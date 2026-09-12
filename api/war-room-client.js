@@ -16,7 +16,7 @@ function classAction(){
  const role=personas[S.p][0].split(" · ")[0]; return (S.awakened?dark:base)[role];
 }
 function familyAction(){
- const active={"هخامنشیان":["فرمان شاهنشاه","دفاع هدف را برای این راند باطل کن.",true],"وراز":["زمین سوخته","اقتصاد شهر هدف را صفر کن.",true],"صفاریان":["خرید شورشیان","یک شهر بی‌طرف را به شورشیان خودت تبدیل کن.",true],"آل‌بویه":["تاج‌بخشی","اول پشتیبانی را روی همین شهر مهر کن؛ اگر فتح شد، مالک نهایی را تو تعیین می‌کنی.",true]};
+ const active={"هخامنشیان":["فرمان شاهنشاه","شهر دشمن در سپیده‌دم بدون نبرد تسلیم می‌شود؛ فقط یک‌بار در بازی.",true],"وراز":["زمین سوخته","اقتصاد شهر هدف را برای همیشه می‌سوزاند و حملهٔ تو به آن قطعی می‌شود.",true],"نهابد":["وامِ درباری","برای فرمانده انتخاب‌شده ۱۲ سکه وامِ سیستمی ثبت کن؛ نکول، مصادره دارد.",true],"طاهریان":["استخراج پنهان","از شهرِ دست‌نشانده‌ات بی‌هشدار برداشت کن؛ اول قرارداد دست‌نشاندگی لازم است.",true],"صفاریان":["خرید شورشیان","یک شهر بی‌طرف را به شورشیان خودت تبدیل کن.",true],"آل‌بویه":["تاج‌بخشی","اول پشتیبانی را روی همین شهر مهر کن؛ اگر فتح شد، مالک نهایی را تو تعیین می‌کنی.",true]};
  const name=factions[S.f][0]; return active[name]||["اثر خودکار خاندان","قدرت خاندان "+name+" هنگام اقتصاد، دفاع یا آشکارسازی راند خودکار محاسبه می‌شود.",false];
 }
 function render(){
@@ -24,7 +24,7 @@ $("#phase").textContent="راند "+N.format(S.round)+" · "+S.phase;$("#prestig
 $("#identity-title").textContent=(S.awakened?"سایه بیدار: ":"هویت قفل‌شده: ")+personas[S.p][0].split(" · ")[0]+" خاندان "+factions[S.f][0];
 $("#prestige-fill").style.width=Math.min(100,(S.prestige/12)*100)+"%";
 $("#class-action").textContent="فرمان کلاس: "+classAction();
-const doctrine=familyAction();$("#family-action").textContent="فرمان خاندان: "+doctrine[0];$("#family-action").disabled=!doctrine[2];const heir=$("#family-recipient");if(heir)heir.hidden=factions[S.f][0]!=="آل‌بویه";$("#family-action-note").textContent=doctrine[1];
+const doctrine=familyAction(),roleName=personas[S.p][0].split(" · ")[0];$("#family-action").textContent="فرمان خاندان: "+doctrine[0];$("#family-action").disabled=!doctrine[2];const heir=$("#family-recipient");if(heir)heir.hidden=!["آل‌بویه","نهابد"].includes(factions[S.f][0]);const copy=$("#copy-role");if(copy)copy.hidden=!(S.awakened&&roleName==="عیار");$("#family-action-note").textContent=doctrine[1];
 $("#awaken").disabled=S.awakened||S.prestige<12;$("#awaken").textContent=S.awakened?"سایه بیدار است":"بیداری سایه · ۱۲ اعتبار";
 $("#awakening-state").textContent=S.awakened?"واریانت تاریک فقط در لحظهٔ نخستین استفاده بر رقیبان آشکار می‌شود.":"با ۱۲ اعتبار، واریانت تاریکِ کلاس تو فعال می‌شود.";
 $("#faction").disabled=S.locked;$("#persona").disabled=S.locked;document.body.classList.toggle("shadow-awake",S.awakened);
