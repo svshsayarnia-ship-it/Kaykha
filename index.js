@@ -1,9 +1,6 @@
 const stableOrigin = 'https://kaykha-phase4-2vyue2uug-svshsayarnia-ship-its-projects.vercel.app';
 const gameShell = require('./api/game-shell');
 const warRoomHtml = require('./api/war-room-html');
-const warRoomCss = require('./api/war-room-css');
-const warRoomClient = require('./api/war-room-client');
-const kaykhaOnline = require('./api/kaykha-online');
 
 function assetPayload(handler) {
   let body = '';
@@ -32,21 +29,6 @@ async function proxy(request, response) {
 
   if (requestUrl.pathname === '/war-room.html' || requestUrl.pathname === '/game') {
     serveEmbedded(response, 'text/html; charset=utf-8', warRoomHtml, 'private, no-store');
-    return;
-  }
-
-  if (requestUrl.pathname === '/war-room.css') {
-    serveEmbedded(response, 'text/css; charset=utf-8', warRoomCss);
-    return;
-  }
-
-  if (requestUrl.pathname === '/war-room.js') {
-    serveEmbedded(response, 'application/javascript; charset=utf-8', warRoomClient);
-    return;
-  }
-
-  if (requestUrl.pathname === '/kaykha-online.js') {
-    serveEmbedded(response, 'application/javascript; charset=utf-8', kaykhaOnline);
     return;
   }
 
