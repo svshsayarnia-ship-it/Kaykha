@@ -152,15 +152,64 @@ body.kaykha-unified:before{
 .faction-card-visual small{display:block;color:#b8ccca;font-size:10px;line-height:1.8;margin-top:3px}
 @media(max-width:980px){.role-gallery-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:620px){.role-gallery-head{display:block}.role-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.persona-art{width:64px;height:64px;flex-basis:64px}}
+
+/* Phase Five city entry: 2.5D architectural threshold */
+#city-entry-curtain{position:fixed;inset:0;z-index:160;display:grid;place-items:center;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 42%,rgba(35,139,132,.24),rgba(3,8,13,.92) 68%);backdrop-filter:blur(0);transition:opacity .22s ease,backdrop-filter .22s ease}
+#city-entry-curtain.show{opacity:1;backdrop-filter:blur(7px)}
+#city-entry-curtain .city-entry-shell{position:relative;width:min(900px,90vw);min-height:min(650px,84vh);display:grid;grid-template-columns:minmax(0,1.25fr) minmax(220px,.75fr);align-items:stretch;gap:0;padding:16px;border:1px solid #e2c98088;background:linear-gradient(145deg,#102f3d,#06131e 70%);box-shadow:0 35px 120px #000c,inset 0 0 0 1px #ffffff0b;transform:perspective(1100px) rotateX(9deg) scale(.9) translateY(26px);transition:transform .52s cubic-bezier(.2,.85,.2,1);overflow:hidden}
+#city-entry-curtain.show .city-entry-shell{transform:perspective(1100px) rotateX(0) scale(1) translateY(0)}
+#city-entry-curtain .city-entry-shell:before,#city-entry-curtain .city-entry-shell:after{content:"";position:absolute;inset:10px;pointer-events:none;border:1px solid #e2c98038}
+#city-entry-curtain .city-entry-shell:after{inset:21px;border-color:#238b8440}
+.city-entry-portal{position:relative;min-height:480px;overflow:hidden;border:1px solid #e2c98066;background:#06131d;clip-path:polygon(7% 0,93% 0,100% 7%,100% 100%,0 100%,0 7%)}
+.city-entry-portal:before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(90deg,#031018aa 0,#03101815 44%,#03101888 100%),linear-gradient(0deg,#02080dcc 0,#02080d05 62%,#e2c98020 100%);box-shadow:inset 0 0 0 13px #050b1355,inset 0 0 50px #000b}
+.city-entry-portal:after{content:"";position:absolute;z-index:3;inset:16px;border:1px solid #e2c98055;clip-path:polygon(7% 0,93% 0,100% 8%,100% 100%,0 100%,0 8%);pointer-events:none}
+.city-entry-portal img{display:block;width:100%;height:100%;min-height:480px;object-fit:cover;filter:saturate(.92) contrast(1.08);transform:scale(1.08);animation:kaykhaCityZoom 1.4s cubic-bezier(.2,.8,.2,1) both}
+.city-entry-column{position:absolute;z-index:4;top:12px;bottom:12px;width:23px;background:linear-gradient(90deg,#6e5228,#e2c980 35%,#8f6b32 65%,#4a341c);box-shadow:0 0 16px #0009}
+.city-entry-column:before{content:"";position:absolute;left:-8px;right:-8px;top:0;height:17px;background:linear-gradient(#ead48a,#8b642c);border:1px solid #f1df9c}
+.city-entry-column:after{content:"";position:absolute;left:-8px;right:-8px;bottom:0;height:17px;background:linear-gradient(#8b642c,#ead48a);border:1px solid #f1df9c}
+.city-entry-column.left{left:24px}.city-entry-column.right{right:24px}
+.city-entry-copy{position:relative;z-index:6;display:flex;flex-direction:column;justify-content:center;gap:13px;padding:34px 28px;text-align:right}
+.city-entry-copy .entry-kicker{color:#76c9bd;font-size:11px;letter-spacing:.08em}
+.city-entry-copy h2{margin:0;color:#f6e4ad;font-size:clamp(30px,5vw,58px);line-height:1.15;text-shadow:0 8px 30px #000}
+.city-entry-copy p{margin:0;color:#c9d7d2;font-size:12px;line-height:2}
+.city-entry-copy .entry-route{display:flex;align-items:center;gap:8px;color:#f0d47c;font-size:10px}
+.city-entry-copy .entry-route:before{content:"";width:34px;height:1px;background:#e2c980}
+.city-entry-seal{width:74px;height:74px;display:grid;place-items:center;align-self:flex-end;border:1px solid #e2c980aa;border-radius:50%;color:#e2c980;font-size:30px;background:radial-gradient(circle,#d9b65a33,#06131d);box-shadow:0 0 0 8px #e2c9800b,0 0 30px #e2c98022;animation:kaykhaSealPulse 1.8s ease-in-out infinite}
+.city-entry-dust{position:absolute;z-index:5;width:5px;height:5px;border-radius:50%;background:#e2c980;box-shadow:140px 42px #e2c980,260px 190px #76c9bd,70px 270px #e2c980,330px 360px #76c9bd,60px 410px #e2c980;opacity:.65;animation:kaykhaDust 1.4s linear both}
+body.city-entering .shell-main{filter:blur(4px) saturate(.7);transform:scale(.985);transition:filter .25s ease,transform .25s ease}
+@keyframes kaykhaCityZoom{from{transform:scale(1.24);filter:saturate(.55) contrast(1.2) brightness(.6)}to{transform:scale(1.08);filter:saturate(.92) contrast(1.08) brightness(1)}}
+@keyframes kaykhaDust{from{transform:translate3d(-20px,26px,0);opacity:0}35%{opacity:.8}to{transform:translate3d(30px,-18px,0);opacity:0}}
+@keyframes kaykhaSealPulse{50%{box-shadow:0 0 0 13px #e2c98008,0 0 42px #e2c98035}}
+@media(max-width:720px){#city-entry-curtain .city-entry-shell{display:block;min-height:0;padding:10px}.city-entry-portal{min-height:270px;height:46vh}.city-entry-portal img{min-height:270px}.city-entry-copy{padding:20px 18px 26px}.city-entry-copy h2{font-size:34px}.city-entry-seal{position:absolute;left:20px;bottom:18px;width:58px;height:58px}.city-entry-column{display:none}}
+@media(prefers-reduced-motion:reduce){#city-entry-curtain,#city-entry-curtain .city-entry-shell,#city-entry-portal img,body.city-entering .shell-main{transition:none!important;animation:none!important}}
 </style></style></head><body class="kaykha-unified"><div class="architectural-frame" aria-hidden="true"><div class="frame-line top"></div><div class="frame-line bottom"></div><div class="frame-column left"></div><div class="frame-column right"></div></div><main class="shell"><nav class="shell-nav" aria-label="ناوبری بازی"><div class="shell-sigil">ک</div><button type="button" data-game-view="command" class="active"><span>⌁</span><b>فرماندهی</b></button><button type="button" data-game-view="map"><span>◇</span><b>نقشه</b></button><button type="button" data-game-view="market"><span>◫</span><b>بازار</b></button><button type="button" data-game-view="diwan"><span>☾</span><b>دیوان</b></button><div class="nav-spacer"></div></nav><section class="shell-main"><header class="shell-topbar"><div class="brand-lockup"><small>KAYKHA · COMMAND TABLE</small><h1>میز فرمان کیخا</h1></div><div class="top-state"><span id="phase" class="phase-pill">راند ۱ · بازار مکاره و دربار</span><span id="mode-state" class="mode-pill">تمرین آزاد</span><a class="top-guide" href="/game-guide.html" target="_blank">راهنمای بازی</a></div></header><div class="shell-scroll"><div id="practice-note" class="practice-note"><b>تمرین آزاد فعال است.</b> بدون حساب کاربری چرخهٔ اصلی را یاد می‌گیری؛ نتیجه‌های این حالت محلی هستند.</div>
 <section class="game-view active" data-view-panel="command"><div class="view-head"><div><small>مرکز تصمیم</small><h2>فرماندهی</h2></div><p>هدف جاری را بفهم، فرمان را مهر کن و نتیجه را در سپیده‌دم ببین.</p></div><section class="command-hero"><div><small>مأموریت جاری</small><h3>یک فرمان معتبر مهر کن و سپیده‌دم را ببین.</h3><p>اول در نقشه مبدأ و هدف را انتخاب کن؛ بعد نوع فرمان را تعیین کن و آن را مهر کن.</p></div><div class="mission-progress"><div class="mission-step"><span>۱</span><div><b>مبدأ و هدف</b><small>از نقشه</small></div></div><div class="mission-step"><span>۲</span><div><b>نوع فرمان</b><small>حمله، دفاع، پشتیبانی…</small></div></div><div class="mission-step"><span>۳</span><div><b>سپیده‌دم</b><small>نتیجه را ببین</small></div></div></div></section><section class="command-grid"><aside class="panel identity-panel"><small>قدرت تو</small><h2>خاندان و چهره</h2><div id="persona-portrait" class="persona-portrait"><img id="persona-art" class="persona-art" alt="پرتره نقش انتخاب‌شده"><div class="portrait-sigil">⚔</div><div class="portrait-copy"><b id="portrait-name">اسپهبد</b><small id="portrait-house">هخامنشیان · پاسدار مرز</small></div></div><select id="faction"></select><article id="faction-card"></article><select id="persona"></select><article id="persona-card"></article><section class="identity-lock"><small id="identity-title">هویت قفل‌نشده</small><div class="prestige-bar"><span id="prestige-fill"></span></div><p>اعتبار: <b id="prestige">۰</b> / ۱۲</p><button id="class-action" class="class-action"></button><select id="copy-role" hidden><option value="">کلاس قابل تقلید</option><option value="اسپهبد">اسپهبد</option><option value="چشم شاه">چشم شاه</option><option value="رئیس‌التجار">رئیس‌التجار</option><option value="دهقان">دهقان</option><option value="مغ اعظم">مغ اعظم</option><option value="عطّار">عطّار</option><option value="قلندر">قلندر</option></select><button id="family-action" class="family-action"></button><select id="family-recipient"><option value="">وارث نهایی: خودم</option></select><p id="family-action-note" class="family-note"></p><button id="awaken" class="awaken">بیداری سایه · ۱۲ اعتبار</button><p id="awakening-state">پس از بیداری، واریانت تاریک پنهان می‌ماند.</p></section></aside><section class="panel command-card"><small>خنجرهای پنهان</small><h2>فرمان این راند</h2><p id="choice">مبدأ ری · هدف اصفهان</p><div id="orders"><button data-order="attack">حمله</button><button data-order="defend">دفاع</button><button data-order="support">پشتیبانی</button><button data-order="caravan">کاروان</button><button data-order="trade">تجارت</button><button data-order="raid">غارت</button><button data-order="sabotage">خرابکاری</button></div><button id="seal" class="gold">مهر کردن فرمان</button><p id="sealed">فرمان تا سپیده‌دم مخفی می‌ماند.</p><button id="resolve" class="red">آشکارسازی و اجرای سپیده‌دم</button></section><aside class="panel event-card"><small>دفتر وقایع</small><h2>نتیجه و علت</h2><ol id="log"></ol></aside></section></section>
 <section class="game-view" data-view-panel="map"><div class="view-head"><div><small>قلمرو</small><h2>نقشهٔ دربار</h2></div><p>مبدأ و هدف فرمان را اینجا انتخاب کن.</p></div><section class="map-stage"><div class="map-board"><div id="territories"></div><section id="city-stage" aria-live="polite"><div class="city-visual"><img id="city-art" alt=""><div class="city-vignette"></div><span id="city-depth">نمای داخلی شهر</span></div><div class="city-copy"><small id="city-region">اقلیم مرکزی</small><h3 id="city-name">ری</h3><p id="city-description">شهر انتخابی‌ات را بزن تا وارد بازارش شوی.</p><button id="audio-toggle" type="button" aria-pressed="false">صدای فضا: خاموش</button></div></section></div><aside class="map-help"><div class="intel-strip"><small>قاعده انتخاب</small><b>یک شهر خودی را مبدأ کن، سپس مقصد را تعیین کن.</b><p>انتخاب‌ها به فرماندهی منتقل می‌شوند.</p></div><button type="button" class="gold" data-jump-command>رفتن به ثبت فرمان</button></aside></section></section>
 <section class="game-view" data-view-panel="market"><div class="view-head"><div><small>اقتصاد آزاد</small><h2>بازار مکاره</h2></div><p>مالکیت اقتصادی از کنترل نظامی جداست.</p></div><section class="panel market"><div class="market-head"><div><small>اسناد و تیمچه</small><h2>مالکیت و درآمد</h2></div><p id="economy-status">خزانه: — · نفوذ: —</p></div><div class="market-toolbar"><select id="market-city"><option value="ری">ری</option><option value="اصفهان">اصفهان</option><option value="نیشابور">نیشابور</option><option value="گرگان">گرگان</option><option value="هگمتانه">هگمتانه</option><option value="مرو">مرو</option><option value="تیسفون">تیسفون</option><option value="هگمتانه">هگمتانه</option><option value="بلخ">بلخ</option><option value="یزد">یزد</option><option value="الموت">الموت</option><option value="تبریز">تبریز</option><option value="شوش">شوش</option><option value="هرمز">هرمز</option><option value="شیراز">شیراز</option><option value="بم">بم</option><option value="زرنج">زرنج</option></select><select id="property-level"><option value="stall">دکان · ۶ سکه</option><option value="merchant_house">حجره · ۱۲ سکه</option><option value="caravanserai">کاروانسرا · ۲۰ سکه</option></select><button id="buy-deed" class="gold">خرید سند</button></div><p id="market-status">شهر را انتخاب کن.</p><div id="market"></div></section></section>
 <section class="game-view" data-view-panel="diwan"><div class="view-head"><div><small>دیپلماسی</small><h2>دیوان</h2></div><p>تالار آنلاین، پیمان، سفته و نجوا.</p></div><div class="diwan-intro"><b>در دیوان حرف، دارایی و تهدید هر سه قرارداد می‌شوند.</b></div><section class="diwan-grid"><aside class="panel"><section id="online"><small>تالار هم‌زمان</small><h2>ورود به دربار</h2><input id="commander-name" maxlength="32" placeholder="نام فرمانده"><div class="online-actions"><button id="create-lobby">ساخت تالار</button><input id="lobby-code" maxlength="6" placeholder="کد تالار"><button id="join-lobby">ورود</button></div><div class="online-actions"><select id="game-mode"><option value="hegemony">بحران جانشینی</option><option value="dynasty">خون و پیمان</option><option value="silk_road">شریان ابریشم</option><option value="survival">هجوم انیران</option><option value="invisible_guest">مهمان ناخوانده</option><option value="winter_hegemony">عصر زمستان · هژمونی ترکیبی</option></select><button id="start-lobby">آغاز بازی</button><button id="open-orders">باز کردن فرمان‌ها</button></div><p id="online-status">نسخهٔ آفلاین آماده است.</p></section></aside><section class="rp-grid"><section class="rp-card"><small>دیوار خون</small><div><select id="bounty-type"><option value="raid">غارت</option><option value="sabotage">خرابکاری</option><option value="hunt">شکار</option><option value="defend">دفاع</option></select><input id="bounty-reward" type="number" min="1" max="40" value="8"><button id="post-bounty">ثبت قرارداد ناشناس</button></div><div id="bounty-board" class="compact-list"></div></section><section class="rp-card"><small>نقاب زمستان</small><textarea id="whisper-body" maxlength="600" placeholder="نجوای ناشناس دربار…"></textarea><button id="send-whisper">ارسال با ۱ نفوذ</button><div id="whisper-feed" class="compact-list"></div></section><section class="rp-card"><small>پیمان و سفته</small><div><select id="contract-type"><option value="joint_venture">شراکت تیمچه</option><option value="debt">سفته</option><option value="blood_debt">خون‌بها</option><option value="treaty">پیمان رسمی</option><option value="vassalage">دست‌نشاندگی</option></select><select id="contract-level"><option value="word">قول شفاهی</option><option value="sealed" selected>مهرشده</option><option value="blood">قرارداد خون</option></select><select id="contract-member"></select><input id="contract-amount" type="number" min="1" max="40" value="8"><button id="create-contract">مهر قرارداد</button></div><div id="contract-list" class="compact-list"></div></section><section class="rp-card"><small>دفتر آهنین</small><div id="credit-summary" class="identity-lock">اعتبار هنوز خوانده نشده است.</div><div><select id="loan-member"></select><input id="loan-principal" type="number" min="1" max="200" value="8" placeholder="اصل وام"><input id="loan-interest" type="number" min="0" max="200" value="2" placeholder="بهره"><input id="loan-due" type="number" min="1" max="20" value="2" placeholder="موعد راند"><select id="loan-collateral"><option value="territory">وثیقه شهر هدف</option><option value="income">وثیقه درآمد</option><option value="route">وثیقه مسیر</option></select><button id="create-loan">ثبت وام با وثیقه</button></div><div id="loan-list" class="compact-list"></div></section><section class="rp-card"><small>لایه سایه</small><div id="shadow-role" class="identity-lock">نقش مستقل تو از دید دیگران پنهان است.</div><p>بانکدار آهنین، ارباب کاروان‌ها و فروشندهٔ اسرار سرباز ندارند؛ اما می‌توانند جریان پول، مسیر و اطلاعات را تغییر دهند.</p></section></section><section class="role-gallery-panel"><div class="role-gallery-head"><div><small>نگارخانهٔ دربار</small><h3>چهره‌ها و نقش‌های مستقل</h3></div><p>هر نقش یک پرترهٔ اختصاصی دارد؛ روی کارت‌ها برو تا جایگاه هر چهره را بشناسی.</p></div><div id="role-gallery-grid" class="role-gallery-grid"></div></section><section class="rp-card"><small>هژمونی ترکیبی · عصر زمستان</small><div id="winter-scoreboard" class="identity-lock"><small>پس از اتصال تالار، امتیاز نظامی، خزانه، ثروت بیرونی، پیمان خون و مشروعیت نمایش داده می‌شود.</small></div><p>در حالت عصر زمستان، برنده در پایان راند زمستان از روی همین پنج ستون تعیین می‌شود.</p></section><section class="rp-card"><small>بحران زنده</small><div id="crisis-panel" class="identity-lock"><small>بحران فعالی نیست؛ اما هر سپیده‌دم می‌تواند معادله را عوض کند.</small></div><p>سقوط بازار و شورش به‌صورت خودکار اجرا می‌شوند؛ تهدید بیرونی با بودجهٔ جمعی قابل مهار است.</p></section></section></section></section></section>
-</div></section></main><script src="/war-room.js"></script><script src="/kaykha-online.js"></script><script>(()=>{const p=new URLSearchParams(location.search);const practice=p.get('mode')==='practice';if(practice)document.getElementById('practice-note')?.classList.add('show');const mode=document.getElementById('mode-state');if(mode)mode.textContent=practice?'تمرین آزاد':'تالار آنلاین';const buttons=[...document.querySelectorAll('[data-game-view]')],panels=[...document.querySelectorAll('[data-view-panel]')];function openView(name){buttons.forEach(b=>b.classList.toggle('active',b.dataset.gameView===name));panels.forEach(x=>x.classList.toggle('active',x.dataset.viewPanel===name));document.querySelector('.shell-scroll')?.scrollTo({top:0,behavior:'smooth'})}buttons.forEach(b=>b.addEventListener('click',()=>openView(b.dataset.gameView)));document.querySelector('[data-jump-command]')?.addEventListener('click',()=>openView('command'));openView(['command','map','market','diwan'].includes(p.get('view'))?p.get('view'):'map');window.addEventListener('kaykha:identity',()=>{if(mode&&!practice)mode.textContent='متصل به تالار آنلاین'})})();</script><script>
+</div></section><div id="city-entry-curtain" aria-hidden="true"><div class="city-entry-shell"><div class="city-entry-portal"><img id="city-entry-art" alt=""><i class="city-entry-column left"></i><i class="city-entry-column right"></i><i class="city-entry-dust"></i></div><div class="city-entry-copy"><span class="entry-kicker">دروازهٔ شهر · فصل پنجم</span><h2 id="city-entry-name">ری</h2><p id="city-entry-description">بازار، پیمان و تهدید در این شهر به هم گره خورده‌اند.</p><div class="entry-route"><span id="city-entry-region">اقلیم مرکزی</span><span>·</span><span>ورود به بازار و دیوان</span></div><div class="city-entry-seal">ک</div></div></div></div></main><script src="/war-room.js"></script><script src="/kaykha-online.js"></script><script>(()=>{const p=new URLSearchParams(location.search);const practice=p.get('mode')==='practice';if(practice)document.getElementById('practice-note')?.classList.add('show');const mode=document.getElementById('mode-state');if(mode)mode.textContent=practice?'تمرین آزاد':'تالار آنلاین';const buttons=[...document.querySelectorAll('[data-game-view]')],panels=[...document.querySelectorAll('[data-view-panel]')];function openView(name){buttons.forEach(b=>b.classList.toggle('active',b.dataset.gameView===name));panels.forEach(x=>x.classList.toggle('active',x.dataset.viewPanel===name));document.querySelector('.shell-scroll')?.scrollTo({top:0,behavior:'smooth'})}buttons.forEach(b=>b.addEventListener('click',()=>openView(b.dataset.gameView)));document.querySelector('[data-jump-command]')?.addEventListener('click',()=>openView('command'));openView(['command','map','market','diwan'].includes(p.get('view'))?p.get('view'):'map');window.addEventListener('kaykha:identity',()=>{if(mode&&!practice)mode.textContent='متصل به تالار آنلاین'})})();</script><script>
 (()=> {
   const cityArt = {
     'ری':'Ray.webp','اصفهان':'Isfahan.webp','نیشابور':'Neyshaboor.webp','گرگان':'Gorgan.webp','همدان':'Hamedan.webp','هگمتانه':'Hamedan.webp','مرو':'Marv.webp','تیسفون':'Tisphoon.webp','بلخ':'Balkh.webp','یزد':'Yazd.webp','الموت':'Alamoot.webp','تبریز':'Tabriz.webp','شوش':'Shush.webp','هرمز':'Hormoz.webp','شیراز':'Shiraz.webp','بم':'Bam.webp','زرنج':'Bam.webp'
+  };
+  const cityMeta = {
+    'ری':['اقلیم مرکزی','دروازهٔ خزانه، بازار و فرمان‌های شاهی.'],
+    'اصفهان':['فلات مرکزی','تیمچه‌های هنر، فلز و پیمان‌های تجاری.'],
+    'نیشابور':['خراسان بزرگ','شهر دانش، ابریشم و خبرهای دوردست.'],
+    'گرگان':['کرانهٔ کاسپین','مرز جنگل، راه و پشتیبانی نظامی.'],
+    'همدان':['کوهستان ماد','دژهای سنگی و مسیرهای سختِ لشکرکشی.'],
+    'هگمتانه':['کوهستان ماد','پایتخت کهن و گره‌گاه نفوذ خاندان‌ها.'],
+    'مرو':['خراسان بزرگ','چهارراه کاروان‌ها و مالیات شریان ابریشم.'],
+    'تیسفون':['میان‌رودان','قلب دربار، رود و سیاست امپراتوری.'],
+    'بلخ':['خراسان بزرگ','دروازهٔ شرق و بازار خبرهای مرزی.'],
+    'یزد':['کویر مرکزی','آب، آتش و اقتصاد بقا در دل کویر.'],
+    'الموت':['رشته‌کوه البرز','دژ پنهان، نجوا و فرمان‌های بی‌امضا.'],
+    'تبریز':['آذربایجان','بازار گذرگاه شمال‌غرب و میدان برخورد قدرت‌ها.'],
+    'شوش':['خوزستان','دروازهٔ گرم جنوب‌غرب و خزانهٔ کهن.'],
+    'هرمز':['کرانهٔ جنوب','بندر کالا، عوارض و مسیرهای دریایی.'],
+    'شیراز':['پارسه و فارس','باغ، هنر و مرکز نفوذ جنوب.'],
+    'بم':['کرمان','دژ کویر و حلقهٔ اتصال راه‌های دور.'],
+    'زرنج':['سیستان','مرز باد، آب و لشکرهای بیابانی.']
   };
   const roleSigil = {'اسپهبد':'⚔','بزرگ‌فرمادار':'✦','چشم شاه':'◉','رئیس‌التجار':'◈','دهقان':'⌁','مغ اعظم':'☼','عیار':'☽','عطّار':'⚗','خواب‌گزار':'◒','پیر کوهستان':'♜','پرده‌خوان':'✧','قلندر':'☾'};
   const personaRoles = [
@@ -203,9 +252,14 @@ body.kaykha-unified:before{
     const img=document.getElementById('city-art');
     const title=document.getElementById('city-name');
     if(!img || !name) return;
+    const meta=cityMeta[name] || ['اقلیم ناشناخته','شهر انتخابی تو؛ بازار و فرمان از اینجا دنبال می‌شود.'];
     img.src=artPath(name);
     img.alt='نمای تصویری شهر ' + name;
     if(title) title.textContent=name;
+    const region=document.getElementById('city-region');
+    const description=document.getElementById('city-description');
+    if(region) region.textContent=meta[0];
+    if(description) description.textContent=meta[1];
   }
   function renderRoleGallery(){
     const root=document.getElementById('role-gallery-grid');
@@ -244,12 +298,65 @@ body.kaykha-unified:before{
   }
   const territory=document.getElementById('territories');
   if(territory) new MutationObserver(refreshVisuals).observe(territory,{childList:true});
+  const audioEngine=(()=>{
+    let context=null;
+    let enabled=false;
+    let ambient=null;
+    const ensure=()=>{const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;if(!context)context=new C();if(context.state==='suspended')context.resume().catch(()=>{});return context};
+    const tone=(frequency,duration,type='sine',gainValue=.035,slideTo=null)=>{
+      const ctx=ensure();if(!ctx)return;
+      const now=ctx.currentTime;
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.type=type;osc.frequency.setValueAtTime(frequency,now);
+      if(slideTo)osc.frequency.exponentialRampToValueAtTime(Math.max(35,slideTo),now+duration);
+      gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(gainValue,now+.02);gain.gain.exponentialRampToValueAtTime(.0001,now+duration);
+      osc.connect(gain).connect(ctx.destination);osc.start(now);osc.stop(now+duration+.03);
+    };
+    const noise=(duration=.45,gainValue=.025)=>{
+      const ctx=ensure();if(!ctx)return;
+      const buffer=ctx.createBuffer(1,ctx.sampleRate*duration,ctx.sampleRate);
+      const data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,.6);
+      const source=ctx.createBufferSource();const filter=ctx.createBiquadFilter();const gain=ctx.createGain();
+      filter.type='lowpass';filter.frequency.value=1100;gain.gain.setValueAtTime(.0001,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(gainValue,ctx.currentTime+.05);gain.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+duration);
+      source.buffer=buffer;source.connect(filter).connect(gain).connect(ctx.destination);source.start();source.stop(ctx.currentTime+duration+.02);
+    };
+    const play=kind=>{if(!enabled)return;if(kind==='city'){tone(118,.95,'sine',.055,48);tone(236,.55,'triangle',.022,118);noise(.8,.035);setTimeout(()=>tone(392,.5,'sine',.025,260),160);return}if(kind==='select'){tone(320,.12,'triangle',.035,460);return}if(kind==='seal'){tone(180,.28,'square',.028,92);tone(360,.18,'triangle',.02,240);return}if(kind==='resolve'){tone(220,.3,'sawtooth',.025,80);setTimeout(()=>tone(440,.38,'triangle',.02,260),120);return}if(kind==='nav'){tone(260,.09,'sine',.018,320);return}tone(480,.1,'sine',.02,360)};
+    const set=state=>{enabled=state;if(enabled){ensure();play('toggle')}};
+    return {play,set,isEnabled:()=>enabled};
+  })();
+  function enterCity(name){
+    const curtain=document.getElementById('city-entry-curtain');
+    const stage=document.getElementById('city-stage');
+    if(!curtain || !name){showCity(name);return}
+    const meta=cityMeta[name] || ['اقلیم ناشناخته','بازار و فرمان این شهر در حال گشایش است.'];
+    const image=document.getElementById('city-entry-art');
+    const title=document.getElementById('city-entry-name');
+    const region=document.getElementById('city-entry-region');
+    const description=document.getElementById('city-entry-description');
+    if(image){image.src=artPath(name);image.alt='ورود تصویری به شهر '+name}
+    if(title) title.textContent=name;
+    if(region) region.textContent=meta[0];
+    if(description) description.textContent=meta[1];
+    document.body.classList.add('city-entering');
+    stage?.classList.add('is-transitioning');
+    curtain.classList.add('show');
+    curtain.setAttribute('aria-hidden','false');
+    audioEngine.play('city');
+    clearTimeout(enterCity.timer);
+    enterCity.timer=setTimeout(()=>{showCity(name);stage?.classList.remove('is-transitioning');curtain.classList.remove('show');curtain.setAttribute('aria-hidden','true');document.body.classList.remove('city-entering')},1450);
+  }
   document.addEventListener('click',event=>{
     const city=event.target.closest('#territories button');
-    if(city) showCity((city.querySelector('b')?.textContent || '').trim());
+    if(city){enterCity((city.querySelector('b')?.textContent || '').trim());return}
+    if(event.target.closest('[data-game-view]')) audioEngine.play('nav');
+    if(event.target.closest('#orders button')) audioEngine.play('select');
+    if(event.target.closest('#seal')) audioEngine.play('seal');
+    if(event.target.closest('#resolve')) audioEngine.play('resolve');
   });
-  document.getElementById('faction')?.addEventListener('change',decoratePortrait);
-  document.getElementById('persona')?.addEventListener('change',decoratePortrait);
+  document.getElementById('faction')?.addEventListener('change',()=>{decoratePortrait();audioEngine.play('select')});
+  document.getElementById('persona')?.addEventListener('change',()=>{decoratePortrait();audioEngine.play('select')});
+  document.getElementById('audio-toggle')?.addEventListener('click',event=>audioEngine.set(event.currentTarget.getAttribute('aria-pressed')==='true'));
   refreshVisuals();
 })();
 </script></body></html>`);
