@@ -1,5 +1,5 @@
 const stableOrigin = 'https://kaykha-phase4-2vyue2uug-svshsayarnia-ship-its-projects.vercel.app';
-const warRoomHtml = require('./api/war-room-html');
+const commandOrigin = 'https://kaykha-phase4-67719fv7k-svshsayarnia-ship-its-projects.vercel.app';
 const worldShellCss = require('./api/world-shell-css');
 const worldShellJs = require('./api/world-shell-js');
 
@@ -33,8 +33,8 @@ function copyUpstreamHeaders(response, upstream, transformed = false) {
   });
 }
 
-async function fetchUpstream(request, requestUrl) {
-  return fetch(`${stableOrigin}${requestUrl.pathname}${requestUrl.search}`, {
+async function fetchOrigin(origin, request, requestUrl) {
+  return fetch(`${origin}${requestUrl.pathname}${requestUrl.search}`, {
     method: request.method,
     headers: {
       accept: request.headers.accept || '*/*',
@@ -46,8 +46,19 @@ async function fetchUpstream(request, requestUrl) {
   });
 }
 
+async function pipeUpstream(upstream, response) {
+  response.statusCode = upstream.status;
+  copyUpstreamHeaders(response, upstream, false);
+  if (!upstream.body) {
+    response.end();
+    return;
+  }
+  for await (const chunk of upstream.body) response.write(chunk);
+  response.end();
+}
+
 async function serveRoot(request, response, requestUrl) {
-  const upstream = await fetchUpstream(request, requestUrl);
+  const upstream = await fetchOrigin(stableOrigin, request, requestUrl);
   response.statusCode = upstream.status;
   copyUpstreamHeaders(response, upstream, true);
   response.setHeader('cache-control', 'no-store, max-age=0');
@@ -65,11 +76,6 @@ async function serveRoot(request, response, requestUrl) {
 async function proxy(request, response) {
   const requestUrl = new URL(request.url || '/', 'https://kaykha-phase4.vercel.app');
 
-  if (requestUrl.pathname === '/war-room.html' || requestUrl.pathname === '/game') {
-    serveEmbedded(response, 'text/html; charset=utf-8', warRoomHtml, 'private, no-store');
-    return;
-  }
-
   if (requestUrl.pathname === '/world-shell.css') {
     serveEmbedded(response, 'text/css; charset=utf-8', worldShellCss);
     return;
@@ -80,20 +86,19 @@ async function proxy(request, response) {
     return;
   }
 
+  if (requestUrl.pathname === '/war-room.html' || requestUrl.pathname === '/game') {
+    const upstream = await fetchOrigin(commandOrigin, request, requestUrl);
+    await pipeUpstream(upstream, response);
+    return;
+  }
+
   if ((requestUrl.pathname === '/' || requestUrl.pathname === '/index.html') && ['GET', 'HEAD'].includes(request.method)) {
     await serveRoot(request, response, requestUrl);
     return;
   }
 
-  const upstream = await fetchUpstream(request, requestUrl);
-  response.statusCode = upstream.status;
-  copyUpstreamHeaders(response, upstream, false);
-  if (!upstream.body) {
-    response.end();
-    return;
-  }
-  for await (const chunk of upstream.body) response.write(chunk);
-  response.end();
+  const upstream = await fetchOrigin(stableOrigin, request, requestUrl);
+  await pipeUpstream(upstream, response);
 }
 
 module.exports = async function handler(request, response) {
