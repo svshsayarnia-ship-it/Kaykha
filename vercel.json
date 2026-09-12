@@ -1,6 +1,24 @@
 {
   "routes": [
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.js" }
+    {
+      "src": "/war-room.html",
+      "dest": "/public/war-room.html"
+    },
+    {
+      "src": "/war-room.css",
+      "dest": "/public/war-room.css"
+    },
+    {
+      "src": "/war-room.js",
+      "dest": "/public/war-room.js"
+    },
+    {
+      "src": "/kaykha-online.js",
+      "dest": "/public/kaykha-online.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.js"
+    }
   ]
 }
