@@ -69,6 +69,8 @@ as $function$
    order by 8 desc, m.id;
 $function$;
 
+revoke all on function app_private.kaykha_compute_hegemony_scores(uuid) from public, anon, authenticated;
+
 create or replace function public.get_kaykha_hegemony_scores(p_game_id uuid)
 returns table(
   member_id uuid,
