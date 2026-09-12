@@ -4,6 +4,10 @@
     { "src": "index.js", "use": "@vercel/node" }
   ],
   "routes": [
+    {
+      "src": "/assets/cities/(.*)",
+      "dest": "https://kaykha-phase5-2hwvemkpj-svshsayarnia-ship-its-projects.vercel.app/assets/cities/$1"
+    },
     { "src": "/(.*)", "dest": "/index.js" }
   ]
 }
