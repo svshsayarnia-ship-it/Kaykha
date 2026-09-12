@@ -57,19 +57,66 @@
     if (!response.ok) throw new Error(body.message || body.hint || 'اتصال به دربار برقرار نشد.');
     return body;
   }
+  function authUserId(token) {
+    try {
+      const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      return JSON.parse(atob(payload)).sub || null;
+    } catch (_) { return null; }
+  }
+  function apiPath(path, token) {
+    return fetch(URL + '/rest/v1/' + path, {
+      headers: { apikey: KEY, Authorization: 'Bearer ' + token }
+    }).then(async response => ({ ok: response.ok, body: await response.json().catch(() => []) }));
+  }
+  function hydrateBoard(territories, members, events, token) {
+    const formatter = new Intl.NumberFormat('fa-IR');
+    const me = authUserId(token);
+    const membership = new Map(members.map(member => [member.id, member]));
+    territories.forEach(territory => {
+      const name = Object.keys(CITY).find(city => CITY[city] === territory.territory_id);
+      const button = [...document.querySelectorAll('#territories button')]
+        .find(item => item.querySelector('b')?.textContent === name);
+      if (!button || !name) return;
+      const owner = membership.get(territory.owner_member_id);
+      const mine = owner?.user_id === me;
+      const ownerLabel = !owner ? 'بی‌طرف' : mine ? 'تو' : owner.display_name || 'دشمن';
+      button.classList.toggle('enemy', !mine);
+      button.innerHTML = '<b>' + name + '</b><br><small>' + ownerLabel + ' · ' + formatter.format(territory.strength) + ' سپاه · ' + formatter.format(territory.economy) + ' بازار</small>';
+    });
+    const log = $('#log');
+    if (log && events.length) {
+      log.replaceChildren(...events.slice().reverse().map(event => {
+        const item = document.createElement('li');
+        const meta = document.createElement('small');
+        meta.textContent = 'راند ' + formatter.format(event.round_no) + ' · ' + phaseName(event.tone);
+        item.append(meta, document.createTextNode(event.body));
+        return item;
+      }));
+    }
+  }
   async function readGame() {
     if (!state.gameId) return;
     const token = accessToken();
     if (!token) { status('نسخهٔ آفلاین آماده است؛ برای اتصال به تالار، از ورود اصلی بازی وارد شو.'); return; }
-    const response = await fetch(URL + '/rest/v1/kaykha_games?id=eq.' + encodeURIComponent(state.gameId) + '&select=code,status,phase,round_no', {
-      headers: { apikey: KEY, Authorization: 'Bearer ' + token }
-    });
-    const games = await response.json().catch(() => []);
-    if (!response.ok || !games[0]) { localStorage.removeItem(storageKey); state.gameId = null; status('اتصال قبلی تالار در دسترس نیست.', true); return; }
+    const id = encodeURIComponent(state.gameId);
+    const [gameResult, territoryResult, memberResult, eventResult] = await Promise.all([
+      apiPath('kaykha_games?id=eq.' + id + '&select=code,status,phase,round_no', token),
+      apiPath('kaykha_territories?game_id=eq.' + id + '&select=territory_id,owner_member_id,strength,economy', token),
+      apiPath('kaykha_members?game_id=eq.' + id + '&select=id,user_id,display_name', token),
+      apiPath('kaykha_events?game_id=eq.' + id + '&select=round_no,tone,body,created_at&order=created_at.desc&limit=12', token)
+    ]);
+    const games = gameResult.body;
+    if (!gameResult.ok || !games[0]) {
+      localStorage.removeItem(storageKey); state.gameId = null;
+      status('اتصال قبلی تالار در دسترس نیست.', true); return;
+    }
     const game = games[0];
     status('تالار ' + game.code + ' · راند ' + new Intl.NumberFormat('fa-IR').format(game.round_no) + ' · ' + phaseName(game.phase));
     const phase = $('#phase');
     if (phase) phase.textContent = 'راند ' + new Intl.NumberFormat('fa-IR').format(game.round_no) + ' · ' + phaseName(game.phase);
+    if (territoryResult.ok && memberResult.ok && eventResult.ok) {
+      hydrateBoard(territoryResult.body, memberResult.body, eventResult.body, token);
+    }
   }
   async function savePersona() {
     if (state.gameId) await rpc('set_kaykha_persona', { p_game_id: state.gameId, p_persona_key: persona() });
@@ -124,5 +171,8 @@
       });
     }, true);
     readGame();
+    window.addEventListener('focus', readGame);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) readGame(); });
+    setInterval(() => { if (!document.hidden) readGame(); }, 7000);
   });
 })();
