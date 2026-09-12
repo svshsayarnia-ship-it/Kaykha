@@ -1,5 +1,7 @@
 const stableOrigin = 'https://kaykha-phase4-2vyue2uug-svshsayarnia-ship-its-projects.vercel.app';
-const warRoomHtml = require('./api/war-room-html');
+const commandOrigin = 'https://kaykha-phase4-67719fv7k-svshsayarnia-ship-its-projects.vercel.app';
+const worldShellCss = require('./api/world-shell-css');
+const worldShellJs = require('./api/world-shell-js');
 
 function assetPayload(handler) {
   let body = '';
@@ -18,15 +20,21 @@ function serveEmbedded(response, type, handler, cache = 'public, max-age=120, s-
   response.end(assetPayload(handler));
 }
 
-async function proxy(request, response) {
-  const requestUrl = new URL(request.url || '/', 'https://kaykha-phase4.vercel.app');
-
-  if (requestUrl.pathname === '/war-room.html' || requestUrl.pathname === '/game') {
-    serveEmbedded(response, 'text/html; charset=utf-8', warRoomHtml, 'private, no-store');
-    return;
+function copyUpstreamHeaders(response, upstream, transformed = false) {
+  const blocked = new Set(['connection', 'content-encoding', 'transfer-encoding', 'set-cookie']);
+  if (transformed) {
+    blocked.add('content-length');
+    blocked.add('etag');
   }
+  const setCookies = typeof upstream.headers.getSetCookie === 'function' ? upstream.headers.getSetCookie() : [];
+  if (setCookies.length) response.setHeader('set-cookie', setCookies);
+  upstream.headers.forEach((value, name) => {
+    if (!blocked.has(name.toLowerCase())) response.setHeader(name, value);
+  });
+}
 
-  const upstream = await fetch(`${stableOrigin}${requestUrl.pathname}${requestUrl.search}`, {
+async function fetchOrigin(origin, request, requestUrl) {
+  return fetch(`${origin}${requestUrl.pathname}${requestUrl.search}`, {
     method: request.method,
     headers: {
       accept: request.headers.accept || '*/*',
@@ -36,23 +44,61 @@ async function proxy(request, response) {
     },
     ...(['GET', 'HEAD'].includes(request.method) ? {} : { body: request, duplex: 'half' })
   });
+}
 
+async function pipeUpstream(upstream, response) {
   response.statusCode = upstream.status;
-  const setCookies = typeof upstream.headers.getSetCookie === 'function' ? upstream.headers.getSetCookie() : [];
-  if (setCookies.length) response.setHeader('set-cookie', setCookies);
-
-  upstream.headers.forEach((value, name) => {
-    if (!['connection', 'content-encoding', 'transfer-encoding', 'set-cookie'].includes(name.toLowerCase())) {
-      response.setHeader(name, value);
-    }
-  });
-
+  copyUpstreamHeaders(response, upstream, false);
   if (!upstream.body) {
     response.end();
     return;
   }
   for await (const chunk of upstream.body) response.write(chunk);
   response.end();
+}
+
+async function serveRoot(request, response, requestUrl) {
+  const upstream = await fetchOrigin(stableOrigin, request, requestUrl);
+  response.statusCode = upstream.status;
+  copyUpstreamHeaders(response, upstream, true);
+  response.setHeader('cache-control', 'no-store, max-age=0');
+  if (request.method === 'HEAD' || !upstream.body) {
+    response.end();
+    return;
+  }
+  const html = await upstream.text();
+  const themed = html
+    .replace('</head>', '<link rel="stylesheet" href="/world-shell.css?v=one-world-2"></head>')
+    .replace('</body>', '<script defer src="/world-shell.js?v=one-world-2"></script></body>');
+  response.end(themed);
+}
+
+async function proxy(request, response) {
+  const requestUrl = new URL(request.url || '/', 'https://kaykha-phase4.vercel.app');
+
+  if (requestUrl.pathname === '/world-shell.css') {
+    serveEmbedded(response, 'text/css; charset=utf-8', worldShellCss);
+    return;
+  }
+
+  if (requestUrl.pathname === '/world-shell.js') {
+    serveEmbedded(response, 'application/javascript; charset=utf-8', worldShellJs);
+    return;
+  }
+
+  if (requestUrl.pathname === '/war-room.html' || requestUrl.pathname === '/game') {
+    const upstream = await fetchOrigin(commandOrigin, request, requestUrl);
+    await pipeUpstream(upstream, response);
+    return;
+  }
+
+  if ((requestUrl.pathname === '/' || requestUrl.pathname === '/index.html') && ['GET', 'HEAD'].includes(request.method)) {
+    await serveRoot(request, response, requestUrl);
+    return;
+  }
+
+  const upstream = await fetchOrigin(stableOrigin, request, requestUrl);
+  await pipeUpstream(upstream, response);
 }
 
 module.exports = async function handler(request, response) {
