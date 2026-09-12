@@ -118,22 +118,34 @@ module.exports = function worldShellJs(_request, response) {
     }
   }
 
+  const CITY_IMAGE = {
+    'ری': 'Ray', 'تیسفون': 'Tisphoon', 'اصفهان': 'Isfahan', 'هگمتانه': 'Hamedan',
+    'نیشابور': 'Neyshaboor', 'مرو': 'Marv', 'بلخ': 'Balkh', 'یزد': 'Yazd',
+    'الموت': 'Alamoot', 'گرگان': 'Gorgan', 'تبریز': 'Tabriz', 'شوش': 'Shush',
+    'هرمز': 'Hormoz', 'شیراز': 'Shiraz', 'بم': 'Bam', 'زرنج': 'Gambroon', 'گمبرون': 'Gambroon'
+  };
+
   function cityTransition(button) {
-    if (!button || reduceMotion) return;
+    if (!button) return;
     const cityName = button.querySelector('b')?.textContent?.trim();
     if (!cityName) return;
+    const imageName = CITY_IMAGE[cityName];
     let layer = $('#kaykha-city-transition');
     if (!layer) {
       layer = document.createElement('div');
       layer.id = 'kaykha-city-transition';
-      layer.innerHTML = '<div class="city-gate"><small>ورود به قلمرو</small><strong></strong></div>';
+      layer.innerHTML = '<div class="city-gate"><img class="city-visual" alt=""><div class="city-kicker">ورود به قلمرو</div><strong></strong></div>';
       document.body.appendChild(layer);
     }
+    const image = layer.querySelector('.city-visual');
+    image.src = imageName ? '/assets/cities/' + imageName + '.webp' : '';
+    image.alt = cityName;
+    image.hidden = !imageName;
     layer.querySelector('strong').textContent = cityName;
     requestAnimationFrame(() => layer.classList.add('show'));
     pulse(18);
     clearTimeout(cityTransition.t);
-    cityTransition.t = setTimeout(() => layer.classList.remove('show'), 520);
+    cityTransition.t = setTimeout(() => layer.classList.remove('show'), 1100);
   }
 
   document.addEventListener('click', event => {
