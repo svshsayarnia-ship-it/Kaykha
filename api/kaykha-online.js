@@ -6,7 +6,7 @@ module.exports = function asset(_request, response) {
   const KEY = 'sb_publishable_KIuxWr99zocUh2EBiXkQaQ_LB9PD8Wv';
   const CITY = { 'ری':'ray', 'اصفهان':'isfahan', 'نیشابور':'nishapur', 'گرگان':'gorgan', 'همدان':'hamedan', 'مرو':'marv' };
   const storageKey = 'kaykha.active-game-id';
-  const state = { gameId: localStorage.getItem(storageKey) || null };
+  const state = { gameId: localStorage.getItem(storageKey) || null, me: null, members: [], market: null, selectedTile: null };
   const $ = s => document.querySelector(s);
 
   function tokenFrom(value, depth = 0) {
@@ -75,7 +75,7 @@ module.exports = function asset(_request, response) {
     const formatter = new Intl.NumberFormat('fa-IR');
     const me = authUserId(token);
     const membership = new Map(members.map(member => [member.id, member]));
-    const self = members.find(member => member.user_id === me);
+    const self = members.find(member => member.user_id === me); state.me = self || null; state.members = members;
     if (self) window.dispatchEvent(new CustomEvent('kaykha:identity', {
       detail: { house: self.house_id, persona: self.persona_key, prestige: self.prestige, awakened: self.shadow_awakened, locked: Boolean(self.persona_key) }
     }));
@@ -101,15 +101,52 @@ module.exports = function asset(_request, response) {
       }));
     }
   }
+  function esc(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  }
+  const zoneName = {gates:'دروازه و گمرک',royal_square:'میدان شاهی',guild_alleys:'راستهٔ اصناف',undercity:'دخمه‌ها'};
+  const resourceName = {copper:'مس',carpet:'فرش',silk:'ابریشم',herbs:'گیاهان',armor:'زره'};
+  const contractName = {joint_venture:'شراکت تیمچه',debt:'سفته',blood_debt:'خون‌بها',treaty:'پیمان'};
+  function renderMarket(data) {
+    state.market = data || {};
+    const tiles = data?.tiles || [];
+    const grid = $('#market');
+    const city = $('#market-city')?.value || 'ری';
+    if (grid) grid.innerHTML = tiles.map(tile => {
+      const deed = tile.deed;
+      const selected = state.selectedTile === tile.position_no ? ' selected' : '';
+      const owned = deed ? ' owned' : '';
+      const label = deed ? (deed.owner_member_id ? (deed.property_level === 'stall' ? 'دکان' : deed.property_level === 'merchant_house' ? 'حجره' : 'کاروانسرا') : 'سفیدمهر') : 'سند آزاد';
+      return '<button class="tile '+esc(tile.zone_key)+owned+selected+'" data-market-position="'+esc(tile.position_no)+'"><span class="zone">'+esc(zoneName[tile.zone_key] || tile.zone_key)+'</span><b>'+esc(resourceName[tile.resource_key] || tile.resource_key)+'</b><br><small>'+label+' · '+esc(tile.base_income)+' سود پایه</small></button>';
+    }).join('') || '<p>بازار این شهر هنوز گشوده نشده است.</p>';
+    const statusLine = $('#market-status');
+    if (statusLine) statusLine.textContent = city + ' · ' + (state.selectedTile ? 'محلهٔ انتخابی: ' + state.selectedTile : 'یکی از چهار محله را انتخاب کن.');
+    const economy = $('#economy-status');
+    if (economy && state.me) economy.textContent = 'خزانه: '+new Intl.NumberFormat('fa-IR').format(state.me.coins || 0)+' سکه · نفوذ: '+new Intl.NumberFormat('fa-IR').format(state.me.influence_tokens || 0);
+    const memberSelect = $('#contract-member');
+    if (memberSelect) memberSelect.innerHTML = state.members.filter(member => member.id !== state.me?.id).map(member => '<option value="'+esc(member.id)+'">'+esc(member.display_name || 'فرمانده')+'</option>').join('') || '<option value="">فرماندهٔ دیگری نیست</option>';
+    const board = $('#bounty-board');
+    if (board) board.innerHTML = (data?.bounties || []).map(bounty => '<p class="'+(bounty.status === 'open' ? 'pulse' : '')+'"><b>'+esc(bounty.bounty_type)+' · '+esc(bounty.target_territory_id)+'</b><br>'+new Intl.NumberFormat('fa-IR').format(bounty.reward_coins)+' سکه · '+esc(bounty.status)+(bounty.status === 'open' ? '<button data-claim-bounty="'+esc(bounty.id)+'">برداشتن قرارداد</button>' : '')+'</p>').join('') || '<p>دیوار خون فعلاً ساکت است.</p>';
+    const whispers = $('#whisper-feed');
+    if (whispers) whispers.innerHTML = (data?.whispers || []).map(whisper => '<p><b>[نجوای ناشناس]</b><br>'+esc(whisper.body)+'</p>').join('') || '<p>هنوز نجوايی نرسیده.</p>';
+    const contracts = $('#contract-list');
+    if (contracts) contracts.innerHTML = (data?.contracts || []).map(contract => '<p><b>'+esc(contractName[contract.contract_type] || contract.contract_type)+'</b> · '+esc(contract.status)+(contract.due_round ? ' · موعد راند '+new Intl.NumberFormat('fa-IR').format(contract.due_round) : '')+'</p>').join('') || '<p>پیمانی در دفتر تو ثبت نشده است.</p>';
+  }
+  async function readMarket() {
+    if (!state.gameId || !state.me) return;
+    const city = CITY[$('#market-city')?.value || 'ری'] || 'ray';
+    const data = await rpc('get_kaykha_market', { p_game_id: state.gameId, p_city_id: city });
+    renderMarket(data);
+  }
   async function readGame() {
     if (!state.gameId) return;
     const token = accessToken();
     if (!token) { status('نسخهٔ آفلاین آماده است؛ برای اتصال به تالار، از ورود اصلی بازی وارد شو.'); return; }
     const id = encodeURIComponent(state.gameId);
     const [gameResult, territoryResult, memberResult, eventResult] = await Promise.all([
-      apiPath('kaykha_games?id=eq.' + id + '&select=code,status,phase,round_no', token),
+      apiPath('kaykha_games?id=eq.' + id + '&select=code,status,phase,round_no,mode', token),
       apiPath('kaykha_territories?game_id=eq.' + id + '&select=territory_id,owner_member_id,strength,economy', token),
-      apiPath('kaykha_members?game_id=eq.' + id + '&select=id,user_id,display_name,house_id,persona_key,prestige,shadow_awakened', token),
+      apiPath('kaykha_members?game_id=eq.' + id + '&select=id,user_id,display_name,house_id,persona_key,prestige,shadow_awakened,coins,influence_tokens', token),
       apiPath('kaykha_events?game_id=eq.' + id + '&select=round_no,tone,body,created_at&order=created_at.desc&limit=12', token)
     ]);
     const games = gameResult.body;
@@ -122,7 +159,7 @@ module.exports = function asset(_request, response) {
     const phase = $('#phase');
     if (phase) phase.textContent = 'راند ' + new Intl.NumberFormat('fa-IR').format(game.round_no) + ' · ' + phaseName(game.phase);
     if (territoryResult.ok && memberResult.ok && eventResult.ok) {
-      hydrateBoard(territoryResult.body, memberResult.body, eventResult.body, token);
+      hydrateBoard(territoryResult.body, memberResult.body, eventResult.body, token); await readMarket();
     }
   }
   async function savePersona() {
@@ -130,7 +167,7 @@ module.exports = function asset(_request, response) {
   }
   async function createLobby() {
     if (userName().length < 2) throw new Error('نام فرمانده را کامل بنویس.');
-    const rows = await rpc('create_kaykha_game', { p_display_name: userName(), p_house_id: faction(), p_total_seats: 6, p_mode: 'hegemony' });
+    const rows = await rpc('create_kaykha_game', { p_display_name: userName(), p_house_id: faction(), p_total_seats: 6, p_mode: ($('#game-mode')?.value || 'hegemony') });
     state.gameId = rows[0].game_id; localStorage.setItem(storageKey, state.gameId);
     await savePersona();
     status('تالار ' + rows[0].game_code + ' ساخته شد. کدش را برای یاران بفرست.');
@@ -154,7 +191,58 @@ module.exports = function asset(_request, response) {
     $('#join-lobby')?.addEventListener('click', () => run(joinLobby));
     $('#start-lobby')?.addEventListener('click', () => run(() => rpc('start_kaykha_game', { p_game_id: state.gameId })));
     $('#open-orders')?.addEventListener('click', () => run(() => rpc('open_kaykha_orders', { p_game_id: state.gameId })));
+    $('#market-city')?.addEventListener('change', () => { state.selectedTile = null; run(readMarket); });
     document.addEventListener('click', event => {
+      const claim = event.target.closest('[data-claim-bounty]');
+      if (claim && state.gameId) {
+        event.preventDefault(); event.stopImmediatePropagation();
+        run(() => rpc('claim_kaykha_bounty', { p_bounty_id: claim.dataset.claimBounty }));
+        return;
+      }
+      if (event.target.closest('#class-action') && state.gameId) {
+        event.preventDefault(); event.stopImmediatePropagation();
+        const choice = $('#choice')?.textContent || '';
+        const cities = Object.keys(CITY).filter(city => choice.includes(city));
+        run(async () => {
+          const result = await rpc('use_kaykha_class_action', { p_game_id: state.gameId, p_target_territory_id: CITY[cities[1] || cities[0] || 'ری'], p_payload: {} });
+          status(result.effect || 'فرمان کلاس در دفتر پنهان ثبت شد.');
+        });
+        return;
+      }
+      if (event.target.closest('#buy-deed') && state.gameId) {
+        event.preventDefault(); event.stopImmediatePropagation();
+        if (!state.selectedTile) { status('اول یکی از چهار محله را انتخاب کن.', true); return; }
+        run(() => rpc('buy_kaykha_deed', { p_game_id: state.gameId, p_city_id: CITY[$('#market-city')?.value || 'ری'], p_position_no: state.selectedTile, p_property_level: $('#property-level')?.value || 'stall' }));
+        return;
+      }
+      if (event.target.closest('#post-bounty') && state.gameId) {
+        event.preventDefault(); event.stopImmediatePropagation();
+        const choice = $('#choice')?.textContent || '';
+        const cities = Object.keys(CITY).filter(city => choice.includes(city));
+        run(() => rpc('post_kaykha_bounty', { p_game_id: state.gameId, p_bounty_type: $('#bounty-type')?.value || 'raid', p_target_territory_id: CITY[cities[1] || cities[0] || 'ری'], p_reward_coins: Number($('#bounty-reward')?.value || 8) }));
+        return;
+      }
+      if (event.target.closest('#send-whisper') && state.gameId) {
+        event.preventDefault(); event.stopImmediatePropagation();
+        run(async () => {
+          await rpc('send_kaykha_whisper', { p_game_id: state.gameId, p_recipient_member_id: null, p_body: $('#whisper-body')?.value || '' });
+          if ($('#whisper-body')) $('#whisper-body').value = '';
+          status('نجوا با نقاب زمستان فرستاده شد.');
+        });
+        return;
+      }
+      if (event.target.closest('#create-contract') && state.gameId) {
+        event.preventDefault(); event.stopImmediatePropagation();
+        const type = $('#contract-type')?.value || 'treaty';
+        const amount = Number($('#contract-amount')?.value || 8);
+        const terms = type === 'joint_venture' ? {creator_share:60,counterparty_share:40} : type === 'debt' ? {amount:amount,interest:2,duration_rounds:1} : {};
+        run(() => rpc('create_kaykha_contract', { p_game_id: state.gameId, p_contract_type: type, p_counterparty_member_id: $('#contract-member')?.value || null, p_terms: terms }));
+        return;
+      }
+      const marketTile = event.target.closest('[data-market-position]');
+      if (marketTile) {
+        event.preventDefault(); state.selectedTile = Number(marketTile.dataset.marketPosition); renderMarket(state.market); return;
+      }
       if (event.target.closest('#awaken') && state.gameId) {
         event.preventDefault();
         event.stopImmediatePropagation();
