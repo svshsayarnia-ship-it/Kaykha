@@ -5,3 +5,6 @@
 .online-actions button{border:1px solid var(--line);background:#0a1c29;color:var(--paper);padding:8px;font-size:12px}
 #online-status{font-size:11px;line-height:1.7;color:#b5c8ce;margin:10px 0 0}
 #online-status.bad{color:#f29b8b}
+
+.identity-lock{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}
+.identity-lock>small{color:var(--gold);font-size:11px}.prestige-bar{height:5px;background:#07141e;border:1px solid var(--line);margin-top:8px;overflow:hidden}.prestige-bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--gold));transition:width .45s ease}.identity-lock p{font-size:12px;margin:8px 0}.class-action,.awaken{width:100%;padding:9px;margin-top:7px;border:1px solid var(--line);font:inherit;font-size:12px}.class-action{background:#0a2630;color:#d5f0ea}.awaken{background:#281315;color:#f2c6bd;border-color:#a84e47}.awaken:disabled{opacity:.48;cursor:not-allowed}.shadow-awake main{filter:saturate(.88)}.shadow-awake .panel{border-color:#a84e478f;box-shadow:0 18px 45px #3a000044}.shadow-awake .identity-lock{animation:shadowPulse 2.2s ease-in-out infinite}@keyframes shadowPulse{50%{box-shadow:0 0 20px #a84e4755}}
