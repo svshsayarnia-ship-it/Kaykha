@@ -25,5 +25,12 @@ module.exports = function asset(_request, response) {
 #audio-toggle.is-on{border-color:#75cabe;color:#baf2e8;box-shadow:0 0 0 3px #2f9b9322}
 @media(max-width:700px){#city-stage{grid-template-columns:1fr;min-height:0}.city-visual,.city-visual img{min-height:220px;height:220px}.city-copy{padding:16px}.city-copy h3{font-size:22px}}
 
+
+.intel-card{grid-column:span 1}
+#intel-panel{display:grid;gap:8px;max-height:430px;overflow:auto;padding-left:3px}
+.intel-record{border:1px solid #c9a75e44;background:linear-gradient(135deg,#0b2430,#07131c);padding:10px;border-radius:8px}
+.intel-record b{display:block;color:#efd17a;font-size:12px;margin-bottom:5px}
+.intel-record small{display:block;color:#c8d6d0;line-height:1.8;font-size:11px}
+@media(max-width:900px){.intel-card{grid-column:auto}}
 `);
 };
