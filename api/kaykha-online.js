@@ -106,7 +106,7 @@ module.exports = function asset(_request, response) {
   }
   const zoneName = {gates:'دروازه و گمرک',royal_square:'میدان شاهی',guild_alleys:'راستهٔ اصناف',undercity:'دخمه‌ها'};
   const resourceName = {copper:'مس',carpet:'فرش',silk:'ابریشم',herbs:'گیاهان',armor:'زره'};
-  const contractName = {joint_venture:'شراکت تیمچه',debt:'سفته',blood_debt:'خون‌بها',treaty:'پیمان'};
+  const contractName = {joint_venture:'شراکت تیمچه',debt:'سفته',blood_debt:'خون‌بها',treaty:'پیمان',vassalage:'دست‌نشاندگی'};
   function renderMarket(data) {
     state.market = data || {};
     const tiles = data?.tiles || [];
@@ -131,6 +131,13 @@ module.exports = function asset(_request, response) {
     if (whispers) whispers.innerHTML = (data?.whispers || []).map(whisper => '<p><b>[نجوای ناشناس]</b><br>'+esc(whisper.body)+'</p>').join('') || '<p>هنوز نجوايی نرسیده.</p>';
     const contracts = $('#contract-list');
     if (contracts) contracts.innerHTML = (data?.contracts || []).map(contract => '<p><b>'+esc(contractName[contract.contract_type] || contract.contract_type)+'</b> · '+esc(contract.status)+(contract.due_round ? ' · موعد راند '+new Intl.NumberFormat('fa-IR').format(contract.due_round) : '')+'</p>').join('') || '<p>پیمانی در دفتر تو ثبت نشده است.</p>';
+  }
+  function actionMessage(result) {
+    const intel = result && result.intelligence;
+    if (!intel) return result?.effect || 'فرمان در دفتر پنهان ثبت شد.';
+    const detail = intel.forecast || intel.message || intel.intent || intel.order_type || '';
+    const route = intel.from || intel.origin ? ' · ' + (intel.from || intel.origin) + ' ← ' + (intel.toward || intel.target || '') : '';
+    return (result.effect || 'نتیجهٔ فرمان') + (detail ? ' ' + detail + route : '');
   }
   async function readMarket() {
     if (!state.gameId || !state.me) return;
@@ -204,7 +211,7 @@ module.exports = function asset(_request, response) {
         const choice = $('#choice')?.textContent || '';
         const cities = Object.keys(CITY).filter(city => choice.includes(city));
         run(async () => {
-          const result = await rpc('use_kaykha_family_doctrine', { p_game_id: state.gameId, p_target_territory_id: CITY[cities[1] || cities[0] || 'ری'], p_payload: { recipient_member_id: $('#family-recipient')?.value || null } });
+          const result = await rpc('use_kaykha_family_doctrine', { p_game_id: state.gameId, p_target_territory_id: CITY[cities[1] || cities[0] || 'ری'], p_payload: { recipient_member_id: $('#family-recipient')?.value || null, origin_territory_id: CITY[cities[0] || 'ری'] } });
           status(result.effect || 'فرمان خاندان در دفتر پنهان ثبت شد.');
         });
         return;
@@ -214,8 +221,8 @@ module.exports = function asset(_request, response) {
         const choice = $('#choice')?.textContent || '';
         const cities = Object.keys(CITY).filter(city => choice.includes(city));
         run(async () => {
-          const result = await rpc('use_kaykha_class_action', { p_game_id: state.gameId, p_target_territory_id: CITY[cities[1] || cities[0] || 'ری'], p_payload: {} });
-          status(result.effect || 'فرمان کلاس در دفتر پنهان ثبت شد.');
+          const result = await rpc('use_kaykha_class_action', { p_game_id: state.gameId, p_target_territory_id: CITY[cities[1] || cities[0] || 'ری'], p_payload: { origin_territory_id: CITY[cities[0] || 'ری'], copied_role: $('#copy-role')?.value || '' } });
+          status(actionMessage(result));
         });
         return;
       }
