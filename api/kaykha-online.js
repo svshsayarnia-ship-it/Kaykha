@@ -199,6 +199,16 @@ module.exports = function asset(_request, response) {
         run(() => rpc('claim_kaykha_bounty', { p_bounty_id: claim.dataset.claimBounty }));
         return;
       }
+      if (event.target.closest('#family-action') && state.gameId) {
+        event.preventDefault(); event.stopImmediatePropagation();
+        const choice = $('#choice')?.textContent || '';
+        const cities = Object.keys(CITY).filter(city => choice.includes(city));
+        run(async () => {
+          const result = await rpc('use_kaykha_family_doctrine', { p_game_id: state.gameId, p_target_territory_id: CITY[cities[1] || cities[0] || 'ری'], p_payload: {} });
+          status(result.effect || 'فرمان خاندان در دفتر پنهان ثبت شد.');
+        });
+        return;
+      }
       if (event.target.closest('#class-action') && state.gameId) {
         event.preventDefault(); event.stopImmediatePropagation();
         const choice = $('#choice')?.textContent || '';
