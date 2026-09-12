@@ -6,7 +6,7 @@ module.exports = function asset(_request, response) {
   const KEY = 'sb_publishable_KIuxWr99zocUh2EBiXkQaQ_LB9PD8Wv';
   const CITY = { 'ری':'ray', 'تیسفون':'ctesiphon', 'اصفهان':'isfahan', 'هگمتانه':'hegmataneh', 'نیشابور':'nishapur', 'مرو':'merv', 'بلخ':'balkh', 'یزد':'yazd', 'الموت':'alamut', 'گرگان':'gorgan', 'تبریز':'tabriz', 'شوش':'susa', 'هرمز':'hormuz', 'شیراز':'shiraz', 'بم':'bam', 'زرنج':'zaranj', 'گمبرون':'gambroon' };
   const storageKey = 'kaykha.active-game-id';
-  const state = { gameId: localStorage.getItem(storageKey) || null, me: null, members: [], market: null, selectedTile: null, creditProfiles: [], loans: [], shadowRole: null };
+  const state = { gameId: localStorage.getItem(storageKey) || null, me: null, members: [], market: null, selectedTile: null, creditProfiles: [], loans: [], shadowRole: null, roundNo: 1 };
   const $ = s => document.querySelector(s);
 
   function tokenFrom(value, depth = 0) {
@@ -139,6 +139,8 @@ module.exports = function asset(_request, response) {
   function renderCredit() {
     const formatter = new Intl.NumberFormat('fa-IR');
     const own = state.creditProfiles.find(profile => profile.member_id === state.me?.id);
+    const dueInput = $('#loan-due');
+    if (dueInput && Number(dueInput.value || 0) <= state.roundNo) dueInput.value = String(state.roundNo + 2);
     const summary = $('#credit-summary');
     if (summary) {
       summary.innerHTML = own ? '<b>اعتبار: '+formatter.format(own.reputation_score)+'/۱۰۰</b><br><small>سقف وام: '+formatter.format(own.credit_limit)+' · بدهی فعال: '+formatter.format(own.active_debt || 0)+(own.blacklist_until_round ? ' · سیاهه تا راند '+formatter.format(own.blacklist_until_round) : '')+'</small>' : '<small>دفتر اعتبار پس از اتصال به تالار خوانده می‌شود.</small>';
@@ -205,6 +207,7 @@ module.exports = function asset(_request, response) {
       status('اتصال قبلی تالار در دسترس نیست.', true); return;
     }
     const game = games[0];
+    state.roundNo = Number(game.round_no || 1);
     status('تالار ' + game.code + ' · راند ' + new Intl.NumberFormat('fa-IR').format(game.round_no) + ' · ' + phaseName(game.phase));
     const phase = $('#phase');
     if (phase) phase.textContent = 'راند ' + new Intl.NumberFormat('fa-IR').format(game.round_no) + ' · ' + phaseName(game.phase);
