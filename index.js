@@ -1,6 +1,17 @@
 const legacyOrigin = 'https://kaykha-phase4-ihkf34ufk-svshsayarnia-ship-its-projects.vercel.app';
 const guide = require('./api/guide');
 const gameShell = require('./api/game-shell');
+const warRoomHtml = require('./api/war-room-html');
+const warRoomCss = require('./api/war-room-css');
+const warRoomClient = require('./api/war-room-client');
+const kaykhaOnline = require('./api/kaykha-online');
+
+const embeddedAssets = {
+  '/war-room.html': { type: 'text/html; charset=utf-8', handler: warRoomHtml },
+  '/war-room.css': { type: 'text/css; charset=utf-8', handler: warRoomCss },
+  '/war-room.js': { type: 'application/javascript; charset=utf-8', handler: warRoomClient },
+  '/kaykha-online.js': { type: 'application/javascript; charset=utf-8', handler: kaykhaOnline }
+};
 
 function scriptPayload(script) {
   let body = '';
@@ -14,6 +25,15 @@ function scriptPayload(script) {
 
 async function proxy(request, response) {
   const requestUrl = new URL(request.url || '/', 'https://kaykha-phase4.vercel.app');
+
+  const embedded = embeddedAssets[requestUrl.pathname];
+  if (embedded) {
+    response.setHeader('content-type', embedded.type);
+    response.setHeader('cache-control', 'public, max-age=300, s-maxage=300');
+    response.statusCode = 200;
+    response.end(scriptPayload(embedded.handler));
+    return;
+  }
 
   if (requestUrl.pathname === '/guide.js' || requestUrl.pathname === '/game-shell.js') {
     response.setHeader('content-type', 'application/javascript; charset=utf-8');
