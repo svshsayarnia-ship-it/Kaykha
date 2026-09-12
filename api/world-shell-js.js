@@ -263,8 +263,9 @@ module.exports = function worldShellJs(_request, response) {
     mountCoach();
     observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class','disabled'] });
     updateCoach();
-    setInterval(updateCoach, 1800);
-    window.addEventListener('focus', updateCoach);
+    scanVoiceFrames();
+    setInterval(() => { updateCoach(); scanVoiceFrames(); }, 1800);
+    window.addEventListener('focus', () => { updateCoach(); scanVoiceFrames(); });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
