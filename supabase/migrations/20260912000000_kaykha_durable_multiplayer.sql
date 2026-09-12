@@ -279,3 +279,55 @@ end;
 $$;
 revoke all on function public.resolve_kaykha_round(uuid) from public, anon;
 grant execute on function public.resolve_kaykha_round(uuid) to authenticated;
+
+
+-- Kaykha 3.0: locked identity, prestige, and secret shadow awakening.
+alter table public.kaykha_members
+  add column if not exists shadow_awakened boolean not null default false,
+  add column if not exists awakened_at timestamptz,
+  add column if not exists shadow_revealed_at timestamptz;
+
+create or replace function public.set_kaykha_persona(p_game_id uuid, p_persona_key text)
+returns void language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  if (select auth.uid()) is null then raise exception 'ورود به بازی لازم است'; end if;
+  if char_length(trim(coalesce(p_persona_key,''))) not between 2 and 96 then raise exception 'چهره نامعتبر است'; end if;
+  update public.kaykha_members set persona_key=trim(p_persona_key)
+  where game_id=p_game_id and user_id=(select auth.uid()) and not is_ai and persona_key is null;
+  if not found then
+    if exists(select 1 from public.kaykha_members where game_id=p_game_id and user_id=(select auth.uid()) and not is_ai) then raise exception 'هویت تو از آغاز بازی قفل شده است'; end if;
+    raise exception 'تو عضو این تالار نیستی';
+  end if;
+end;
+$$;
+
+create or replace function public.awaken_kaykha_shadow(p_game_id uuid)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_member public.kaykha_members%rowtype; v_cost integer:=12;
+begin
+  if (select auth.uid()) is null then raise exception 'ورود به بازی لازم است'; end if;
+  select * into v_member from public.kaykha_members where game_id=p_game_id and user_id=(select auth.uid()) and not is_ai for update;
+  if not found then raise exception 'تو عضو این تالار نیستی'; end if;
+  if v_member.persona_key is null then raise exception 'ابتدا کلاس خود را انتخاب کن'; end if;
+  if v_member.shadow_awakened then raise exception 'سایهٔ تو پیش‌تر بیدار شده است'; end if;
+  if v_member.prestige<v_cost then raise exception 'برای بیداری به ۱۲ اعتبار نیاز داری'; end if;
+  update public.kaykha_members set prestige=prestige-v_cost,shadow_awakened=true,awakened_at=now() where id=v_member.id;
+  return jsonb_build_object('persona',v_member.persona_key,'awakened',true,'remaining_prestige',v_member.prestige-v_cost,'publicly_revealed',false);
+end;
+$$;
+revoke all on function public.awaken_kaykha_shadow(uuid) from public, anon;
+grant execute on function public.awaken_kaykha_shadow(uuid) to authenticated;
+
+create or replace function app_private.kaykha_award_round_prestige()
+returns trigger language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  if old.phase='orders' and new.phase='negotiation' and new.round_no=old.round_no+1 then
+    update public.kaykha_members set prestige=least(99,prestige+1) where game_id=new.id and not is_ai;
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists kaykha_award_round_prestige_trigger on public.kaykha_games;
+create trigger kaykha_award_round_prestige_trigger
+after update of phase,round_no on public.kaykha_games
+for each row execute function app_private.kaykha_award_round_prestige();
