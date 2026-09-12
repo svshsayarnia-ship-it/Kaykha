@@ -242,12 +242,7 @@ async function proxy(request, response) {
     return;
   }
 
-  if (requestUrl.pathname === '/game') {
-    await serveRoot(request, response, requestUrl);
-    return;
-  }
-
-  if (requestUrl.pathname === '/war-room.html') {
+  if (requestUrl.pathname === '/game' || requestUrl.pathname === '/war-room.html') {
     await serveRepoModuleAsset(response, 'api/war-room-html.js', 'text/html; charset=utf-8', '/war-room.html');
     return;
   }
