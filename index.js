@@ -1,19 +1,6 @@
-const legacyOrigin = 'https://kaykha-phase4-ihkf34ufk-svshsayarnia-ship-its-projects.vercel.app';
-const guide = require('./api/guide');
+const stableOrigin = 'https://kaykha-phase4-2vyue2uug-svshsayarnia-ship-its-projects.vercel.app';
 const gameShell = require('./api/game-shell');
 const warRoomHtml = require('./api/war-room-html');
-const warRoomCss = require('./api/war-room-css');
-const warRoomClient = require('./api/war-room-client');
-const kaykhaOnline = require('./api/kaykha-online');
-const gameGuideHtml = require('./api/game-guide-html');
-
-const embeddedAssets = {
-  '/war-room.html': { type: 'text/html; charset=utf-8', handler: warRoomHtml },
-  '/war-room.css': { type: 'text/css; charset=utf-8', handler: warRoomCss },
-  '/war-room.js': { type: 'application/javascript; charset=utf-8', handler: warRoomClient },
-  '/kaykha-online.js': { type: 'application/javascript; charset=utf-8', handler: kaykhaOnline },
-  '/game-guide.html': { type: 'text/html; charset=utf-8', handler: gameGuideHtml }
-};
 
 function scriptPayload(script) {
   let body = '';
@@ -25,27 +12,27 @@ function scriptPayload(script) {
   return body;
 }
 
+function serveEmbedded(response, type, handler) {
+  response.setHeader('content-type', type);
+  response.setHeader('cache-control', 'public, max-age=120, s-maxage=120');
+  response.statusCode = 200;
+  response.end(scriptPayload(handler));
+}
+
 async function proxy(request, response) {
   const requestUrl = new URL(request.url || '/', 'https://kaykha-phase4.vercel.app');
 
-  const embedded = embeddedAssets[requestUrl.pathname];
-  if (embedded) {
-    response.setHeader('content-type', embedded.type);
-    response.setHeader('cache-control', 'public, max-age=300, s-maxage=300');
-    response.statusCode = 200;
-    response.end(scriptPayload(embedded.handler));
+  if (requestUrl.pathname === '/game-shell.js') {
+    serveEmbedded(response, 'application/javascript; charset=utf-8', gameShell);
     return;
   }
 
-  if (requestUrl.pathname === '/guide.js' || requestUrl.pathname === '/game-shell.js') {
-    response.setHeader('content-type', 'application/javascript; charset=utf-8');
-    response.setHeader('cache-control', 'public, max-age=300, s-maxage=300');
-    response.statusCode = 200;
-    response.end(scriptPayload(requestUrl.pathname === '/guide.js' ? guide : gameShell));
+  if (requestUrl.pathname === '/war-room.html') {
+    serveEmbedded(response, 'text/html; charset=utf-8', warRoomHtml);
     return;
   }
 
-  const upstream = await fetch(`${legacyOrigin}${requestUrl.pathname}${requestUrl.search}`, {
+  const upstream = await fetch(`${stableOrigin}${requestUrl.pathname}${requestUrl.search}`, {
     method: request.method,
     headers: {
       accept: request.headers.accept || '*/*',
@@ -66,14 +53,6 @@ async function proxy(request, response) {
     }
   });
 
-  if (requestUrl.pathname === '/' && upstream.headers.get('content-type')?.includes('text/html')) {
-    const html = await upstream.text();
-    response.setHeader('content-type', 'text/html; charset=utf-8');
-    response.setHeader('cache-control', 'no-store, max-age=0');
-    response.end(html.replace('</head>', '  <script defer src="/guide.js?v=arta-manual-1"></script>\n  <script defer src="/game-shell.js?v=player-first-2"></script>\n</head>'));
-    return;
-  }
-
   if (!upstream.body) {
     response.end();
     return;
@@ -85,7 +64,8 @@ async function proxy(request, response) {
 module.exports = async function handler(request, response) {
   try {
     await proxy(request, response);
-  } catch {
+  } catch (error) {
+    console.error('kaykha bridge failed', error);
     response.statusCode = 502;
     response.end('بارگذاری بازی موقتاً ممکن نیست. دوباره تلاش کن.');
   }
