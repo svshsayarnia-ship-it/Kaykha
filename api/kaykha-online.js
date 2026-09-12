@@ -204,7 +204,7 @@ module.exports = function asset(_request, response) {
         const choice = $('#choice')?.textContent || '';
         const cities = Object.keys(CITY).filter(city => choice.includes(city));
         run(async () => {
-          const result = await rpc('use_kaykha_family_doctrine', { p_game_id: state.gameId, p_target_territory_id: CITY[cities[1] || cities[0] || 'ری'], p_payload: {} });
+          const result = await rpc('use_kaykha_family_doctrine', { p_game_id: state.gameId, p_target_territory_id: CITY[cities[1] || cities[0] || 'ری'], p_payload: { recipient_member_id: $('#family-recipient')?.value || null } });
           status(result.effect || 'فرمان خاندان در دفتر پنهان ثبت شد.');
         });
         return;
