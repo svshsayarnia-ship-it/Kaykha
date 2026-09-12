@@ -208,6 +208,16 @@ async function proxy(request, response) {
     return;
   }
 
+  if (requestUrl.pathname === '/guide.js' || requestUrl.pathname === '/api/guide.js') {
+    await serveRepoModuleAsset(response, 'api/guide.js', 'application/javascript; charset=utf-8', '/guide.js');
+    return;
+  }
+
+  if (requestUrl.pathname === '/game-guide.html' || requestUrl.pathname === '/api/game-guide-html.js') {
+    await serveRepoModuleAsset(response, 'api/game-guide-html.js', 'text/html; charset=utf-8', '/game-guide.html');
+    return;
+  }
+
   if (requestUrl.pathname.startsWith('/assets/cities/')) {
     await serveCityAsset(request, response, requestUrl);
     return;
