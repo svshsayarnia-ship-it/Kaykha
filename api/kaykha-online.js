@@ -6,7 +6,7 @@ module.exports = function asset(_request, response) {
   const KEY = 'sb_publishable_KIuxWr99zocUh2EBiXkQaQ_LB9PD8Wv';
   const CITY = { 'ری':'ray', 'تیسفون':'ctesiphon', 'اصفهان':'isfahan', 'هگمتانه':'hegmataneh', 'نیشابور':'nishapur', 'مرو':'merv', 'بلخ':'balkh', 'یزد':'yazd', 'الموت':'alamut', 'گرگان':'gorgan', 'تبریز':'tabriz', 'شوش':'susa', 'هرمز':'hormuz', 'شیراز':'shiraz', 'بم':'bam', 'زرنج':'zaranj', 'گمبرون':'gambroon' };
   const storageKey = 'kaykha.active-game-id';
-  const state = { gameId: localStorage.getItem(storageKey) || null, me: null, members: [], market: null, selectedTile: null, creditProfiles: [], loans: [], shadowRole: null, crisis: null, scores: [], roundNo: 1 };
+  const state = { gameId: localStorage.getItem(storageKey) || null, me: null, members: [], market: null, selectedTile: null, creditProfiles: [], loans: [], shadowRole: null, crisis: null, scores: [], intel: [], roundNo: 1 };
   const $ = s => document.querySelector(s);
 
   function tokenFrom(value, depth = 0) {
@@ -235,6 +235,29 @@ module.exports = function asset(_request, response) {
   function tacticalMessage(order) {
     return tacticalMessages[order] || 'فرمان مهر شد؛ نتیجه در سپیده‌دم در دفتر وقایع ثبت می‌شود.';
   }
+  function renderIntel() {
+    const node = $('#intel-panel');
+    if (!node) return;
+    const formatter = new Intl.NumberFormat('fa-IR');
+    const rows = Array.isArray(state.intel) ? state.intel.slice(0, 8) : [];
+    node.innerHTML = rows.length ? rows.map(row => {
+      const data = row.intel || {};
+      const mutiny = data.is_in_mutiny ? ' · شهر ناآرام' : '';
+      const order = data.sealed_order && data.sealed_order !== 'نامشخص' ? ' · فرمان هدف: ' + esc(data.sealed_order) : '';
+      return '<article class="intel-record"><b>' + esc(row.target_territory_id || 'شهر هدف') + ' · راند ' + formatter.format(Number(row.round_no || 0)) + '</b><small>قدرت: ' + formatter.format(Number(data.strength || 0)) + ' · اقتصاد: ' + formatter.format(Number(data.economy || 0)) + ' · نفوذ: ' + formatter.format(Number(data.influence || 0)) + ' · مشروعیت: ' + formatter.format(Number(data.legitimacy || 0)) + ' · فقر: ' + formatter.format(Number(data.poverty || 0)) + mutiny + order + '</small></article>';
+    }).join('') : '<p>هنوز پرونده‌ای نداری. وقتی جاسوسی موفق شود، اطلاعات واقعی شهر هدف در این دفتر می‌نشیند.</p>';
+  }
+  async function readIntel() {
+    if (!state.gameId || !state.me) return;
+    try {
+      const rows = await rpc('get_kaykha_intel', { p_game_id: state.gameId });
+      state.intel = Array.isArray(rows) ? rows : [];
+      renderIntel();
+    } catch (_) {
+      state.intel = [];
+      renderIntel();
+    }
+  }
   function actionMessage(result) {
     const intel = result && result.intelligence;
     if (!intel) return result?.effect || 'فرمان در دفتر پنهان ثبت شد.';
@@ -270,7 +293,7 @@ module.exports = function asset(_request, response) {
     const phase = $('#phase');
     if (phase) phase.textContent = 'راند ' + new Intl.NumberFormat('fa-IR').format(game.round_no) + ' · ' + phaseName(game.phase);
     if (territoryResult.ok && memberResult.ok && eventResult.ok) {
-      hydrateBoard(territoryResult.body, memberResult.body, eventResult.body, token); await Promise.all([readMarket(), readCredit(), readCrisis()]);
+      hydrateBoard(territoryResult.body, memberResult.body, eventResult.body, token); await Promise.all([readMarket(), readCredit(), readCrisis(), readIntel()]);
     }
   }
   async function savePersona() {
@@ -419,6 +442,7 @@ module.exports = function asset(_request, response) {
         status(tacticalMessage(order));
       });
     }, true);
+    renderIntel();
     readGame();
     window.addEventListener('focus', readGame);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) readGame(); });
