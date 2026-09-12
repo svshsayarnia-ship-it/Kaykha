@@ -87,8 +87,10 @@ module.exports = function asset(_request, response) {
       const owner = membership.get(territory.owner_member_id);
       const mine = owner?.user_id === me;
       const ownerLabel = !owner ? 'بی‌طرف' : mine ? 'تو' : owner.display_name || 'دشمن';
-      button.classList.toggle('enemy', !mine);
+      button.classList.toggle('enemy', Boolean(owner && !mine));
+      button.classList.toggle('neutral', !owner);
       button.innerHTML = '<b>' + name + '</b><br><small>' + ownerLabel + ' · ' + formatter.format(territory.strength) + ' سپاه · ' + formatter.format(territory.economy) + ' بازار</small>';
+      button.setAttribute('aria-label', 'شهر ' + name + ' · ' + ownerLabel);
     });
     const log = $('#log');
     if (log && events.length) {
@@ -114,7 +116,7 @@ module.exports = function asset(_request, response) {
     const city = $('#market-city')?.value || 'ری';
     if (grid) grid.innerHTML = tiles.map(tile => {
       const deed = tile.deed;
-      const selected = state.selectedTile === tile.position_no ? ' selected' : '';
+      const selected = state.selectedTile != null && Number(state.selectedTile) === Number(tile.position_no) ? ' selected' : '';
       const owned = deed ? ' owned' : '';
       const label = deed ? (deed.owner_member_id ? (deed.property_level === 'stall' ? 'دکان' : deed.property_level === 'merchant_house' ? 'حجره' : 'کاروانسرا') : 'سفیدمهر') : 'سند آزاد';
       return '<button class="tile '+esc(tile.zone_key)+owned+selected+'" data-market-position="'+esc(tile.position_no)+'"><span class="zone">'+esc(zoneName[tile.zone_key] || tile.zone_key)+'</span><b>'+esc(resourceName[tile.resource_key] || tile.resource_key)+'</b><br><small>'+label+' · '+esc(tile.base_income)+' سود پایه</small></button>';
@@ -282,7 +284,7 @@ module.exports = function asset(_request, response) {
       apiPath('kaykha_members?game_id=eq.' + id + '&select=id,user_id,display_name,house_id,persona_key,prestige,shadow_awakened,coins,influence_tokens,reputation_score,credit_limit,blacklist_until_round', token),
       apiPath('kaykha_events?game_id=eq.' + id + '&select=round_no,tone,body,created_at&order=created_at.desc&limit=12', token)
     ]);
-    const games = gameResult.body;
+    const games = Array.isArray(gameResult.body) ? gameResult.body : [];
     if (!gameResult.ok || !games[0]) {
       localStorage.removeItem(storageKey); state.gameId = null;
       status('اتصال قبلی تالار در دسترس نیست.', true); return;
@@ -292,8 +294,9 @@ module.exports = function asset(_request, response) {
     status('تالار ' + game.code + ' · راند ' + new Intl.NumberFormat('fa-IR').format(game.round_no) + ' · ' + phaseName(game.phase));
     const phase = $('#phase');
     if (phase) phase.textContent = 'راند ' + new Intl.NumberFormat('fa-IR').format(game.round_no) + ' · ' + phaseName(game.phase);
-    if (territoryResult.ok && memberResult.ok && eventResult.ok) {
-      hydrateBoard(territoryResult.body, memberResult.body, eventResult.body, token); await Promise.all([readMarket(), readCredit(), readCrisis(), readIntel()]);
+    if (territoryResult.ok && memberResult.ok) {
+      hydrateBoard(territoryResult.body, memberResult.body, eventResult.ok ? eventResult.body : [], token);
+      await Promise.allSettled([readMarket(), readCredit(), readCrisis(), readIntel()]);
     }
   }
   async function savePersona() {
