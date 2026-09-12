@@ -1,3 +1,7 @@
+const fs = require('fs');
+const path = require('path');
+const livekitToken = require('./api/livekit-token');
+
 const stableOrigin = 'https://kaykha-phase4-2vyue2uug-svshsayarnia-ship-its-projects.vercel.app';
 const commandOrigin = 'https://kaykha-phase4-67719fv7k-svshsayarnia-ship-its-projects.vercel.app';
 const worldShellCss = require('./api/world-shell-css');
@@ -73,8 +77,44 @@ async function serveRoot(request, response, requestUrl) {
   response.end(themed);
 }
 
+async function serveCityAsset(request, response, requestUrl) {
+  if (!['GET', 'HEAD'].includes(request.method)) {
+    response.statusCode = 405;
+    response.setHeader('allow', 'GET, HEAD');
+    response.end();
+    return;
+  }
+  const fileName = path.basename(requestUrl.pathname);
+  if (!/^[A-Za-z0-9_-]+\\.webp$/.test(fileName)) {
+    response.statusCode = 404;
+    response.end('Not found');
+    return;
+  }
+  try {
+    const filePath = path.join(process.cwd(), 'public', 'assets', 'cities', fileName);
+    const body = fs.readFileSync(filePath);
+    response.statusCode = 200;
+    response.setHeader('content-type', 'image/webp');
+    response.setHeader('cache-control', 'public, max-age=31536000, immutable');
+    response.end(body);
+  } catch (_) {
+    response.statusCode = 404;
+    response.end('Not found');
+  }
+}
+
 async function proxy(request, response) {
   const requestUrl = new URL(request.url || '/', 'https://kaykha-phase4.vercel.app');
+
+  if (requestUrl.pathname === '/api/livekit-token') {
+    await livekitToken(request, response);
+    return;
+  }
+
+  if (requestUrl.pathname.startsWith('/assets/cities/')) {
+    await serveCityAsset(request, response, requestUrl);
+    return;
+  }
 
   if (requestUrl.pathname === '/world-shell.css') {
     serveEmbedded(response, 'text/css; charset=utf-8', worldShellCss);
