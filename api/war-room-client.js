@@ -24,7 +24,7 @@ $("#phase").textContent="راند "+N.format(S.round)+" · "+S.phase;$("#prestig
 $("#identity-title").textContent=(S.awakened?"سایه بیدار: ":"هویت قفل‌شده: ")+personas[S.p][0].split(" · ")[0]+" خاندان "+factions[S.f][0];
 $("#prestige-fill").style.width=Math.min(100,(S.prestige/12)*100)+"%";
 $("#class-action").textContent="فرمان کلاس: "+classAction();
-const doctrine=familyAction();$("#family-action").textContent="فرمان خاندان: "+doctrine[0];$("#family-action").disabled=!doctrine[2];$("#family-action-note").textContent=doctrine[1];
+const doctrine=familyAction();$("#family-action").textContent="فرمان خاندان: "+doctrine[0];$("#family-action").disabled=!doctrine[2];const heir=$("#family-recipient");if(heir)heir.hidden=factions[S.f][0]!=="آل‌بویه";$("#family-action-note").textContent=doctrine[1];
 $("#awaken").disabled=S.awakened||S.prestige<12;$("#awaken").textContent=S.awakened?"سایه بیدار است":"بیداری سایه · ۱۲ اعتبار";
 $("#awakening-state").textContent=S.awakened?"واریانت تاریک فقط در لحظهٔ نخستین استفاده بر رقیبان آشکار می‌شود.":"با ۱۲ اعتبار، واریانت تاریکِ کلاس تو فعال می‌شود.";
 $("#faction").disabled=S.locked;$("#persona").disabled=S.locked;document.body.classList.toggle("shadow-awake",S.awakened);
