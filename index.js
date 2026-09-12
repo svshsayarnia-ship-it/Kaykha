@@ -101,7 +101,7 @@ async function serveCityAsset(request, response, requestUrl) {
   }
 
   const fileName = requestUrl.pathname.split('/').pop() || '';
-  if (!/^[A-Za-z0-9_-]+\\.webp$/.test(fileName)) {
+  if (!/^[A-Za-z0-9_-]+\.webp$/.test(fileName)) {
     response.statusCode = 404;
     response.end('Not found');
     return;
