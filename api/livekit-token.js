@@ -3,7 +3,7 @@ const crypto = require('crypto');
 function base64url(value) {
   return Buffer.from(value).toString('base64')
     .replace(/=/g, '')
-    .replace(/\\+/g, '-')
+    .replace(/\+/g, '-')
     .replace(/\\//g, '_');
 }
 
@@ -13,7 +13,7 @@ function signJwt(payload, secret) {
   const unsigned = header + '.' + body;
   const signature = crypto.createHmac('sha256', secret).update(unsigned).digest('base64')
     .replace(/=/g, '')
-    .replace(/\\+/g, '-')
+    .replace(/\+/g, '-')
     .replace(/\\//g, '_');
   return unsigned + '.' + signature;
 }
