@@ -221,6 +221,20 @@ module.exports = function asset(_request, response) {
       renderCrisis();
     }
   }
+  const tacticalMessages = {
+    attack: 'حمله مهر شد؛ در سپیده‌دم قدرت دو شهر مقایسه می‌شود و فقط در صورت پیروزی مالکیت تغییر می‌کند.',
+    defend: 'دفاع مهر شد؛ در سپیده‌دم پادگان‌های شهر مبدأ قدرت دفاعی آن را بالا می‌برند.',
+    support: 'پشتیبانی مهر شد؛ در سپیده‌دم قدرت شهر هدف افزایش پیدا می‌کند.',
+    caravan: 'کاروان مهر شد؛ در سپیده‌دم دارایی اقتصادی و سند ابریشم ثبت می‌شود.',
+    trade: 'تجارت مهر شد؛ در سپیده‌دم اعتبار و سند مذاکره در دفتر سیاسی می‌نشیند.',
+    spy: 'جاسوسی مهر شد؛ در سپیده‌دم پروندهٔ قدرت، اقتصاد، مشروعیت و فرمان هدف فقط در دفتر خصوصی تو باز می‌شود.',
+    revolt: 'شورش مهر شد؛ در سپیده‌دم اگر هدف ایمن نباشد، قدرت دفاعی، اقتصاد و مشروعیتش پایین می‌آید و شهر ناآرام می‌شود.',
+    raid: 'غارت مهر شد؛ در سپیده‌دم اقتصاد هدف آسیب می‌بیند و غنیمت در خزانه ثبت می‌شود.',
+    sabotage: 'خرابکاری مهر شد؛ در سپیده‌دم زیرساخت و توان عملیاتی هدف آسیب می‌بیند.'
+  };
+  function tacticalMessage(order) {
+    return tacticalMessages[order] || 'فرمان مهر شد؛ نتیجه در سپیده‌دم در دفتر وقایع ثبت می‌شود.';
+  }
   function actionMessage(result) {
     const intel = result && result.intelligence;
     if (!intel) return result?.effect || 'فرمان در دفتر پنهان ثبت شد.';
@@ -388,7 +402,7 @@ module.exports = function asset(_request, response) {
         event.stopImmediatePropagation();
         run(async () => {
           const outcome = await rpc('resolve_kaykha_round', { p_game_id: state.gameId });
-          status('سپیده‌دم اجرا شد؛ ' + new Intl.NumberFormat('fa-IR').format(outcome.outcomes) + ' نتیجه در دفتر وقایع ثبت شد.');
+          status('سپیده‌دم اجرا شد؛ ' + new Intl.NumberFormat('fa-IR').format(outcome.outcomes) + ' نتیجه در دفتر وقایع ثبت شد. اگر فرمانت جاسوسی یا شورش بود، جزئیات اثر را در دفتر خصوصی و وضعیت شهر ببین.');
         });
         return;
       }
@@ -402,7 +416,7 @@ module.exports = function asset(_request, response) {
           p_game_id: state.gameId, p_order_type: order,
           p_origin_territory_id: CITY[cities[0]], p_target_territory_id: CITY[cities[1]], p_payload: {}
         });
-        status('فرمان مهر شد؛ جز خودت کسی جزئیاتش را نمی‌بیند.');
+        status(tacticalMessage(order));
       });
     }, true);
     readGame();
