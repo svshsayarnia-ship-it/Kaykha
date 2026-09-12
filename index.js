@@ -185,7 +185,10 @@ async function serveCityAsset(request, response, requestUrl) {
 }
 
 async function serveRoot(request, response, requestUrl) {
-  const upstream = await fetchOrigin(stableOrigin, request, requestUrl);
+  const originUrl = requestUrl.pathname === '/game'
+    ? new URL('/' + requestUrl.search, 'https://kaykha-phase4.vercel.app')
+    : requestUrl;
+  const upstream = await fetchOrigin(stableOrigin, request, originUrl);
   response.statusCode = upstream.status;
   copyUpstreamHeaders(response, upstream, true);
   response.setHeader('cache-control', 'no-store, max-age=0');
@@ -239,7 +242,12 @@ async function proxy(request, response) {
     return;
   }
 
-  if (requestUrl.pathname === '/war-room.html' || requestUrl.pathname === '/game') {
+  if (requestUrl.pathname === '/game') {
+    await serveRoot(request, response, requestUrl);
+    return;
+  }
+
+  if (requestUrl.pathname === '/war-room.html') {
     await serveRepoModuleAsset(response, 'api/war-room-html.js', 'text/html; charset=utf-8', '/war-room.html');
     return;
   }
