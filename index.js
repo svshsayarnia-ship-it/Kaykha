@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 
 const rawRepo = 'https://raw.githubusercontent.com/svshsayarnia-ship-it/Kaykha/main';
-const rawRevision = 'main';
+const rawRevision = 'a24eb98e84731ca2bc8f312b87f87d1d26541072';
 
 function copyUpstreamHeaders(response, upstream, transformed = false) {
   const blocked = new Set(['connection', 'content-encoding', 'transfer-encoding', 'set-cookie']);
@@ -198,8 +198,8 @@ async function proxy(request, response) {
     return;
   }
 
-  if (requestUrl.pathname === '/game-guide.html' || requestUrl.pathname === '/api/game-guide-html.js') {
-    await serveRepoModuleAsset(response, 'api/game-guide-html.js', 'text/html; charset=utf-8', '/game-guide.html');
+  if (requestUrl.pathname === '/api/game-guide-html.js') {
+    await serveRepoModuleAsset(response, 'api/game-guide-html.js', 'text/html; charset=utf-8', '/api/game-guide-html.js');
     return;
   }
 
