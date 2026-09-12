@@ -317,7 +317,6 @@ module.exports = function worldShellJs(_request, response) {
         console.warn('LiveKit voice unavailable; using mesh fallback', error);
         panel.remove();
         installMeshVoice(iframe);
-        status('LiveKit آماده نیست؛ اتصال جایگزین فعال شد.');
       }
     });
     window.addEventListener('beforeunload', () => { localTrack?.stop(); room?.disconnect(); });
