@@ -4,6 +4,7 @@ const stableOrigin = 'https://kaykha-phase4-2vyue2uug-svshsayarnia-ship-its-proj
 const commandOrigin = 'https://kaykha-phase4-67719fv7k-svshsayarnia-ship-its-projects.vercel.app';
 const fallbackUiOrigin = 'https://kaykha-phase4-33kmfd9tn-svshsayarnia-ship-its-projects.vercel.app';
 const rawRepo = 'https://raw.githubusercontent.com/svshsayarnia-ship-it/Kaykha/main';
+const rawRevision = 'd48b1f11aaf1256ac925e85b2e36d48491578294';
 
 function copyUpstreamHeaders(response, upstream, transformed = false) {
   const blocked = new Set(['connection', 'content-encoding', 'transfer-encoding', 'set-cookie']);
@@ -131,7 +132,7 @@ function extractStringRawModule(source) {
 
 async function serveRepoModuleAsset(response, repoPath, contentType, fallbackPath) {
   try {
-    const upstream = await fetch(`${rawRepo}/${repoPath}`, {
+    const upstream = await fetch(`${rawRepo}/${repoPath}?v=${rawRevision}`, {
       headers: { accept: 'text/plain,*/*' },
       cache: 'no-store'
     });
@@ -172,7 +173,7 @@ async function serveCityAsset(request, response, requestUrl) {
     return;
   }
 
-  const upstream = await fetch(`${rawRepo}/public/assets/cities/${encodeURIComponent(fileName)}`);
+  const upstream = await fetch(`${rawRepo}/public/assets/cities/${encodeURIComponent(fileName)}?v=${rawRevision}`);
   response.statusCode = upstream.status;
   response.setHeader('content-type', 'image/webp');
   response.setHeader('cache-control', 'public, max-age=31536000, immutable');
