@@ -177,7 +177,7 @@ module.exports = function worldShellJs(_request, response) {
     return null;
   }
 
-  function installVoice(iframe) {
+  function installMeshVoice(iframe) {
     const doc = iframe.contentDocument;
     if (!doc || doc.querySelector('#kaykha-voice-room')) return;
     const online = doc.querySelector('#online') || doc.body;
@@ -246,6 +246,82 @@ module.exports = function worldShellJs(_request, response) {
     });
     window.addEventListener('beforeunload', () => { send({ kind: 'bye', from: state.id }); state.stream?.getTracks().forEach(track => track.stop()); state.socket?.close(); });
     drawUsers();
+  }
+
+  function installVoice(iframe) {
+    const doc = iframe.contentDocument;
+    if (!doc || doc.querySelector('#kaykha-voice-room')) return;
+    const online = doc.querySelector('#online') || doc.body;
+    const panel = doc.createElement('section');
+    panel.id = 'kaykha-voice-room';
+    panel.dir = 'rtl';
+    panel.innerHTML = '<div><b>🎙 تالار صوتی · LiveKit</b><small class="kv-status">برای گفت‌وگو با بازیکنان، میکروفون را فعال کن.</small></div><button type="button" class="kv-mic">فعال‌سازی میکروفون</button><div class="kv-users"></div>';
+    panel.style.cssText = 'margin-top:12px;padding:12px;border:1px solid #c8a75c66;border-radius:12px;background:linear-gradient(145deg,#102b38,#07131e);color:#f5e6ba;display:grid;gap:8px;font:12px Tahoma,Arial,sans-serif';
+    const style = doc.createElement('style');
+    style.textContent = '#kaykha-voice-room .kv-status{display:block;color:#aebfbd;font-size:10px;margin-top:5px;line-height:1.7}#kaykha-voice-room .kv-mic{border:1px solid #c8a75c99;border-radius:9px;padding:9px;background:#0b202b;color:#f2dda0;font:inherit;cursor:pointer}#kaykha-voice-room .kv-mic.on{background:#1f6b63;color:#fff}#kaykha-voice-room .kv-users{display:flex;gap:6px;flex-wrap:wrap;color:#aebfbd;font-size:10px}';
+    doc.head.appendChild(style);
+    online.appendChild(panel);
+    const status = message => { panel.querySelector('.kv-status').textContent = message; };
+    const drawUsers = count => { panel.querySelector('.kv-users').textContent = count ? 'بازیکنان متصل: ' + (count + 1) : 'هنوز بازیکن صوتی دیگری متصل نیست.'; };
+    const loadSdk = () => new Promise((resolve, reject) => {
+      if (doc.defaultView.LivekitClient) return resolve(doc.defaultView.LivekitClient);
+      const script = doc.createElement('script');
+      script.src = 'https://unpkg.com/livekit-client/dist/livekit-client.umd.min.js';
+      script.onload = () => doc.defaultView.LivekitClient ? resolve(doc.defaultView.LivekitClient) : reject(new Error('SDK unavailable'));
+      script.onerror = reject;
+      doc.head.appendChild(script);
+    });
+    const identity = () => {
+      const raw = localStorage.getItem('kaykha.player-name') || localStorage.getItem('kaykha.player-id') || 'player';
+      return String(raw).replace(/[^A-Za-z0-9_-]/g, '-').slice(0, 60) + '-' + Math.random().toString(36).slice(2, 8);
+    };
+    let room = null;
+    let localTrack = null;
+    let connected = false;
+    panel.querySelector('.kv-mic').addEventListener('click', async () => {
+      const button = panel.querySelector('.kv-mic');
+      try {
+        if (!connected) {
+          const gameId = localStorage.getItem('kaykha.active-game-id');
+          if (!gameId) { status('ابتدا تالار را بساز یا وارد یک تالار شو.'); return; }
+          status('در حال اتصال به تالار صوتی…');
+          const sdk = await loadSdk();
+          const tokenResponse = await fetch('/api/livekit-token', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ room: gameId, identity: identity() }) });
+          if (!tokenResponse.ok) throw new Error('token');
+          const credentials = await tokenResponse.json();
+          room = new sdk.Room({ adaptiveStream: true, dynacast: true });
+          room.on(sdk.RoomEvent.TrackSubscribed, (track, publication, participant) => {
+            if (track.kind === 'audio') track.attach();
+            drawUsers(room.remoteParticipants.size);
+          });
+          room.on(sdk.RoomEvent.TrackUnsubscribed, track => track.detach());
+          room.on(sdk.RoomEvent.ParticipantConnected, () => drawUsers(room.remoteParticipants.size));
+          room.on(sdk.RoomEvent.ParticipantDisconnected, () => drawUsers(room.remoteParticipants.size));
+          room.on(sdk.RoomEvent.Disconnected, () => { connected = false; button.classList.remove('on'); button.textContent = 'اتصال دوباره به میکروفون'; status('ارتباط صوتی قطع شد.'); });
+          await room.connect(credentials.url, credentials.token);
+          await room.localParticipant.setMicrophoneEnabled(true, { echoCancellation: true, noiseSuppression: true, autoGainControl: true });
+          localTrack = room.localParticipant.getTrackPublication(sdk.Track.Source.Microphone)?.track || null;
+          connected = true;
+          button.classList.add('on');
+          button.textContent = 'خاموش‌کردن میکروفون';
+          status('میکروفون روشن است؛ صدای بازیکنان تالار پخش می‌شود.');
+          drawUsers(room.remoteParticipants.size);
+        } else {
+          const enabled = !(room.localParticipant.getTrackPublication('microphone')?.isMuted);
+          await room.localParticipant.setMicrophoneEnabled(enabled);
+          button.classList.toggle('on', enabled);
+          button.textContent = enabled ? 'خاموش‌کردن میکروفون' : 'روشن‌کردن میکروفون';
+          status(enabled ? 'میکروفون روشن است.' : 'میکروفون خاموش است.');
+        }
+      } catch (error) {
+        console.warn('LiveKit voice unavailable; using mesh fallback', error);
+        panel.remove();
+        installMeshVoice(iframe);
+        status('LiveKit آماده نیست؛ اتصال جایگزین فعال شد.');
+      }
+    });
+    window.addEventListener('beforeunload', () => { localTrack?.stop(); room?.disconnect(); });
+    drawUsers(0);
   }
 
   function scanVoiceFrames() {
