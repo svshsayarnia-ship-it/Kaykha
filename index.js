@@ -68,8 +68,8 @@ async function serveRoot(request, response, requestUrl) {
   }
   const html = await upstream.text();
   const themed = html
-    .replace('</head>', '<link rel="stylesheet" href="/world-shell.css?v=one-world-2"></head>')
-    .replace('</body>', '<script defer src="/world-shell.js?v=one-world-2"></script></body>');
+    .replace('</head>', '<link rel="stylesheet" href="/world-shell.css?v=one-world-3"></head>')
+    .replace('</body>', '<script defer src="/world-shell.js?v=one-world-3"></script></body>');
   response.end(themed);
 }
 
