@@ -101,6 +101,15 @@
     $('#start-lobby')?.addEventListener('click', () => run(() => rpc('start_kaykha_game', { p_game_id: state.gameId })));
     $('#open-orders')?.addEventListener('click', () => run(() => rpc('open_kaykha_orders', { p_game_id: state.gameId })));
     document.addEventListener('click', event => {
+      if (event.target.closest('#resolve') && state.gameId) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        run(async () => {
+          const outcome = await rpc('resolve_kaykha_round', { p_game_id: state.gameId });
+          status('سپیده‌دم اجرا شد؛ ' + new Intl.NumberFormat('fa-IR').format(outcome.outcomes) + ' نتیجه در دفتر وقایع ثبت شد.');
+        });
+        return;
+      }
       if (!event.target.closest('#seal') || !state.gameId) return;
       const order = document.querySelector('#orders .active')?.dataset.order;
       const choice = $('#choice')?.textContent || '';
