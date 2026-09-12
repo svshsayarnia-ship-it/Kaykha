@@ -6,7 +6,7 @@
   "routes": [
     {
       "src": "/assets/cities/(.*)",
-      "dest": "https://kaykha-phase5-2hwvemkpj-svshsayarnia-ship-its-projects.vercel.app/assets/cities/$1"
+      "dest": "https://raw.githubusercontent.com/svshsayarnia-ship-it/Kaykha/main/public/assets/cities/$1"
     },
     { "src": "/(.*)", "dest": "/index.js" }
   ]
