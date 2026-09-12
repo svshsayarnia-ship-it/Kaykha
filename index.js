@@ -126,7 +126,6 @@ async function serveCityAsset(request, response, requestUrl) {
     if (request.method === 'HEAD') response.end();
     else response.end(response.statusCode === 404 ? 'Not found' : 'Asset unavailable');
   }
-  }
 }
 async function serveRoot(request, response) {
   const localWarRoomHtml = require('./api/war-room-html.js');
