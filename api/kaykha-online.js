@@ -4,7 +4,7 @@ module.exports = function asset(_request, response) {
   response.status(200).send(String.raw`(()=> {
   const URL = 'https://uwhfxmiguugujcomwmds.supabase.co';
   const KEY = 'sb_publishable_KIuxWr99zocUh2EBiXkQaQ_LB9PD8Wv';
-  const CITY = { 'ری':'ray', 'تیسفون':'ctesiphon', 'اصفهان':'isfahan', 'هگمتانه':'hegmataneh', 'نیشابور':'nishapur', 'مرو':'merv', 'بلخ':'balkh', 'یزد':'yazd', 'الموت':'alamut', 'گرگان':'gorgan', 'تبریز':'tabriz', 'شوش':'susa', 'هرمز':'hormuz', 'شیراز':'shiraz', 'بم':'bam', 'زرنج':'zaranj' };
+  const CITY = { 'ری':'ray', 'تیسفون':'ctesiphon', 'اصفهان':'isfahan', 'هگمتانه':'hegmataneh', 'نیشابور':'nishapur', 'مرو':'merv', 'بلخ':'balkh', 'یزد':'yazd', 'الموت':'alamut', 'گرگان':'gorgan', 'تبریز':'tabriz', 'شوش':'susa', 'هرمز':'hormuz', 'شیراز':'shiraz', 'بم':'bam', 'زرنج':'zaranj', 'گمبرون':'gambroon' };
   const storageKey = 'kaykha.active-game-id';
   const state = { gameId: localStorage.getItem(storageKey) || null, me: null, members: [], market: null, selectedTile: null };
   const $ = s => document.querySelector(s);
