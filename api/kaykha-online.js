@@ -6,7 +6,7 @@ module.exports = function asset(_request, response) {
   const KEY = 'sb_publishable_KIuxWr99zocUh2EBiXkQaQ_LB9PD8Wv';
   const CITY = { 'ری':'ray', 'تیسفون':'ctesiphon', 'اصفهان':'isfahan', 'هگمتانه':'hegmataneh', 'نیشابور':'nishapur', 'مرو':'merv', 'بلخ':'balkh', 'یزد':'yazd', 'الموت':'alamut', 'گرگان':'gorgan', 'تبریز':'tabriz', 'شوش':'susa', 'هرمز':'hormuz', 'شیراز':'shiraz', 'بم':'bam', 'زرنج':'zaranj', 'گمبرون':'gambroon' };
   const storageKey = 'kaykha.active-game-id';
-  const state = { gameId: localStorage.getItem(storageKey) || null, me: null, members: [], market: null, selectedTile: null, creditProfiles: [], loans: [], shadowRole: null, crisis: null, scores: [], intel: [], roundNo: 1 };
+  const state = { gameId: localStorage.getItem(storageKey) || null, me: null, members: [], market: null, selectedTile: null, creditProfiles: [], loans: [], shadowRole: null, crisis: null, scores: [], intel: [], roundNo: 1, voiceRoom: null, voiceIdentity: null, voiceRoomName: null, voiceMicEnabled: false, voiceConnecting: false };
   const $ = s => document.querySelector(s);
 
   function tokenFrom(value, depth = 0) {
@@ -273,6 +273,180 @@ module.exports = function asset(_request, response) {
     const data = await rpc('get_kaykha_market', { p_game_id: state.gameId, p_city_id: city });
     renderMarket(data);
   }
+
+  function voiceNode(selector) {
+    return $(selector);
+  }
+  function voiceEscape(value) {
+    return String(value || '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+  }
+  function voiceParticipantLabel(participant) {
+    const identity = String(participant?.identity || '');
+    if (participant?.isLocal && state.me?.display_name) return state.me.display_name + ' · تو';
+    const member = state.members.find(item => identity.includes(String(item.user_id || '')));
+    return member?.display_name || ('بازیکن · ' + identity.slice(-6));
+  }
+  function renderVoiceParticipants() {
+    const root = voiceNode('#voice-participants');
+    if (!root) return;
+    if (!state.voiceRoom) {
+      root.innerHTML = '<span class="voice-participant"><span class="voice-dot"></span>هنوز صدایی وصل نیست</span>';
+      return;
+    }
+    const local = state.voiceRoom.localParticipant;
+    const remote = Array.from(state.voiceRoom.remoteParticipants.values());
+    const participants = [local, ...remote];
+    root.innerHTML = participants.map(participant => {
+      const live = participant.isLocal ? state.voiceMicEnabled : Boolean(participant.isMicrophoneEnabled);
+      return '<span class="voice-participant ' + (live ? 'speaking' : '') + '"><span class="voice-dot"></span>' + voiceEscape(voiceParticipantLabel(participant)) + (live ? ' · روشن' : ' · خاموش') + '</span>';
+    }).join('');
+  }
+  function updateVoiceControls() {
+    const connected = Boolean(state.voiceRoom);
+    const hasGame = Boolean(state.gameId);
+    const connect = voiceNode('#voice-connect');
+    const mic = voiceNode('#voice-mic');
+    const leave = voiceNode('#voice-disconnect');
+    const stateNode = voiceNode('#voice-state');
+    if (connect) connect.disabled = !hasGame || connected || state.voiceConnecting;
+    if (mic) {
+      mic.disabled = !connected;
+      mic.textContent = state.voiceMicEnabled ? 'میکروفون روشن · خاموش کن' : 'میکروفون خاموش · روشن کن';
+      mic.classList.toggle('is-live', state.voiceMicEnabled);
+    }
+    if (leave) leave.disabled = !connected;
+    if (stateNode) {
+      stateNode.textContent = connected ? 'متصل به اتاق' : hasGame ? 'آماده اتصال' : 'پس از ورود';
+      stateNode.classList.toggle('connected', connected);
+    }
+    renderVoiceParticipants();
+  }
+  function setVoiceStatus(message, bad = false) {
+    const node = voiceNode('#voice-status');
+    if (node) {
+      node.textContent = message;
+      node.classList.toggle('bad', bad);
+    }
+    updateVoiceControls();
+  }
+  function livekitIdentity() {
+    if (state.voiceIdentity) return state.voiceIdentity;
+    const token = accessToken();
+    const base = (authUserId(token) || 'guest').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 48) || 'guest';
+    state.voiceIdentity = 'player-' + base + '-v' + Math.random().toString(36).slice(2, 8);
+    return state.voiceIdentity;
+  }
+  function livekitRoomName() {
+    return 'kaykha-' + String(state.gameId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 70);
+  }
+  function handleVoiceTrackSubscribed(track) {
+    if (!track || track.kind !== 'audio') return;
+    const root = voiceNode('#voice-audio');
+    if (!root) return;
+    const attached = track.attach();
+    const elements = Array.isArray(attached) ? attached : [attached];
+    elements.filter(Boolean).forEach(element => {
+      element.autoplay = true;
+      element.setAttribute('playsinline', '');
+      element.dataset.voiceTrack = '1';
+      root.appendChild(element);
+      element.play?.().catch(() => {});
+    });
+  }
+  function handleVoiceTrackUnsubscribed(track) {
+    if (!track) return;
+    const detached = track.detach();
+    const elements = Array.isArray(detached) ? detached : [detached];
+    elements.filter(Boolean).forEach(element => element.remove());
+  }
+  function bindVoiceRoom(room, kit) {
+    room.on(kit.RoomEvent.TrackSubscribed, track => {
+      handleVoiceTrackSubscribed(track);
+      renderVoiceParticipants();
+    });
+    room.on(kit.RoomEvent.TrackUnsubscribed, track => {
+      handleVoiceTrackUnsubscribed(track);
+      renderVoiceParticipants();
+    });
+    room.on(kit.RoomEvent.ParticipantConnected, () => renderVoiceParticipants());
+    room.on(kit.RoomEvent.ParticipantDisconnected, () => renderVoiceParticipants());
+    room.on(kit.RoomEvent.ActiveSpeakersChanged, () => renderVoiceParticipants());
+    room.on(kit.RoomEvent.AudioPlaybackStatusChanged, () => {
+      if (!room.canPlaybackAudio) setVoiceStatus('صدای تالار آماده است؛ برای پخش، داخل همین پنل یک‌بار لمس کن.', true);
+    });
+    room.on(kit.RoomEvent.MediaDevicesError, error => setVoiceStatus('میکروفون در دسترس نیست: ' + (error?.message || 'مجوز یا دستگاه را بررسی کن.'), true));
+    room.on(kit.RoomEvent.Disconnected, reason => {
+      state.voiceRoom = null;
+      state.voiceMicEnabled = false;
+      state.voiceConnecting = false;
+      renderVoiceParticipants();
+      updateVoiceControls();
+      if (reason) setVoiceStatus('اتصال صوتی قطع شد؛ دوباره تلاش کن.', true);
+    });
+  }
+  async function connectVoice() {
+    if (state.voiceRoom) {
+      setVoiceStatus('اتصال صوتی از قبل برقرار است.');
+      return;
+    }
+    if (state.voiceConnecting) return;
+    if (!state.gameId) throw new Error('ابتدا وارد یک تالار بازی شو.');
+    const kit = window.LivekitClient;
+    if (!kit?.Room) throw new Error('کتابخانهٔ صوتی بارگذاری نشد؛ اتصال اینترنت را بررسی کن.');
+    const auth = accessToken();
+    if (!auth) throw new Error('برای تالار صوتی ابتدا از ورود اصلی بازی وارد شو.');
+    state.voiceConnecting = true;
+    setVoiceStatus('در حال اتصال به تالار صوتی…');
+    try {
+      const roomName = livekitRoomName();
+      const identity = livekitIdentity();
+      const response = await fetch('/api/livekit-token', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ room: roomName, identity })
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !body.token || !body.url) throw new Error(body.error || 'توکن صوتی دریافت نشد.');
+      const room = new kit.Room({ adaptiveStream: true, dynacast: true });
+      bindVoiceRoom(room, kit);
+      room.prepareConnection?.(body.url, body.token);
+      await room.connect(body.url, body.token);
+      await room.startAudio?.().catch(() => {});
+      await room.localParticipant.setMicrophoneEnabled(true);
+      state.voiceRoom = room;
+      state.voiceRoomName = roomName;
+      state.voiceMicEnabled = true;
+      setVoiceStatus('اتصال صوتی برقرار شد؛ صدای یاران در همین تالار پخش می‌شود.');
+    } catch (error) {
+      state.voiceRoom = null;
+      state.voiceMicEnabled = false;
+      setVoiceStatus(error.message || 'اتصال صوتی ناموفق بود.', true);
+      throw error;
+    } finally {
+      state.voiceConnecting = false;
+      updateVoiceControls();
+    }
+  }
+  async function toggleVoiceMic() {
+    if (!state.voiceRoom) {
+      await connectVoice();
+      return;
+    }
+    const enabled = !state.voiceMicEnabled;
+    await state.voiceRoom.localParticipant.setMicrophoneEnabled(enabled);
+    state.voiceMicEnabled = enabled;
+    setVoiceStatus(enabled ? 'میکروفون روشن است؛ یاران صدایت را می‌شنوند.' : 'میکروفون خاموش شد.');
+  }
+  async function disconnectVoice(showMessage = true) {
+    const room = state.voiceRoom;
+    state.voiceRoom = null;
+    state.voiceMicEnabled = false;
+    state.voiceRoomName = null;
+    if (room) await room.disconnect();
+    updateVoiceControls();
+    if (showMessage) setVoiceStatus('از تالار صوتی خارج شدی.');
+  }
+
   async function readGame() {
     if (!state.gameId) return;
     const token = accessToken();
@@ -286,6 +460,7 @@ module.exports = function asset(_request, response) {
     ]);
     const games = Array.isArray(gameResult.body) ? gameResult.body : [];
     if (!gameResult.ok || !games[0]) {
+      await disconnectVoice(false);
       localStorage.removeItem(storageKey); state.gameId = null;
       status('اتصال قبلی تالار در دسترس نیست.', true); return;
     }
@@ -296,6 +471,7 @@ module.exports = function asset(_request, response) {
     if (phase) phase.textContent = 'راند ' + new Intl.NumberFormat('fa-IR').format(game.round_no) + ' · ' + phaseName(game.phase);
     if (territoryResult.ok && memberResult.ok) {
       hydrateBoard(territoryResult.body, memberResult.body, eventResult.ok ? eventResult.body : [], token);
+      updateVoiceControls();
       await Promise.allSettled([readMarket(), readCredit(), readCrisis(), readIntel()]);
     }
   }
@@ -308,7 +484,9 @@ module.exports = function asset(_request, response) {
   async function createLobby() {
     if (userName().length < 2) throw new Error('نام فرمانده را کامل بنویس.');
     const rows = await rpc('create_kaykha_game', { p_display_name: userName(), p_house_id: faction(), p_total_seats: 6, p_mode: ($('#game-mode')?.value || 'hegemony') });
+    if (state.gameId && state.gameId !== rows[0].game_id) await disconnectVoice(false);
     state.gameId = rows[0].game_id; localStorage.setItem(storageKey, state.gameId);
+    updateVoiceControls();
     await savePersona();
     status('تالار ' + rows[0].game_code + ' ساخته شد. کدش را برای یاران بفرست.');
   }
@@ -317,7 +495,9 @@ module.exports = function asset(_request, response) {
     const code = ($('#lobby-code')?.value || '').trim();
     if (code.length !== 6) throw new Error('کد شش‌کاراکتری تالار را وارد کن.');
     const rows = await rpc('join_kaykha_game', { p_code: code, p_display_name: userName(), p_house_id: faction() });
+    if (state.gameId && state.gameId !== rows[0].game_id) await disconnectVoice(false);
     state.gameId = rows[0].game_id; localStorage.setItem(storageKey, state.gameId);
+    updateVoiceControls();
     await savePersona();
     status('وارد تالار ' + rows[0].game_code + ' شدی؛ صندلی ' + new Intl.NumberFormat('fa-IR').format(rows[0].seat_no) + ' برای توست.');
   }
@@ -327,6 +507,11 @@ module.exports = function asset(_request, response) {
     finally { if (done) done(); }
   }
   document.addEventListener('DOMContentLoaded', () => {
+    $('#voice-connect')?.addEventListener('click', () => run(connectVoice));
+    $('#voice-mic')?.addEventListener('click', () => run(toggleVoiceMic));
+    $('#voice-disconnect')?.addEventListener('click', () => run(() => disconnectVoice()));
+    $('#voice-panel')?.addEventListener('click', () => state.voiceRoom?.startAudio?.().catch(() => {}));
+    updateVoiceControls();
     $('#create-lobby')?.addEventListener('click', () => run(createLobby));
     $('#join-lobby')?.addEventListener('click', () => run(joinLobby));
     $('#start-lobby')?.addEventListener('click', () => run(() => rpc('start_kaykha_game', { p_game_id: state.gameId })));
