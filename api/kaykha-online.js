@@ -6,7 +6,7 @@ module.exports = function asset(_request, response) {
   const KEY = 'sb_publishable_KIuxWr99zocUh2EBiXkQaQ_LB9PD8Wv';
   const CITY = { 'ری':'ray', 'تیسفون':'ctesiphon', 'اصفهان':'isfahan', 'هگمتانه':'hegmataneh', 'نیشابور':'nishapur', 'مرو':'merv', 'بلخ':'balkh', 'یزد':'yazd', 'الموت':'alamut', 'گرگان':'gorgan', 'تبریز':'tabriz', 'شوش':'susa', 'هرمز':'hormuz', 'شیراز':'shiraz', 'بم':'bam', 'زرنج':'zaranj', 'گمبرون':'gambroon' };
   const storageKey = 'kaykha.active-game-id';
-  const state = { gameId: localStorage.getItem(storageKey) || null, me: null, members: [], market: null, selectedTile: null, creditProfiles: [], loans: [], shadowRole: null, crisis: null, roundNo: 1 };
+  const state = { gameId: localStorage.getItem(storageKey) || null, me: null, members: [], market: null, selectedTile: null, creditProfiles: [], loans: [], shadowRole: null, crisis: null, scores: [], roundNo: 1 };
   const $ = s => document.querySelector(s);
 
   function tokenFrom(value, depth = 0) {
@@ -158,6 +158,13 @@ module.exports = function asset(_request, response) {
       return '<p><b>'+formatter.format(loan.principal)+' سکه</b> · '+esc(loan.status)+' · موعد '+formatter.format(loan.due_round)+'<br><small>'+esc(lender)+' ← '+esc(borrower)+' · وثیقه: '+esc(loan.collateral_type)+'</small> '+action+'</p>';
     }).join('') || '<p>هنوز وام فعالی در دفتر آهنین نیست.</p>';
   }
+  function renderScores() {
+    const node = $('#winter-scoreboard');
+    if (!node) return;
+    const formatter = new Intl.NumberFormat('fa-IR');
+    const rows = Array.isArray(state.scores) ? state.scores : [];
+    node.innerHTML = rows.length ? rows.map((score, index) => '<p><b>' + formatter.format(index + 1) + '. ' + esc(score.display_name) + '</b> · <strong>' + formatter.format(score.total_score) + '</strong> امتیاز<br><small>نظامی ' + formatter.format(score.military_score) + ' · خزانه ' + formatter.format(score.treasury_score) + ' · ثروت بیرونی ' + formatter.format(score.external_wealth_score) + ' · خون ' + formatter.format(score.blood_contract_score) + ' · مشروعیت ' + formatter.format(score.legitimacy_score) + '</small></p>').join('') : '<small>پس از ورود اعضا، جدول هژمونی اینجا به‌روزرسانی می‌شود.</small>';
+  }
   function renderCrisis() {
     const node = $('#crisis-panel');
     if (!node) return;
@@ -199,10 +206,18 @@ module.exports = function asset(_request, response) {
   async function readCrisis() {
     if (!state.gameId || !state.me) return;
     try {
-      state.crisis = await rpc('get_kaykha_crisis', { p_game_id: state.gameId });
+      const [crisis, scores] = await Promise.all([
+        rpc('get_kaykha_crisis', { p_game_id: state.gameId }),
+        rpc('get_kaykha_hegemony_scores', { p_game_id: state.gameId })
+      ]);
+      state.crisis = crisis;
+      state.scores = Array.isArray(scores) ? scores : [];
+      renderScores();
       renderCrisis();
     } catch (_) {
       state.crisis = null;
+      state.scores = [];
+      renderScores();
       renderCrisis();
     }
   }
