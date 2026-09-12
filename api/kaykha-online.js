@@ -6,7 +6,7 @@ module.exports = function asset(_request, response) {
   const KEY = 'sb_publishable_KIuxWr99zocUh2EBiXkQaQ_LB9PD8Wv';
   const CITY = { 'ری':'ray', 'تیسفون':'ctesiphon', 'اصفهان':'isfahan', 'هگمتانه':'hegmataneh', 'نیشابور':'nishapur', 'مرو':'merv', 'بلخ':'balkh', 'یزد':'yazd', 'الموت':'alamut', 'گرگان':'gorgan', 'تبریز':'tabriz', 'شوش':'susa', 'هرمز':'hormuz', 'شیراز':'shiraz', 'بم':'bam', 'زرنج':'zaranj', 'گمبرون':'gambroon' };
   const storageKey = 'kaykha.active-game-id';
-  const state = { gameId: localStorage.getItem(storageKey) || null, me: null, members: [], market: null, selectedTile: null, creditProfiles: [], loans: [], shadowRole: null, roundNo: 1 };
+  const state = { gameId: localStorage.getItem(storageKey) || null, me: null, members: [], market: null, selectedTile: null, creditProfiles: [], loans: [], shadowRole: null, crisis: null, roundNo: 1 };
   const $ = s => document.querySelector(s);
 
   function tokenFrom(value, depth = 0) {
@@ -158,6 +158,25 @@ module.exports = function asset(_request, response) {
       return '<p><b>'+formatter.format(loan.principal)+' سکه</b> · '+esc(loan.status)+' · موعد '+formatter.format(loan.due_round)+'<br><small>'+esc(lender)+' ← '+esc(borrower)+' · وثیقه: '+esc(loan.collateral_type)+'</small> '+action+'</p>';
     }).join('') || '<p>هنوز وام فعالی در دفتر آهنین نیست.</p>';
   }
+  function renderCrisis() {
+    const node = $('#crisis-panel');
+    if (!node) return;
+    const current = state.crisis?.current;
+    if (!current) {
+      node.innerHTML = '<small>فعلاً بحران فعالی نیست؛ اما هر سپیده‌دم می‌تواند معادله را عوض کند.</small>';
+      return;
+    }
+    const resourceName = {silk:'ابریشم',copper:'مس',carpet:'فرش',herbs:'گیاهان',armor:'زره'};
+    const payload = current.payload || {};
+    const title = current.crisis_key === 'market_crash' ? 'سقوط بازار · ' + (resourceName[payload.resource_key] || payload.resource_key || 'کالای ناشناخته')
+      : current.crisis_key === 'peasant_rebellion' ? 'شورش دهقانان · ' + (payload.target_territory_id || 'یک شهر')
+      : 'تهدید انیران · بودجه لازم ' + Number(payload.required_coins || 0) + ' سکه';
+    const action = current.crisis_key === 'outer_threat' ? '<div class="online-actions"><input id="defense-pledge" type="number" min="1" max="200" value="4"><button id="pledge-defense">تعهد بودجه دفاع</button></div>' : '';
+    node.innerHTML = '<b>' + esc(title) + '</b><br><small>شدت: ' + esc(current.severity) + ' · راند ' + esc(current.round_no) + '</small><p>' +
+      (current.crisis_key === 'market_crash' ? 'درآمد این کالا تا سپیده‌دم بعدی صفر است.' :
+       current.crisis_key === 'peasant_rebellion' ? 'اگر سرکوب نشود، به شهرهای همسایه سرایت می‌کند.' :
+       'اگر خزانه دفاعی کامل نشود، مرزها و مشروعیت شهرهای مرزی آسیب می‌بینند.') + '</p>' + action;
+  }
   async function readCredit() {
     if (!state.gameId || !state.me) return;
     try {
@@ -175,6 +194,16 @@ module.exports = function asset(_request, response) {
     } catch (error) {
       const summary = $('#credit-summary');
       if (summary) summary.innerHTML = '<small>دفتر اعتبار موقتاً قابل خواندن نیست.</small>';
+    }
+  }
+  async function readCrisis() {
+    if (!state.gameId || !state.me) return;
+    try {
+      state.crisis = await rpc('get_kaykha_crisis', { p_game_id: state.gameId });
+      renderCrisis();
+    } catch (_) {
+      state.crisis = null;
+      renderCrisis();
     }
   }
   function actionMessage(result) {
@@ -212,7 +241,7 @@ module.exports = function asset(_request, response) {
     const phase = $('#phase');
     if (phase) phase.textContent = 'راند ' + new Intl.NumberFormat('fa-IR').format(game.round_no) + ' · ' + phaseName(game.phase);
     if (territoryResult.ok && memberResult.ok && eventResult.ok) {
-      hydrateBoard(territoryResult.body, memberResult.body, eventResult.body, token); await Promise.all([readMarket(), readCredit()]);
+      hydrateBoard(territoryResult.body, memberResult.body, eventResult.body, token); await Promise.all([readMarket(), readCredit(), readCrisis()]);
     }
   }
   async function savePersona() {
@@ -310,6 +339,11 @@ module.exports = function asset(_request, response) {
         const collateralType = $('#loan-collateral')?.value || 'income';
         const collateralRef = collateralType === 'territory' ? { territory_id: CITY[cities[1] || cities[0] || 'ری'] } : {};
         run(() => rpc('create_kaykha_loan', { p_game_id: state.gameId, p_borrower_member_id: $('#loan-member')?.value || null, p_principal: Number($('#loan-principal')?.value || 1), p_interest_coins: Number($('#loan-interest')?.value || 0), p_due_round: Number($('#loan-due')?.value || 0) || null, p_collateral_type: collateralType, p_collateral_ref: collateralRef }));
+        return;
+      }
+      if (event.target.closest('#pledge-defense') && state.gameId) {
+        event.preventDefault(); event.stopImmediatePropagation();
+        run(() => rpc('pledge_kaykha_defense', { p_game_id: state.gameId, p_amount: Number($('#defense-pledge')?.value || 1) }));
         return;
       }
       const settle = event.target.closest('[data-settle-loan]');
