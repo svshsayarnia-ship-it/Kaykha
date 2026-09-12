@@ -2,7 +2,28 @@ module.exports = function asset(_request, response) {
   response.setHeader('content-type', 'application/javascript; charset=utf-8');
   response.setHeader('cache-control', 'public, max-age=300, s-maxage=300');
   response.status(200).send(String.raw`(()=>{
-const N=new Intl.NumberFormat("fa-IR"),$=s=>document.querySelector(s);const audioState={enabled:false,ctx:null};function cue(kind){if(!audioState.enabled)return;const C=window.AudioContext||window.webkitAudioContext;if(!C)return;if(!audioState.ctx)audioState.ctx=new C();const o=audioState.ctx.createOscillator(),g=audioState.ctx.createGain();o.type=kind==="blade"?"sawtooth":"sine";o.frequency.value=kind==="blade"?880:kind==="coin"?460:180;g.gain.setValueAtTime(.0001,audioState.ctx.currentTime);g.gain.exponentialRampToValueAtTime(.045,audioState.ctx.currentTime+.01);g.gain.exponentialRampToValueAtTime(.0001,audioState.ctx.currentTime+(kind==="blade"?.12:.2));o.connect(g).connect(audioState.ctx.destination);o.start();o.stop(audioState.ctx.currentTime+.22);}
+const N=new Intl.NumberFormat("fa-IR"),$=s=>document.querySelector(s);const audioState={enabled:false,ctx:null};
+function cue(kind){
+ if(!audioState.enabled)return;
+ const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
+ if(!audioState.ctx)audioState.ctx=new C();
+ const ctx=audioState.ctx,now=ctx.currentTime;
+ const tone=(frequency,duration,type,volume,slide)=>{
+  const o=ctx.createOscillator(),g=ctx.createGain();o.type=type||"sine";o.frequency.setValueAtTime(frequency,now);
+  if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(36,slide),now+duration);
+  g.gain.setValueAtTime(.0001,now);g.gain.exponentialRampToValueAtTime(volume||.035,now+.018);g.gain.exponentialRampToValueAtTime(.0001,now+duration);
+  o.connect(g).connect(ctx.destination);o.start(now);o.stop(now+duration+.03);
+ };
+ if(kind==="seal"){tone(92,.42,"square",.065,44);tone(184,.2,"triangle",.028,110);return}
+ if(kind==="dawn"){tone(148,.78,"sawtooth",.035,42);window.setTimeout(()=>tone(296,.5,"triangle",.025,510),130);return}
+ if(kind==="rumble"){tone(62,.62,"sine",.06,36);tone(118,.38,"triangle",.022,70);return}
+ if(kind==="whisper"){tone(760,.22,"sine",.018,420);window.setTimeout(()=>tone(520,.26,"sine",.015,330),80);return}
+ if(kind==="glitch"){tone(980,.08,"square",.02,140);window.setTimeout(()=>tone(130,.12,"sawtooth",.025,780),70);return}
+ if(kind==="blood"){tone(118,.3,"sawtooth",.032,56);return}
+ if(kind==="blade"){tone(880,.14,"sawtooth",.042,190);return}
+ if(kind==="coin"){tone(460,.18,"sine",.035,780);return}
+ tone(180,.2,"sine",.025,110);
+}
 const factions=[["هخامنشیان","فرمان شاهنشاه؛ یک‌بار شهری دشمن را بی‌نبرد تسلیم می‌کند."],["اشکانیان","تیرباران پارتی؛ شکست حمله تلفات ندارد."],["ساسانیان","بانکداران امپراتوری؛ مالیات از پیمان رسمی."],["سورن","اقتصاد غارتی؛ نخستین حمله پاداش دارد و پس از فتح غنیمت می‌گیرد."],["کارن","دژ کوهستانی؛ قلمروهایش از شورشِ خزانهٔ تهی مصون‌اند."],["مهران","درفش کاویانی؛ پشتیبانی +۲."],["وراز","خشم گراز؛ زمین سوخته."],["اسپینداد","آتش مقدس؛ مصونیت از وهم، طلسم و جاسوسی آیینی."],["زیک","شبکه نامرئی؛ دکان غیرقابل غارت."],["نهابد","اربابان سکه؛ وام و مصادره."],["طاهریان","استقلال پنهان؛ استخراج بی‌هشدار."],["صفاریان","آیین عیاری؛ خرید شورشیان."],["سامانیان","شریان ابریشم؛ مالیات کاروان."],["آل‌بویه","تاج‌بخش؛ با پشتیبانی، وارثِ شهر فتح‌شده را تعیین می‌کند."],["باوندیان","انزوای خودکفا؛ مصونیت بازار و جاسوسی."],["زیاریان","باج‌گیران البرز؛ ۱۰٪ کاروان مرزی."]];
 const personas=[["اسپهبد · پاسدار","دفاع مرز پایتخت را تقویت می‌کند."],["بزرگ‌فرمادار · معمار صلح","هزینه پیمان و بازسازی اعتماد را کم می‌کند."],["چشم شاه · سایه‌بان","ضدجاسوسی مطلق."],["رئیس‌التجار · سازنده","جابجایی متحدان در کاروانسرا رایگان است."],["دهقان · پرورنده","تولید و بازسازی دوبرابر."],["مغ اعظم · روشن‌بین","یک فرمان مخفی را می‌خواند."],["عیار · شب‌رو","ترور اقتصادی بی‌ردپا."],["عطّار · حکیم","بازیابی ارتش و شهر."],["خواب‌گزار · بیدارگر","تمرکز حمله بعد را پیش‌بینی می‌کند."],["پیر کوهستان · مرشد","روحیه ارتش در محاصره نمی‌شکند."],["پرده‌خوان · راوی","نیت واقعی یک رقیب را از سیستم می‌پرسد."],["قلندر · پناه‌دهنده","در یک شهر بست اعلام و حمله را قفل می‌کند."]];
 const land=[["ری",5,"تو",4,70,3,0],["تیسفون",4,"بی‌طرف",5,50,3,0],["اصفهان",4,"دشمن",4,50,3,0],["هگمتانه",4,"بی‌طرف",3,50,2,0],["نیشابور",3,"دشمن",5,55,3,0],["مرو",2,"دشمن",5,50,3,0],["بلخ",3,"بی‌طرف",4,50,3,0],["یزد",3,"بی‌طرف",4,50,3,0],["الموت",4,"بی‌طرف",3,50,3,0],["گرگان",3,"تو",3,60,4,0],["تبریز",4,"بی‌طرف",4,50,3,0],["شوش",3,"بی‌طرف",4,50,3,0],["هرمز",3,"بی‌طرف",5,50,4,0],["شیراز",4,"بی‌طرف",4,50,3,0],["بم",3,"بی‌طرف",3,50,3,0],["زرنج",3,"بی‌طرف",4,50,3,0]];
@@ -10,6 +31,30 @@ const S={round:1,phase:"بازار مکاره و دربار",f:0,p:0,o:0,t:2,ord
 const intel={},instability={};
 factions.forEach((x,i)=>$("#faction").add(new Option(x[0],i)));personas.forEach((x,i)=>$("#persona").add(new Option(x[0],i)));$("#audio-toggle")?.addEventListener("click",()=>{audioState.enabled=!audioState.enabled;const b=$("#audio-toggle");b.textContent="صدای فضا: "+(audioState.enabled?"روشن":"خاموش");b.classList.toggle("is-on",audioState.enabled);b.setAttribute("aria-pressed",String(audioState.enabled));if(audioState.enabled)cue("coin")});
 function add(text){S.logs.unshift(["راند "+N.format(S.round)+" · "+S.phase,text]);S.logs=S.logs.slice(0,12)}
+
+function flash(selector,duration){
+ const node=$(selector);if(!node)return;
+ node.classList.remove("show");void node.offsetWidth;node.classList.add("show");
+ window.setTimeout(()=>node.classList.remove("show"),duration||850);
+}
+function sensory(kind){
+ cue(kind);
+ if(kind==="seal"){document.body.classList.add("seal-commit");flash("#seal-stamp",1050);window.setTimeout(()=>document.body.classList.remove("seal-commit"),520);return}
+ if(kind==="blood"){flash("#blood-splash",1100);return}
+ if(kind==="dawn"){document.body.classList.add("dawn-active");flash("#dawn-overlay",1250);window.setTimeout(()=>document.body.classList.remove("dawn-active"),1280);return}
+ if(kind==="whisper"||kind==="glitch")flash("#teal-event-flash",720);
+}
+function scrambleIdentity(finalName){
+ const node=$("#paranoia-readout");if(!node)return;
+ const names=["سورن","کارن","مهران"];let tick=0;node.textContent=names[0];flash("#paranoia-overlay",950);
+ const timer=window.setInterval(()=>{node.textContent=names[tick++%names.length]},72);
+ window.setTimeout(()=>{window.clearInterval(timer);node.textContent=finalName||"نامشخص"},680);
+}
+function applyHouseAtmosphere(){
+ const classes=["house-suren","house-karen","house-mihran"];document.body.classList.remove(...classes);
+ const className={"سورن":"house-suren","کارن":"house-karen","مهران":"house-mihran"}[factions[S.f][0]];
+ if(className)document.body.classList.add(className);
+}
 function title(x){return {attack:"حمله",defend:"دفاع",support:"پشتیبانی",caravan:"کاروان",trade:"تجارت",spy:"جاسوسی",revolt:"شورش",raid:"غارت",sabotage:"خرابکاری"}[x]}
 const orderBriefs={
  attack:{icon:"⚔",title:"حمله · تغییر قلمرو",summary:"قدرت سپاه مبدأ با دفاع هدف مقایسه می‌شود؛ هدف این فرمان جابه‌جایی مالکیت شهر است.",gain:"فتح شهر + اعتبار سیاسی",risk:"اگر شکست بخورد، سپاه مبدأ فرسوده می‌شود.",dawn:"اگر قدرت مبدأ بیشتر باشد، مالکیت شهر منتقل می‌شود؛ وگرنه شهر می‌ماند و سپاه مبدأ آسیب می‌بیند."},
@@ -32,7 +77,7 @@ function familyAction(){
  const name=factions[S.f][0]; return active[name]||["اثر خودکار خاندان","قدرت خاندان "+name+" هنگام اقتصاد، دفاع یا آشکارسازی راند خودکار محاسبه می‌شود.",false];
 }
 const cityMeta={"ری":{id:"ray",region:"اقلیم مرکزی · پایتخت",desc:"قلب تاج‌وتخت؛ میدان مدور، مرمر سفید و حوض فیروزه‌ای مرکز نفوذ است.",art:"Ray.webp"},"تیسفون":{id:"ctesiphon",region:"اقلیم مرکزی · پایتخت",desc:"زیر سایهٔ طاق کسری، بازار خطی و سرداب‌های پنهان جریان دارند.",art:"Tisphoon.webp"},"اصفهان":{id:"isfahan",region:"اقلیم مرکزی · رودخانه",desc:"رودخانه شهر را دو نیم می‌کند؛ پل‌ها مسیر تجارت و اسنادند.",art:"Isfahan.webp"},"هگمتانه":{id:"hegmataneh",region:"اقلیم مرکزی · هفت حصار",desc:"هفت تراس و دروازه‌های سنگین؛ هر صعود یعنی عبور از یک لایه قدرت.",art:"Hamedan.webp"},"نیشابور":{id:"nishapur",region:"جاده ابریشم · فیروزه",desc:"ابریشم، باغ و فیروزه؛ تیمچه‌ها در میان رواق‌های رنگی شکل می‌گیرند.",art:"Neyshaboor.webp"},"مرو":{id:"merv",region:"جاده ابریشم · واحه",desc:"کانال‌ها دکان‌ها را به جزیره‌های کوچک تقسیم کرده‌اند؛ سکه با بلم جابه‌جا می‌شود.",art:"Marv.webp"},"بلخ":{id:"balkh",region:"جاده ابریشم · مادر شهرها",desc:"ویرانه‌ها و داربست‌ها کنار هم‌اند؛ شراکت یعنی پل‌زدن میان دو بازار.",art:"Balkh.webp"},"یزد":{id:"yazd",region:"کویر · کورهٔ باد",desc:"کوچه‌های باریک و بادگیرهای بلند؛ بازار سیاه در عمق قنات پنهان است.",art:"Yazd.webp"},"الموت":{id:"alamut",region:"کوهستان · آشیانه عقاب",desc:"بازار عمودی روی صخره؛ کاروان‌ها با طناب و سبد میان مه بالا می‌روند.",art:"Alamoot.webp"},"گرگان":{id:"gorgan",region:"شمال · دیوار جنگلی",desc:"باران، چوب و عطاری‌های شب‌تاب؛ دروازهٔ جنگل هم سپر است هم گذرگاه.",art:"Gorgan.webp"},"تبریز":{id:"tabriz",region:"شمال‌غرب · چهارسوق",desc:"بازار سرپوشیده و نورهایی که از هورنوی سقف می‌ریزند؛ سایه‌ها همیشه دیده می‌شوند.",art:"Tabriz.webp"},"شوش":{id:"susa",region:"جنوب‌غرب · شهر غرق‌شده",desc:"آب بالا می‌آید و بازار پایین می‌رود؛ هر قرارداد باید پیش از سیلاب بسته شود.",art:"Shush.webp"},"هرمز":{id:"hormuz",region:"جنوب · بندر سرخ",desc:"اسکله‌های چوبی، لنج‌ها و خاک سرخ؛ سود از مسیر دریا می‌رسد.",art:"Hormoz.webp"},"شیراز":{id:"shiraz",region:"جنوب · باغ زهر و عطر",desc:"باغ‌های نارنج و شیشه‌های رنگی؛ زیبایی اینجا همیشه یک لبهٔ پنهان دارد.",art:"Shiraz.webp"},"بم":{id:"bam",region:"جنوب‌شرق · ارگ خشتی",desc:"دیوارهای یکپارچهٔ گلین و طوفان شن؛ شهر با ذخیره‌اش زنده می‌ماند.",art:"Bam.webp"},"زرنج":{id:"zaranj",region:"سیستان · سرزمین بادها",desc:"آسبادها نبض اقتصادند؛ اگر بایستند، بازار هم نفسش را حبس می‌کند.",art:"Gambroon.webp"}};
-function showCity(index){const city=land[index]?.[0],info=cityMeta[city],stage=$("#city-stage");if(!info||!stage)return;stage.classList.add("is-transitioning");setTimeout(()=>stage.classList.remove("is-transitioning"),40);$("#city-art").src="/assets/cities/"+info.art;$("#city-art").alt="فضای داخلی شهر "+city;$("#city-region").textContent=info.region;$("#city-name").textContent=city;$("#city-description").textContent=info.desc;}
+function showCity(index){const city=land[index]?.[0],info=cityMeta[city],stage=$("#city-stage");if(!info||!stage)return;document.body.dataset.city=info.id;const security=Number(land[index]?.[4]||50);document.body.dataset.security=security<40?"low":security<60?"mid":"high";document.body.dataset.region=info.region.includes("خراسان")?"khorasan":info.id==="susa"?"shushtar":info.id==="ray"?"ray":"empire";stage.classList.add("is-transitioning");setTimeout(()=>stage.classList.remove("is-transitioning"),40);$("#city-art").src="/assets/cities/"+info.art;$("#city-art").alt="فضای داخلی شهر "+city;$("#city-region").textContent=info.region;$("#city-name").textContent=city;$("#city-description").textContent=info.desc;}
 function renderOrderIntel(){
  const brief=orderBriefs[S.order]||orderBriefs.attack,node=$("#order-intel");
  if(!node)return;
@@ -47,6 +92,7 @@ function renderIntel(){
  node.innerHTML=rows.length?rows.map(([city,data])=>"<article class='intel-record'><b>"+city+" · راند "+N.format(data.round||0)+"</b><small>مالکیت: "+(data.owner||"نامشخص")+" · قدرت: "+N.format(data.strength||0)+" · اقتصاد: "+N.format(data.economy||0)+" · مشروعیت: "+N.format(data.legitimacy||0)+(data.mutiny?" · شهر ناآرام":"")+" · فرمان مهرشده: "+(data.sealedOrder||"نامشخص")+"</small></article>").join(""):"<p>هنوز پرونده‌ای نداری. وقتی جاسوسی موفق شود، اطلاعات واقعی شهر هدف در این دفتر می‌نشیند.</p>";
 }
 function render(){
+applyHouseAtmosphere();
 renderOrderIntel();renderIntel();
 $("#phase").textContent="راند "+N.format(S.round)+" · "+S.phase;$("#prestige").textContent=N.format(S.prestige);if($("#economy-status"))$("#economy-status").textContent="خزانه: "+N.format(S.silk)+" · نفوذ: "+N.format(S.influence);
 $("#identity-title").textContent=(S.awakened?"سایه بیدار: ":"هویت قفل‌شده: ")+personas[S.p][0].split(" · ")[0]+" خاندان "+factions[S.f][0];
@@ -65,20 +111,23 @@ $("#log").innerHTML=S.logs.map(x=>"<li><small>"+x[0]+"</small>"+x[1]+"</li>").jo
 $("#market").innerHTML=["ابریشم","مس","فرش","گیاهان","زره"].map((x,i)=>"<div class='tile "+(i===0&&S.silk?"active":"")+"'><b>"+x+"</b><br><small>"+(i===0?N.format(S.silk)+" کاشی مالکیت":"سند تجاری قابل مذاکره")+"</small></div>").join("");
 }
 function resolve(){
-let a=land[S.o],t=land[S.t],f=factions[S.f][0],o=S.sealed;
-if(!o){add("هیچ فرمانی مهر نشد؛ راند بدون تغییر پایان یافت.");S.round++;render();return}
-if(o==="attack"){let power=a[1]+(f==="سورن"?2:0),def=t[1];if(power>def){t[2]="تو";t[1]=Math.max(1,power-def);a[1]=Math.max(1,a[1]-1);S.prestige+=3;add(a[0]+" با قدرت "+N.format(power)+"، "+t[0]+" را فتح کرد؛ نتیجه کاملاً قطعی بود.")}else{a[1]=Math.max(1,a[1]-1);S.prestige++;add("حمله به "+t[0]+" شکست خورد؛ یک سپاه فرسوده شد.")}}
-if(o==="defend"){a[1]+=2;S.prestige++;add(a[0]+" فرمان دفاع گرفت؛ دو پادگان مستقر شد.")}
-if(o==="support"){t[1]+=f==="مهران"?2:1;S.prestige++;add("پشتیبانی به "+t[0]+" رسید؛ قدرت آن افزایش یافت.")}
-if(o==="caravan"){t[3]=Math.min(99,t[3]+1);S.silk++;S.prestige++;add("کاروان ابریشم به "+t[0]+" رسید؛ اقتصاد شهر یک واحد رونق گرفت و سند اقتصادی از حاکمیت نظامی جدا ماند.")}
-if(o==="trade"){a[3]=Math.min(99,a[3]+1);S.silk++;S.prestige+=2;add("مذاکره آزاد در "+a[0]+" ثبت شد؛ اقتصاد، سند و اعتبار سیاسی به‌دست آمد.")}
-if(o==="spy"){intel[t[0]]={round:S.round,owner:t[2],strength:t[1],economy:t[3],legitimacy:t[4],mutiny:Boolean(instability[t[0]]),sealedOrder:"نامشخص"};S.influence++;S.prestige++;add("جاسوسی از "+t[0]+" موفق شد؛ قدرت "+N.format(t[1])+" و وضعیت مالکیت برایت آشکار شد و یک نشان نفوذ گرفتی. شهر تصرف نشد.")}
-if(o==="revolt"){if(t[2]==="تو"){add("شورش روی "+t[0]+" اثر نکرد؛ شهر خودی هدف مناسبی برای این فرمان نیست.")}else{instability[t[0]]=(instability[t[0]]||0)+1;t[1]=Math.max(1,t[1]-1);t[3]=Math.max(0,t[3]-2);t[4]=Math.max(0,t[4]-10);t[6]=Math.min(100,t[6]+10);S.influence++;S.prestige+=2;add("شورش در "+t[0]+" شعله‌ور شد؛ یک سپاه، دو واحد اقتصاد و ده واحد مشروعیت از هدف کم شد، شهر ناآرام شد و یک نشان نفوذ گرفتی.")}}
-if(o==="raid"){t[1]=Math.max(1,t[1]-1);t[3]=Math.max(0,t[3]-1);S.silk++;S.prestige++;add("غارت "+t[0]+" موفق بود؛ یک لایه از توان و اقتصاد شهر شکسته شد و یک دارایی به خزانه رسید.")}
-if(o==="sabotage"){t[1]=Math.max(1,t[1]-1);add("خرابکاری در "+t[0]+" ثبت شد؛ قدرت عملیاتی شهر یک واحد پایین آمد.")}
-S.sealed=null;S.round++;S.phase="بازار مکاره و دربار";add("سپیده‌دم پایان یافت؛ بازار برای راند بعد گشوده شد.");render()
+ let a=land[S.o],t=land[S.t],f=factions[S.f][0],o=S.sealed,outcome="neutral";
+ if(!o){add("هیچ فرمانی مهر نشد؛ راند بدون تغییر پایان یافت.");S.round++;sensory("dawn");render();return}
+ if(o==="attack"){let power=a[1]+(f==="سورن"?2:0),def=t[1];if(power>def){t[2]="تو";t[1]=Math.max(1,power-def);a[1]=Math.max(1,a[1]-1);S.prestige+=3;outcome="blood";add(a[0]+" با قدرت "+N.format(power)+"، "+t[0]+" را فتح کرد؛ نتیجه کاملاً قطعی بود.")}else{a[1]=Math.max(1,a[1]-1);S.prestige++;add("حمله به "+t[0]+" شکست خورد؛ یک سپاه فرسوده شد.")}}
+ if(o==="defend"){a[1]+=2;S.prestige++;add(a[0]+" فرمان دفاع گرفت؛ دو پادگان مستقر شد.")}
+ if(o==="support"){t[1]+=f==="مهران"?2:1;S.prestige++;add("پشتیبانی به "+t[0]+" رسید؛ قدرت آن افزایش یافت.")}
+ if(o==="caravan"){t[3]=Math.min(99,t[3]+1);S.silk++;S.prestige++;add("کاروان ابریشم به "+t[0]+" رسید؛ اقتصاد شهر یک واحد رونق گرفت و سند اقتصادی از حاکمیت نظامی جدا ماند.")}
+ if(o==="trade"){a[3]=Math.min(99,a[3]+1);S.silk++;S.prestige+=2;add("مذاکره آزاد در "+a[0]+" ثبت شد؛ اقتصاد، سند و اعتبار سیاسی به‌دست آمد.")}
+ if(o==="spy"){intel[t[0]]={round:S.round,owner:t[2],strength:t[1],economy:t[3],legitimacy:t[4],mutiny:Boolean(instability[t[0]]),sealedOrder:"نامشخص"};S.influence++;S.prestige++;outcome="paranoia";add("جاسوسی از "+t[0]+" موفق شد؛ قدرت "+N.format(t[1])+" و وضعیت مالکیت برایت آشکار شد و یک نشان نفوذ گرفتی. شهر تصرف نشد.")}
+ if(o==="revolt"){if(t[2]==="تو"){add("شورش روی "+t[0]+" اثر نکرد؛ شهر خودی هدف مناسبی برای این فرمان نیست.")}else{instability[t[0]]=(instability[t[0]]||0)+1;t[1]=Math.max(1,t[1]-1);t[3]=Math.max(0,t[3]-2);t[4]=Math.max(0,t[4]-10);t[6]=Math.min(100,t[6]+10);S.influence++;S.prestige+=2;outcome="blood";add("شورش در "+t[0]+" شعله‌ور شد؛ یک سپاه، دو واحد اقتصاد و ده واحد مشروعیت از هدف کم شد، شهر ناآرام شد و یک نشان نفوذ گرفتی.")}}
+ if(o==="raid"){t[1]=Math.max(1,t[1]-1);t[3]=Math.max(0,t[3]-1);S.silk++;S.prestige++;outcome="blood";add("غارت "+t[0]+" موفق بود؛ یک لایه از توان و اقتصاد شهر شکسته شد و یک دارایی به خزانه رسید.")}
+ if(o==="sabotage"){t[1]=Math.max(1,t[1]-1);outcome="blood";add("خرابکاری در "+t[0]+" ثبت شد؛ قدرت عملیاتی شهر یک واحد پایین آمد.")}
+ S.sealed=null;S.round++;S.phase="بازار مکاره و دربار";add("سپیده‌دم پایان یافت؛ بازار برای راند بعد گشوده شد.");
+ if(outcome==="blood")sensory("blood");
+ if(outcome==="paranoia"){sensory("glitch");scrambleIdentity(f)}
+ sensory("dawn");render();
 }
-$("#faction").onchange=e=>{S.f=+e.target.value;render()};$("#persona").onchange=e=>{S.p=+e.target.value;render()};$("#class-action").onclick=()=>{add(classAction()+" آماده شد؛ اثر نهایی در پردهٔ فرمان‌ها ثبت می‌شود.");render()};$("#awaken").onclick=()=>{if(!S.awakened&&S.prestige>=12){S.prestige-=12;S.awakened=true;add("سایه بیدار شد؛ هویت تاریکت هنوز پنهان است.");render()}};$("#orders").onclick=e=>{if(e.target.dataset.order){S.order=e.target.dataset.order;render()}};$("#seal").onclick=()=>{S.sealed=S.order;S.phase="خنجرهای پنهان";add("یک فرمان مهر شد؛ رقیبان فقط سکوت دربار را می‌بینند.");render()};$("#resolve").onclick=resolve;
+$("#faction").onchange=e=>{S.f=+e.target.value;render()};$("#persona").onchange=e=>{S.p=+e.target.value;render()};$("#class-action").onclick=()=>{add(classAction()+" آماده شد؛ اثر نهایی در پردهٔ فرمان‌ها ثبت می‌شود.");render()};$("#awaken").onclick=()=>{if(!S.awakened&&S.prestige>=12){S.prestige-=12;S.awakened=true;add("سایه بیدار شد؛ هویت تاریکت هنوز پنهان است.");render()}};$("#orders").onclick=e=>{if(e.target.dataset.order){S.order=e.target.dataset.order;sensory(S.order==="spy"?"whisper":S.order==="revolt"||S.order==="raid"||S.order==="sabotage"?"rumble":"select");render()}};$("#seal").onclick=()=>{S.sealed=S.order;S.phase="خنجرهای پنهان";add("یک فرمان مهر شد؛ رقیبان فقط سکوت دربار را می‌بینند.");sensory("seal");if(S.order==="spy"||S.order==="revolt")sensory("whisper");render()};$("#resolve").onclick=resolve;
 window.addEventListener("kaykha:identity",e=>{const d=e.detail||{};if(typeof d.prestige==="number")S.prestige=d.prestige;if(typeof d.awakened==="boolean")S.awakened=d.awakened;if(d.persona){const i=personas.findIndex(x=>x[0]===d.persona);if(i>=0){S.p=i;$("#persona").value=i}}if(d.house){const i=factions.findIndex(x=>x[0]===d.house);if(i>=0){S.f=i;$("#faction").value=i}}S.locked=Boolean(d.locked);render()});render()
 })();`);
 };
