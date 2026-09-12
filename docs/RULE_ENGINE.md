@@ -60,6 +60,6 @@
 - 'get_kaykha_hegemony_scores' امتیازهای قابل‌ردیابی پایان بازی را ارائه می‌کند و برای اتصال به mode جدید آماده است.
 
 
-## Phase 5C · Winter Hege­mony
+## Phase 5C · Winter Hegemony
 
 The `winter_hegemony` mode ends at the configured winter round (default: round 8). Victory is decided by composite hegemony: military power, treasury, external wealth from deeds held outside the member's controlled cities, blood contracts, and legitimacy. Ties resolve deterministically by military score, legitimacy, then member id. The online war room exposes the live scoreboard; existing modes retain their prior victory rules.
