@@ -299,6 +299,9 @@ module.exports = function asset(_request, response) {
   async function savePersona() {
     if (state.gameId) await rpc('set_kaykha_persona', { p_game_id: state.gameId, p_persona_key: persona() });
   }
+  function safeReadGame() {
+    return readGame().catch(() => status('اتصال به تالار موقتاً قطع است؛ دوباره تلاش می‌کنیم.', true));
+  }
   async function createLobby() {
     if (userName().length < 2) throw new Error('نام فرمانده را کامل بنویس.');
     const rows = await rpc('create_kaykha_game', { p_display_name: userName(), p_house_id: faction(), p_total_seats: 6, p_mode: ($('#game-mode')?.value || 'hegemony') });
@@ -443,10 +446,10 @@ module.exports = function asset(_request, response) {
       });
     }, true);
     renderIntel();
-    readGame();
-    window.addEventListener('focus', readGame);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) readGame(); });
-    setInterval(() => { if (!document.hidden) readGame(); }, 7000);
+    safeReadGame();
+    window.addEventListener('focus', safeReadGame);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) safeReadGame(); });
+    setInterval(() => { if (!document.hidden) safeReadGame(); }, 7000);
   });
 })();`);
 };
