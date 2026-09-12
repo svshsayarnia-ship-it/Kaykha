@@ -48,7 +48,7 @@ async function proxy(request, response) {
     const html = await upstream.text();
     response.setHeader('content-type', 'text/html; charset=utf-8');
     response.setHeader('cache-control', 'no-store, max-age=0');
-    response.end(html.replace('</head>', '  <script defer src="/guide.js?v=arta-fix-7"></script>\n</head>'));
+    response.end(html.replace('</head>', '  <script defer src="/guide.js?v=arta-fix-7"></script>\n  <script defer src="/game-shell.js?v=integrated-command-1"></script>\n</head>'));
     return;
   }
 
