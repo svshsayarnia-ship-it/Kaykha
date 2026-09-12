@@ -65,9 +65,10 @@ body{background:radial-gradient(circle at 72% 0,#143747 0,#081827 28%,#050b13 68
 
 #kaykha-city-transition{position:fixed;z-index:120;inset:0;display:grid;place-items:center;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 45%,rgba(35,139,132,.22),rgba(3,9,13,.9) 68%);transition:opacity .18s ease}
 #kaykha-city-transition.show{opacity:1}
-#kaykha-city-transition .city-gate{min-width:min(420px,82vw);padding:26px 28px;border:1px solid rgba(200,167,92,.45);background:linear-gradient(145deg,#112d3b,#07131e);box-shadow:0 30px 90px #0009;text-align:center;transform:perspective(700px) rotateX(7deg) scale(.94);transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+#kaykha-city-transition .city-gate{width:min(720px,88vw);padding:14px;border:1px solid rgba(200,167,92,.45);border-radius:22px;background:linear-gradient(145deg,#112d3b,#07131e);box-shadow:0 30px 90px #0009;text-align:center;transform:perspective(700px) rotateX(7deg) scale(.94);transition:transform .35s cubic-bezier(.2,.8,.2,1);overflow:hidden}
 #kaykha-city-transition.show .city-gate{transform:perspective(700px) rotateX(0) scale(1)}
-#kaykha-city-transition small{display:block;color:var(--world-gold);font-size:.7rem;margin-bottom:6px}
+#kaykha-city-transition .city-visual{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:14px;box-shadow:0 12px 35px #0008;margin-bottom:12px}
+#kaykha-city-transition .city-kicker{color:var(--world-gold);font-size:.7rem;margin-bottom:6px}
 #kaykha-city-transition strong{display:block;color:#f5e5b9;font-size:clamp(1.5rem,6vw,2.8rem)}
 
 @media(max-width:959px){
