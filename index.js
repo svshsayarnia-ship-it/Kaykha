@@ -2,6 +2,8 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
+const CITY_ASSET_FALLBACK_ORIGIN = 'https://kaykha-phase5-2hwvemkpj-svshsayarnia-ship-its-projects.vercel.app';
+
 function base64url(value) {
   return Buffer.from(value).toString('base64')
     .replace(/=/g, '')
@@ -119,6 +121,25 @@ async function serveCityAsset(request, response, requestUrl) {
     if (error?.code !== 'ENOENT') {
       console.error(`local city asset load failed for ${fileName}`, error);
     }
+
+    if (error?.code === 'ENOENT') {
+      try {
+        const fallback = await fetch(`${CITY_ASSET_FALLBACK_ORIGIN}/assets/cities/${fileName}`, {
+          method: request.method
+        });
+        if (fallback.ok) {
+          response.statusCode = fallback.status;
+          response.setHeader('content-type', fallback.headers.get('content-type') || 'image/webp');
+          response.setHeader('cache-control', 'public, max-age=31536000, immutable');
+          if (request.method === 'HEAD') response.end();
+          else response.end(Buffer.from(await fallback.arrayBuffer()));
+          return;
+        }
+      } catch (fallbackError) {
+        console.error(`fallback city asset load failed for ${fileName}`, fallbackError);
+      }
+    }
+
     response.statusCode = error?.code === 'ENOENT' ? 404 : 500;
     response.setHeader('content-type', 'text/plain; charset=utf-8');
     response.setHeader('cache-control', 'no-store');
