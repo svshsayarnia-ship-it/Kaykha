@@ -38,7 +38,96 @@ html,body{min-height:100%;background:var(--shell-ink)}body.kaykha-unified{margin
 .persona-portrait .portrait-copy b{display:block;color:#f2d98f;font-size:14px}
 .persona-portrait .portrait-copy small{display:block;color:#b8ccca;font-size:10px;line-height:1.8;margin-top:4px}
 @media(max-width:720px){.city-visual,.city-visual img{min-height:205px;height:205px}.persona-portrait{min-height:92px}}
-</style></style></head><body class="kaykha-unified"><main class="shell"><nav class="shell-nav" aria-label="ناوبری بازی"><div class="shell-sigil">ک</div><button type="button" data-game-view="command" class="active"><span>⌁</span><b>فرماندهی</b></button><button type="button" data-game-view="map"><span>◇</span><b>نقشه</b></button><button type="button" data-game-view="market"><span>◫</span><b>بازار</b></button><button type="button" data-game-view="diwan"><span>☾</span><b>دیوان</b></button><div class="nav-spacer"></div></nav><section class="shell-main"><header class="shell-topbar"><div class="brand-lockup"><small>KAYKHA · COMMAND TABLE</small><h1>میز فرمان کیخا</h1></div><div class="top-state"><span id="phase" class="phase-pill">راند ۱ · بازار مکاره و دربار</span><span id="mode-state" class="mode-pill">تمرین آزاد</span><a class="top-guide" href="/game-guide.html" target="_blank">راهنمای بازی</a></div></header><div class="shell-scroll"><div id="practice-note" class="practice-note"><b>تمرین آزاد فعال است.</b> بدون حساب کاربری چرخهٔ اصلی را یاد می‌گیری؛ نتیجه‌های این حالت محلی هستند.</div>
+
+/* Phase 5 architectural skin: Achaemenid frame, glazed depth, and scene transitions */
+body.kaykha-unified{
+  position:relative;
+  background:
+    radial-gradient(circle at 50% -12%,rgba(226,201,128,.16),transparent 30%),
+    radial-gradient(circle at 82% 8%,#1d5360 0,transparent 28%),
+    linear-gradient(135deg,#07121b 0%,#102b36 48%,#061018 100%) fixed;
+}
+body.kaykha-unified:before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.32;
+  background-image:linear-gradient(rgba(226,201,128,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(226,201,128,.045) 1px,transparent 1px);
+  background-size:34px 34px;mask-image:linear-gradient(to bottom,black,transparent 90%);
+}
+.shell{position:relative;z-index:1}
+.shell-main{position:relative;background:linear-gradient(90deg,rgba(4,11,17,.34),transparent 18%,transparent 82%,rgba(4,11,17,.34))}
+.shell-topbar{
+  position:relative;border-bottom:1px solid rgba(226,201,128,.38);
+  background:linear-gradient(180deg,rgba(15,45,55,.95),rgba(5,17,25,.91));
+  box-shadow:0 12px 30px rgba(0,0,0,.26),inset 0 -1px rgba(226,201,128,.16);
+}
+.shell-topbar:after{
+  content:"";position:absolute;left:24px;right:24px;bottom:-4px;height:7px;
+  border-top:1px solid rgba(226,201,128,.65);border-bottom:1px solid rgba(226,201,128,.22);
+  opacity:.72;pointer-events:none;
+}
+.shell-scroll{position:relative}
+.shell-scroll:before,.shell-scroll:after{
+  content:"";position:fixed;top:86px;bottom:16px;width:10px;pointer-events:none;z-index:4;opacity:.75;
+  border-top:1px solid rgba(226,201,128,.4);border-bottom:1px solid rgba(226,201,128,.35);
+}
+.shell-scroll:before{left:104px;border-left:2px solid rgba(226,201,128,.4)}
+.shell-scroll:after{right:16px;border-right:2px solid rgba(226,201,128,.4)}
+.architectural-frame{position:fixed;inset:0;z-index:6;pointer-events:none}
+.architectural-frame .frame-line{position:absolute;background:linear-gradient(90deg,transparent,rgba(226,201,128,.54),transparent)}
+.architectural-frame .frame-line.top{top:9px;left:42px;right:42px;height:1px}
+.architectural-frame .frame-line.bottom{bottom:9px;left:42px;right:42px;height:1px}
+.architectural-frame .frame-column{
+  position:absolute;top:0;bottom:0;width:25px;opacity:.64;
+  background:linear-gradient(90deg,rgba(226,201,128,.08),rgba(226,201,128,.45) 45%,rgba(226,201,128,.08));
+  border-left:1px solid rgba(226,201,128,.35);border-right:1px solid rgba(226,201,128,.35);
+}
+.architectural-frame .frame-column.left{left:9px}
+.architectural-frame .frame-column.right{right:9px}
+.architectural-frame .frame-column:before{
+  content:"";position:absolute;left:-7px;right:-7px;top:10px;height:13px;
+  border:1px solid rgba(226,201,128,.62);border-radius:3px 3px 1px 1px;
+  background:linear-gradient(180deg,rgba(226,201,128,.48),rgba(120,82,28,.25));
+  box-shadow:0 5px 0 rgba(226,201,128,.12),0 -5px 0 rgba(226,201,128,.1);
+}
+.architectural-frame .frame-column:after{
+  content:"";position:absolute;left:-7px;right:-7px;bottom:10px;height:13px;
+  border:1px solid rgba(226,201,128,.62);border-radius:1px 1px 3px 3px;
+  background:linear-gradient(180deg,rgba(120,82,28,.25),rgba(226,201,128,.48));
+  box-shadow:0 -5px 0 rgba(226,201,128,.12),0 5px 0 rgba(226,201,128,.1);
+}
+.panel,.command-hero,.map-board,.diwan-intro,.rp-card,.market,.city-stage{
+  position:relative;border-radius:5px!important;border-color:rgba(226,201,128,.34)!important;
+  background:
+    linear-gradient(145deg,rgba(28,70,79,.88),rgba(6,18,27,.94))!important;
+  box-shadow:0 16px 40px rgba(0,0,0,.28),inset 0 0 0 1px rgba(255,255,255,.025),inset 0 0 34px rgba(226,201,128,.035)!important;
+}
+.panel:before,.command-hero:before,.map-board:before,.market:before,.city-stage:before{
+  content:"";position:absolute;inset:5px;border:1px solid rgba(226,201,128,.14);pointer-events:none;border-radius:2px;
+}
+.command-hero{overflow:hidden}
+.command-hero:after,.map-board:after{
+  content:"";position:absolute;top:10px;right:22px;width:72px;height:8px;
+  border-top:1px solid rgba(226,201,128,.62);border-bottom:1px solid rgba(226,201,128,.2);
+  opacity:.8;pointer-events:none;
+}
+.view-head h2,.city-copy h3{ text-shadow:0 3px 18px rgba(226,201,128,.18)}
+.game-view{opacity:0;transform:translateY(12px);filter:saturate(.82);pointer-events:none}
+.game-view.active{display:block;pointer-events:auto;animation:kaykhaSceneIn .42s cubic-bezier(.2,.75,.2,1) forwards}
+@keyframes kaykhaSceneIn{to{opacity:1;transform:none;filter:none}}
+.shell-nav button,.top-guide,.phase-pill,.mode-pill,.gold,.red,#territories button{transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease,background .22s ease}
+.shell-nav button:hover,.top-guide:hover{transform:translateY(-2px);border-color:rgba(226,201,128,.7)}
+.gold,.red{box-shadow:0 7px 16px rgba(0,0,0,.2),inset 0 1px rgba(255,255,255,.18)}
+.map-board #territories button.city-card{border-radius:5px!important}
+.city-visual{border-bottom:1px solid rgba(226,201,128,.34)}
+.city-copy{background:linear-gradient(180deg,rgba(12,42,51,.82),rgba(5,17,25,.94))}
+.persona-portrait{border-radius:5px;background:linear-gradient(135deg,rgba(35,100,105,.76),rgba(7,19,29,.96));box-shadow:inset 0 0 26px rgba(226,201,128,.08),0 12px 26px rgba(0,0,0,.25)}
+@media(max-width:720px){
+  .architectural-frame .frame-column{display:none}
+  .architectural-frame .frame-line{left:14px;right:14px}
+  .shell-scroll:before,.shell-scroll:after{display:none}
+  .panel:before,.command-hero:before,.map-board:before,.market:before,.city-stage:before{inset:4px}
+}
+@media(prefers-reduced-motion:reduce){.game-view,.game-view.active{animation:none;transform:none;opacity:1;filter:none}}
+</style></style></head><body class="kaykha-unified"><div class="architectural-frame" aria-hidden="true"><div class="frame-line top"></div><div class="frame-line bottom"></div><div class="frame-column left"></div><div class="frame-column right"></div></div><main class="shell"><nav class="shell-nav" aria-label="ناوبری بازی"><div class="shell-sigil">ک</div><button type="button" data-game-view="command" class="active"><span>⌁</span><b>فرماندهی</b></button><button type="button" data-game-view="map"><span>◇</span><b>نقشه</b></button><button type="button" data-game-view="market"><span>◫</span><b>بازار</b></button><button type="button" data-game-view="diwan"><span>☾</span><b>دیوان</b></button><div class="nav-spacer"></div></nav><section class="shell-main"><header class="shell-topbar"><div class="brand-lockup"><small>KAYKHA · COMMAND TABLE</small><h1>میز فرمان کیخا</h1></div><div class="top-state"><span id="phase" class="phase-pill">راند ۱ · بازار مکاره و دربار</span><span id="mode-state" class="mode-pill">تمرین آزاد</span><a class="top-guide" href="/game-guide.html" target="_blank">راهنمای بازی</a></div></header><div class="shell-scroll"><div id="practice-note" class="practice-note"><b>تمرین آزاد فعال است.</b> بدون حساب کاربری چرخهٔ اصلی را یاد می‌گیری؛ نتیجه‌های این حالت محلی هستند.</div>
 <section class="game-view active" data-view-panel="command"><div class="view-head"><div><small>مرکز تصمیم</small><h2>فرماندهی</h2></div><p>هدف جاری را بفهم، فرمان را مهر کن و نتیجه را در سپیده‌دم ببین.</p></div><section class="command-hero"><div><small>مأموریت جاری</small><h3>یک فرمان معتبر مهر کن و سپیده‌دم را ببین.</h3><p>اول در نقشه مبدأ و هدف را انتخاب کن؛ بعد نوع فرمان را تعیین کن و آن را مهر کن.</p></div><div class="mission-progress"><div class="mission-step"><span>۱</span><div><b>مبدأ و هدف</b><small>از نقشه</small></div></div><div class="mission-step"><span>۲</span><div><b>نوع فرمان</b><small>حمله، دفاع، پشتیبانی…</small></div></div><div class="mission-step"><span>۳</span><div><b>سپیده‌دم</b><small>نتیجه را ببین</small></div></div></div></section><section class="command-grid"><aside class="panel identity-panel"><small>قدرت تو</small><h2>خاندان و چهره</h2><div id="persona-portrait" class="persona-portrait"><div class="portrait-sigil">⚔</div><div class="portrait-copy"><b id="portrait-name">اسپهبد</b><small id="portrait-house">هخامنشیان · پاسدار مرز</small></div></div><select id="faction"></select><article id="faction-card"></article><select id="persona"></select><article id="persona-card"></article><section class="identity-lock"><small id="identity-title">هویت قفل‌نشده</small><div class="prestige-bar"><span id="prestige-fill"></span></div><p>اعتبار: <b id="prestige">۰</b> / ۱۲</p><button id="class-action" class="class-action"></button><select id="copy-role" hidden><option value="">کلاس قابل تقلید</option><option value="اسپهبد">اسپهبد</option><option value="چشم شاه">چشم شاه</option><option value="رئیس‌التجار">رئیس‌التجار</option><option value="دهقان">دهقان</option><option value="مغ اعظم">مغ اعظم</option><option value="عطّار">عطّار</option><option value="قلندر">قلندر</option></select><button id="family-action" class="family-action"></button><select id="family-recipient"><option value="">وارث نهایی: خودم</option></select><p id="family-action-note" class="family-note"></p><button id="awaken" class="awaken">بیداری سایه · ۱۲ اعتبار</button><p id="awakening-state">پس از بیداری، واریانت تاریک پنهان می‌ماند.</p></section></aside><section class="panel command-card"><small>خنجرهای پنهان</small><h2>فرمان این راند</h2><p id="choice">مبدأ ری · هدف اصفهان</p><div id="orders"><button data-order="attack">حمله</button><button data-order="defend">دفاع</button><button data-order="support">پشتیبانی</button><button data-order="caravan">کاروان</button><button data-order="trade">تجارت</button><button data-order="raid">غارت</button><button data-order="sabotage">خرابکاری</button></div><button id="seal" class="gold">مهر کردن فرمان</button><p id="sealed">فرمان تا سپیده‌دم مخفی می‌ماند.</p><button id="resolve" class="red">آشکارسازی و اجرای سپیده‌دم</button></section><aside class="panel event-card"><small>دفتر وقایع</small><h2>نتیجه و علت</h2><ol id="log"></ol></aside></section></section>
 <section class="game-view" data-view-panel="map"><div class="view-head"><div><small>قلمرو</small><h2>نقشهٔ دربار</h2></div><p>مبدأ و هدف فرمان را اینجا انتخاب کن.</p></div><section class="map-stage"><div class="map-board"><div id="territories"></div><section id="city-stage" aria-live="polite"><div class="city-visual"><img id="city-art" alt=""><div class="city-vignette"></div><span id="city-depth">نمای داخلی شهر</span></div><div class="city-copy"><small id="city-region">اقلیم مرکزی</small><h3 id="city-name">ری</h3><p id="city-description">شهر انتخابی‌ات را بزن تا وارد بازارش شوی.</p><button id="audio-toggle" type="button" aria-pressed="false">صدای فضا: خاموش</button></div></section></div><aside class="map-help"><div class="intel-strip"><small>قاعده انتخاب</small><b>یک شهر خودی را مبدأ کن، سپس مقصد را تعیین کن.</b><p>انتخاب‌ها به فرماندهی منتقل می‌شوند.</p></div><button type="button" class="gold" data-jump-command>رفتن به ثبت فرمان</button></aside></section></section>
 <section class="game-view" data-view-panel="market"><div class="view-head"><div><small>اقتصاد آزاد</small><h2>بازار مکاره</h2></div><p>مالکیت اقتصادی از کنترل نظامی جداست.</p></div><section class="panel market"><div class="market-head"><div><small>اسناد و تیمچه</small><h2>مالکیت و درآمد</h2></div><p id="economy-status">خزانه: — · نفوذ: —</p></div><div class="market-toolbar"><select id="market-city"><option value="ری">ری</option><option value="اصفهان">اصفهان</option><option value="نیشابور">نیشابور</option><option value="گرگان">گرگان</option><option value="هگمتانه">هگمتانه</option><option value="مرو">مرو</option><option value="تیسفون">تیسفون</option><option value="هگمتانه">هگمتانه</option><option value="بلخ">بلخ</option><option value="یزد">یزد</option><option value="الموت">الموت</option><option value="تبریز">تبریز</option><option value="شوش">شوش</option><option value="هرمز">هرمز</option><option value="شیراز">شیراز</option><option value="بم">بم</option><option value="زرنج">زرنج</option></select><select id="property-level"><option value="stall">دکان · ۶ سکه</option><option value="merchant_house">حجره · ۱۲ سکه</option><option value="caravanserai">کاروانسرا · ۲۰ سکه</option></select><button id="buy-deed" class="gold">خرید سند</button></div><p id="market-status">شهر را انتخاب کن.</p><div id="market"></div></section></section>
