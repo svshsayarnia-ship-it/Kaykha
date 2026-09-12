@@ -5,12 +5,14 @@ const warRoomHtml = require('./api/war-room-html');
 const warRoomCss = require('./api/war-room-css');
 const warRoomClient = require('./api/war-room-client');
 const kaykhaOnline = require('./api/kaykha-online');
+const gameGuideHtml = require('./api/game-guide-html');
 
 const embeddedAssets = {
   '/war-room.html': { type: 'text/html; charset=utf-8', handler: warRoomHtml },
   '/war-room.css': { type: 'text/css; charset=utf-8', handler: warRoomCss },
   '/war-room.js': { type: 'application/javascript; charset=utf-8', handler: warRoomClient },
-  '/kaykha-online.js': { type: 'application/javascript; charset=utf-8', handler: kaykhaOnline }
+  '/kaykha-online.js': { type: 'application/javascript; charset=utf-8', handler: kaykhaOnline },
+  '/game-guide.html': { type: 'text/html; charset=utf-8', handler: gameGuideHtml }
 };
 
 function scriptPayload(script) {
@@ -68,7 +70,7 @@ async function proxy(request, response) {
     const html = await upstream.text();
     response.setHeader('content-type', 'text/html; charset=utf-8');
     response.setHeader('cache-control', 'no-store, max-age=0');
-    response.end(html.replace('</head>', '  <script defer src="/guide.js?v=arta-fix-7"></script>\n  <script defer src="/game-shell.js?v=integrated-command-1"></script>\n</head>'));
+    response.end(html.replace('</head>', '  <script defer src="/guide.js?v=arta-manual-1"></script>\n  <script defer src="/game-shell.js?v=integrated-command-1"></script>\n</head>'));
     return;
   }
 
