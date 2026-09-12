@@ -192,3 +192,18 @@ grant execute on function public.join_kaykha_game(text,text,text) to authenticat
 grant execute on function public.start_kaykha_game(uuid) to authenticated;
 grant execute on function public.open_kaykha_orders(uuid) to authenticated;
 grant execute on function public.submit_kaykha_order(uuid,text,text,text,jsonb) to authenticated;
+
+create or replace function public.set_kaykha_persona(p_game_id uuid, p_persona_key text)
+returns void language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  if (select auth.uid()) is null then raise exception 'ورود به بازی لازم است'; end if;
+  if char_length(trim(coalesce(p_persona_key,''))) not between 2 and 96 then
+    raise exception 'چهره نامعتبر است';
+  end if;
+  update public.kaykha_members set persona_key = trim(p_persona_key)
+  where game_id = p_game_id and user_id = (select auth.uid()) and not is_ai;
+  if not found then raise exception 'تو عضو این تالار نیستی'; end if;
+end;
+$$;
+revoke all on function public.set_kaykha_persona(uuid,text) from public, anon;
+grant execute on function public.set_kaykha_persona(uuid,text) to authenticated;
