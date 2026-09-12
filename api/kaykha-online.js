@@ -75,6 +75,10 @@ module.exports = function asset(_request, response) {
     const formatter = new Intl.NumberFormat('fa-IR');
     const me = authUserId(token);
     const membership = new Map(members.map(member => [member.id, member]));
+    const self = members.find(member => member.user_id === me);
+    if (self) window.dispatchEvent(new CustomEvent('kaykha:identity', {
+      detail: { house: self.house_id, persona: self.persona_key, prestige: self.prestige, awakened: self.shadow_awakened, locked: Boolean(self.persona_key) }
+    }));
     territories.forEach(territory => {
       const name = Object.keys(CITY).find(city => CITY[city] === territory.territory_id);
       const button = [...document.querySelectorAll('#territories button')]
@@ -105,7 +109,7 @@ module.exports = function asset(_request, response) {
     const [gameResult, territoryResult, memberResult, eventResult] = await Promise.all([
       apiPath('kaykha_games?id=eq.' + id + '&select=code,status,phase,round_no', token),
       apiPath('kaykha_territories?game_id=eq.' + id + '&select=territory_id,owner_member_id,strength,economy', token),
-      apiPath('kaykha_members?game_id=eq.' + id + '&select=id,user_id,display_name', token),
+      apiPath('kaykha_members?game_id=eq.' + id + '&select=id,user_id,display_name,house_id,persona_key,prestige,shadow_awakened', token),
       apiPath('kaykha_events?game_id=eq.' + id + '&select=round_no,tone,body,created_at&order=created_at.desc&limit=12', token)
     ]);
     const games = gameResult.body;
@@ -151,6 +155,18 @@ module.exports = function asset(_request, response) {
     $('#start-lobby')?.addEventListener('click', () => run(() => rpc('start_kaykha_game', { p_game_id: state.gameId })));
     $('#open-orders')?.addEventListener('click', () => run(() => rpc('open_kaykha_orders', { p_game_id: state.gameId })));
     document.addEventListener('click', event => {
+      if (event.target.closest('#awaken') && state.gameId) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        run(async () => {
+          const shadow = await rpc('awaken_kaykha_shadow', { p_game_id: state.gameId });
+          window.dispatchEvent(new CustomEvent('kaykha:identity', {
+            detail: { persona: shadow.persona, prestige: shadow.remaining_prestige, awakened: true, locked: true }
+          }));
+          status('سایه بیدار شد؛ تا نخستین قدرت تاریک، کسی از آن خبر ندارد.');
+        });
+        return;
+      }
       if (event.target.closest('#resolve') && state.gameId) {
         event.preventDefault();
         event.stopImmediatePropagation();
