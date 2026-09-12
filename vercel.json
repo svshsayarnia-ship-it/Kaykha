@@ -3,11 +3,12 @@
   "builds": [
     { "src": "index.js", "use": "@vercel/node" }
   ],
+  "functions": {
+    "index.js": {
+      "includeFiles": "public/assets/cities/*.webp"
+    }
+  },
   "routes": [
-    {
-      "src": "/assets/cities/(.*)",
-      "dest": "https://raw.githubusercontent.com/svshsayarnia-ship-it/Kaykha/main/public/assets/cities/$1"
-    },
     { "src": "/(.*)", "dest": "/index.js" }
   ]
 }
