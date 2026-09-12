@@ -1,28 +1,9 @@
-const fs = require('fs');
-const path = require('path');
-const livekitToken = require('./api/livekit-token');
+const crypto = require('crypto');
 
 const stableOrigin = 'https://kaykha-phase4-2vyue2uug-svshsayarnia-ship-its-projects.vercel.app';
 const commandOrigin = 'https://kaykha-phase4-67719fv7k-svshsayarnia-ship-its-projects.vercel.app';
-const worldShellCss = require('./api/world-shell-css');
-const worldShellJs = require('./api/world-shell-js');
-
-function assetPayload(handler) {
-  let body = '';
-  handler({}, {
-    setHeader() {},
-    status() { return this; },
-    send(value) { body = value; }
-  });
-  return body;
-}
-
-function serveEmbedded(response, type, handler, cache = 'public, max-age=120, s-maxage=120') {
-  response.setHeader('content-type', type);
-  response.setHeader('cache-control', cache);
-  response.statusCode = 200;
-  response.end(assetPayload(handler));
-}
+const fallbackUiOrigin = 'https://kaykha-phase4-33kmfd9tn-svshsayarnia-ship-its-projects.vercel.app';
+const rawRepo = 'https://raw.githubusercontent.com/svshsayarnia-ship-it/Kaykha/main';
 
 function copyUpstreamHeaders(response, upstream, transformed = false) {
   const blocked = new Set(['connection', 'content-encoding', 'transfer-encoding', 'set-cookie']);
@@ -61,6 +42,148 @@ async function pipeUpstream(upstream, response) {
   response.end();
 }
 
+function base64url(value) {
+  return Buffer.from(value).toString('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+}
+
+function signJwt(payload, secret) {
+  const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const body = base64url(JSON.stringify(payload));
+  const unsigned = `${header}.${body}`;
+  const signature = crypto.createHmac('sha256', secret).update(unsigned).digest('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+  return `${unsigned}.${signature}`;
+}
+
+async function readJson(request) {
+  let raw = '';
+  for await (const chunk of request) raw += chunk;
+  return raw ? JSON.parse(raw) : {};
+}
+
+async function livekitToken(request, response) {
+  response.setHeader('content-type', 'application/json; charset=utf-8');
+  response.setHeader('cache-control', 'no-store');
+  response.setHeader('access-control-allow-origin', request.headers?.origin || '*');
+  response.setHeader('access-control-allow-headers', 'content-type');
+  response.setHeader('access-control-allow-methods', 'POST, OPTIONS');
+
+  if (request.method === 'OPTIONS') {
+    response.statusCode = 204;
+    response.end();
+    return;
+  }
+  if (request.method !== 'POST') {
+    response.statusCode = 405;
+    response.end(JSON.stringify({ error: 'POST required' }));
+    return;
+  }
+
+  try {
+    if (!process.env.LIVEKIT_API_KEY || !process.env.LIVEKIT_API_SECRET || !process.env.LIVEKIT_URL) {
+      throw new Error('LiveKit environment is not configured');
+    }
+    const input = await readJson(request);
+    const room = String(input.room || '').trim();
+    const identity = String(input.identity || '').trim();
+    if (!/^[A-Za-z0-9_-]{1,80}$/.test(room) || !/^[A-Za-z0-9_-]{1,80}$/.test(identity)) {
+      response.statusCode = 400;
+      response.end(JSON.stringify({ error: 'Invalid room or identity' }));
+      return;
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const token = signJwt({
+      iss: process.env.LIVEKIT_API_KEY,
+      sub: identity,
+      nbf: now - 10,
+      exp: now + 3600,
+      video: {
+        room,
+        roomJoin: true,
+        canPublish: true,
+        canSubscribe: true,
+        canPublishData: true
+      }
+    }, process.env.LIVEKIT_API_SECRET);
+
+    response.statusCode = 200;
+    response.end(JSON.stringify({ token, url: process.env.LIVEKIT_URL }));
+  } catch (error) {
+    console.error('livekit token failed', error);
+    response.statusCode = 500;
+    response.end(JSON.stringify({ error: 'LiveKit is not configured' }));
+  }
+}
+
+function extractStringRawModule(source) {
+  const marker = 'String.raw`';
+  const start = source.indexOf(marker);
+  const end = source.lastIndexOf('`);');
+  if (start === -1 || end === -1 || end <= start) throw new Error('Invalid embedded asset module');
+  return source.slice(start + marker.length, end);
+}
+
+async function serveRepoModuleAsset(response, repoPath, contentType, fallbackPath) {
+  try {
+    const upstream = await fetch(`${rawRepo}/${repoPath}`, {
+      headers: { accept: 'text/plain,*/*' },
+      cache: 'no-store'
+    });
+    if (!upstream.ok) throw new Error(`GitHub raw ${upstream.status}`);
+    const source = await upstream.text();
+    const payload = extractStringRawModule(source);
+    response.statusCode = 200;
+    response.setHeader('content-type', contentType);
+    response.setHeader('cache-control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400');
+    response.end(payload);
+  } catch (error) {
+    console.error(`repo asset fallback for ${repoPath}`, error);
+    const fallback = await fetch(`${fallbackUiOrigin}${fallbackPath}`);
+    response.statusCode = fallback.status;
+    response.setHeader('content-type', contentType);
+    response.setHeader('cache-control', 'public, max-age=60, s-maxage=300');
+    if (!fallback.body) {
+      response.end();
+      return;
+    }
+    for await (const chunk of fallback.body) response.write(chunk);
+    response.end();
+  }
+}
+
+async function serveCityAsset(request, response, requestUrl) {
+  if (!['GET', 'HEAD'].includes(request.method)) {
+    response.statusCode = 405;
+    response.setHeader('allow', 'GET, HEAD');
+    response.end();
+    return;
+  }
+
+  const fileName = requestUrl.pathname.split('/').pop() || '';
+  if (!/^[A-Za-z0-9_-]+\.webp$/.test(fileName)) {
+    response.statusCode = 404;
+    response.end('Not found');
+    return;
+  }
+
+  const upstream = await fetch(`${rawRepo}/public/assets/cities/${encodeURIComponent(fileName)}`);
+  response.statusCode = upstream.status;
+  response.setHeader('content-type', 'image/webp');
+  response.setHeader('cache-control', 'public, max-age=31536000, immutable');
+  if (!upstream.ok || request.method === 'HEAD' || !upstream.body) {
+    response.end();
+    return;
+  }
+  for await (const chunk of upstream.body) response.write(chunk);
+  response.end();
+}
+
 async function serveRoot(request, response, requestUrl) {
   const upstream = await fetchOrigin(stableOrigin, request, requestUrl);
   response.statusCode = upstream.status;
@@ -72,35 +195,9 @@ async function serveRoot(request, response, requestUrl) {
   }
   const html = await upstream.text();
   const themed = html
-    .replace('</head>', '<link rel="stylesheet" href="/world-shell.css?v=one-world-5"></head>')
-    .replace('</body>', '<script defer src="/world-shell.js?v=one-world-5"></script></body>');
+    .replace('</head>', '<link rel="stylesheet" href="/world-shell.css?v=one-world-6"></head>')
+    .replace('</body>', '<script defer src="/world-shell.js?v=one-world-6"></script></body>');
   response.end(themed);
-}
-
-async function serveCityAsset(request, response, requestUrl) {
-  if (!['GET', 'HEAD'].includes(request.method)) {
-    response.statusCode = 405;
-    response.setHeader('allow', 'GET, HEAD');
-    response.end();
-    return;
-  }
-  const fileName = path.basename(requestUrl.pathname);
-  if (!/^[A-Za-z0-9_-]+\.webp$/.test(fileName)) {
-    response.statusCode = 404;
-    response.end('Not found');
-    return;
-  }
-  try {
-    const filePath = path.join(process.cwd(), 'public', 'assets', 'cities', fileName);
-    const body = fs.readFileSync(filePath);
-    response.statusCode = 200;
-    response.setHeader('content-type', 'image/webp');
-    response.setHeader('cache-control', 'public, max-age=31536000, immutable');
-    response.end(body);
-  } catch (_) {
-    response.statusCode = 404;
-    response.end('Not found');
-  }
 }
 
 async function proxy(request, response) {
@@ -117,12 +214,12 @@ async function proxy(request, response) {
   }
 
   if (requestUrl.pathname === '/world-shell.css') {
-    serveEmbedded(response, 'text/css; charset=utf-8', worldShellCss);
+    await serveRepoModuleAsset(response, 'api/world-shell-css.js', 'text/css; charset=utf-8', '/world-shell.css?v=one-world-2');
     return;
   }
 
   if (requestUrl.pathname === '/world-shell.js') {
-    serveEmbedded(response, 'application/javascript; charset=utf-8', worldShellJs);
+    await serveRepoModuleAsset(response, 'api/world-shell-js.js', 'application/javascript; charset=utf-8', '/world-shell.js?v=one-world-2');
     return;
   }
 
