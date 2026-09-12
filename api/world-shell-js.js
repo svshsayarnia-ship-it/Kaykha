@@ -24,6 +24,10 @@ module.exports = function worldShellJs(_request, response) {
     } catch (_) {}
   }
 
+  function syncShellState() {
+    document.body.classList.toggle('kaykha-in-game', visible($('#bottom-nav')));
+  }
+
   function mountCoach() {
     if ($('#kaykha-world-coach')) return;
     const coach = document.createElement('aside');
@@ -98,6 +102,7 @@ module.exports = function worldShellJs(_request, response) {
   }
 
   function updateCoach(force = false) {
+    syncShellState();
     mountCoach();
     const coach = $('#kaykha-world-coach');
     if (!coach) return;
