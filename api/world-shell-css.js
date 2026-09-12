@@ -18,9 +18,9 @@ body{background:radial-gradient(circle at 72% 0,#143747 0,#081827 28%,#050b13 68
 .btn-teal{background:linear-gradient(180deg,#238b84,#125e5b)!important;border-color:#4ab4ac!important}
 .bottom-nav button.active{color:var(--world-gold-2)!important;background:linear-gradient(180deg,rgba(200,167,92,.12),transparent)!important;border-color:rgba(200,167,92,.3)!important}
 
-/* One World desktop shell: the old mobile footer becomes the same command rail language as /game. */
 @media(min-width:960px){
-  .app-shell{width:100%!important;max-width:none!important;margin:0!important;padding-right:92px;min-height:100dvh}
+  .app-shell{width:100%!important;max-width:none!important;margin:0!important;min-height:100dvh}
+  body.kaykha-in-game .app-shell{padding-right:92px}
   .screen{padding-bottom:28px!important}
   .bottom-nav{position:fixed!important;inset:0 0 0 auto!important;transform:none!important;width:92px!important;height:100dvh!important;grid-template-columns:1fr!important;grid-template-rows:repeat(5,72px)!important;align-content:start!important;gap:8px!important;padding:92px 10px 18px!important;border-top:0!important;border-left:1px solid var(--world-line)!important;background:linear-gradient(180deg,#07131e,#040910)!important;z-index:70!important}
   .bottom-nav button{min-height:66px!important;border-radius:14px!important;gap:5px!important;font-size:.68rem!important}
@@ -49,13 +49,11 @@ body{background:radial-gradient(circle at 72% 0,#143747 0,#081827 28%,#050b13 68
   .modal-sheet{max-width:760px!important;border-radius:24px!important;margin-bottom:18px!important;border-bottom:1px solid var(--world-line)!important}
 }
 
-/* Shared command-table rhythm on tablets and phones. */
 @media(max-width:959px){
   .panel{border-radius:14px!important}
   .bottom-nav{background:rgba(4,10,16,.94)!important;border-top-color:var(--world-line)!important}
 }
 
-/* Contextual coach injected by world-shell.js. */
 #kaykha-world-coach{position:fixed;z-index:85;right:110px;bottom:20px;width:min(360px,calc(100vw - 140px));border:1px solid rgba(200,167,92,.42);border-radius:16px;background:linear-gradient(145deg,rgba(16,43,56,.97),rgba(5,14,22,.98));box-shadow:0 22px 70px rgba(0,0,0,.55);padding:13px 14px;color:var(--world-paper);direction:rtl;display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:start}
 #kaykha-world-coach[hidden]{display:none!important}
 #kaykha-world-coach small{grid-column:1/-1;color:var(--world-gold);font-size:.68rem;font-weight:800;letter-spacing:.05em}
@@ -65,7 +63,6 @@ body{background:radial-gradient(circle at 72% 0,#143747 0,#081827 28%,#050b13 68
 #kaykha-world-coach .coach-go{background:linear-gradient(180deg,#d9bd72,#ad853f);color:#171108;border-color:#e3ca86;font-weight:800}
 .kaykha-coach-focus{outline:2px solid var(--world-gold-2)!important;outline-offset:4px!important;box-shadow:0 0 0 8px rgba(200,167,92,.09)!important}
 
-/* Lightweight 2.5D territory transition: art/content stays data-driven. */
 #kaykha-city-transition{position:fixed;z-index:120;inset:0;display:grid;place-items:center;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 45%,rgba(35,139,132,.22),rgba(3,9,13,.9) 68%);transition:opacity .18s ease}
 #kaykha-city-transition.show{opacity:1}
 #kaykha-city-transition .city-gate{min-width:min(420px,82vw);padding:26px 28px;border:1px solid rgba(200,167,92,.45);background:linear-gradient(145deg,#112d3b,#07131e);box-shadow:0 30px 90px #0009;text-align:center;transform:perspective(700px) rotateX(7deg) scale(.94);transition:transform .35s cubic-bezier(.2,.8,.2,1)}
