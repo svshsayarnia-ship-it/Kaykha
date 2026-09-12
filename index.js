@@ -247,6 +247,16 @@ async function proxy(request, response) {
     return;
   }
 
+  if (requestUrl.pathname === '/war-room.css') {
+    await serveRepoModuleAsset(response, 'api/war-room-css.js', 'text/css; charset=utf-8', '/war-room.css');
+    return;
+  }
+
+  if (requestUrl.pathname === '/war-room.js') {
+    await serveRepoModuleAsset(response, 'api/war-room-client.js', 'application/javascript; charset=utf-8', '/war-room.js');
+    return;
+  }
+
   if (requestUrl.pathname === '/kaykha-online.js') {
     await serveRepoModuleAsset(response, 'api/kaykha-online.js', 'application/javascript; charset=utf-8', '/kaykha-online.js');
     return;
