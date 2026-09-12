@@ -1,10 +1,7 @@
 const crypto = require('crypto');
 
-const stableOrigin = 'https://kaykha-phase4-2vyue2uug-svshsayarnia-ship-its-projects.vercel.app';
-const commandOrigin = 'https://kaykha-phase4-67719fv7k-svshsayarnia-ship-its-projects.vercel.app';
-const fallbackUiOrigin = 'https://kaykha-phase4-33kmfd9tn-svshsayarnia-ship-its-projects.vercel.app';
 const rawRepo = 'https://raw.githubusercontent.com/svshsayarnia-ship-it/Kaykha/main';
-const rawRevision = 'd48b1f11aaf1256ac925e85b2e36d48491578294';
+const rawRevision = 'main';
 
 function copyUpstreamHeaders(response, upstream, transformed = false) {
   const blocked = new Set(['connection', 'content-encoding', 'transfer-encoding', 'set-cookie']);
@@ -144,17 +141,10 @@ async function serveRepoModuleAsset(response, repoPath, contentType, fallbackPat
     response.setHeader('cache-control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400');
     response.end(payload);
   } catch (error) {
-    console.error(`repo asset fallback for ${repoPath}`, error);
-    const fallback = await fetch(`${fallbackUiOrigin}${fallbackPath}`);
-    response.statusCode = fallback.status;
-    response.setHeader('content-type', contentType);
-    response.setHeader('cache-control', 'public, max-age=60, s-maxage=300');
-    if (!fallback.body) {
-      response.end();
-      return;
-    }
-    for await (const chunk of fallback.body) response.write(chunk);
-    response.end();
+    console.error(`repo asset load for ${repoPath}`, error);
+    response.statusCode = 502;
+    response.setHeader('content-type', 'text/plain; charset=utf-8');
+    response.end('Asset unavailable');
   }
 }
 
@@ -185,27 +175,12 @@ async function serveCityAsset(request, response, requestUrl) {
   response.end();
 }
 
-async function serveRoot(request, response, requestUrl) {
-  const originUrl = requestUrl.pathname === '/game'
-    ? new URL('/' + requestUrl.search, 'https://kaykha-phase4.vercel.app')
-    : requestUrl;
-  const upstream = await fetchOrigin(stableOrigin, request, originUrl);
-  response.statusCode = upstream.status;
-  copyUpstreamHeaders(response, upstream, true);
-  response.setHeader('cache-control', 'no-store, max-age=0');
-  if (request.method === 'HEAD' || !upstream.body) {
-    response.end();
-    return;
-  }
-  const html = await upstream.text();
-  const themed = html
-    .replace('</head>', '<link rel="stylesheet" href="/world-shell.css?v=one-world-6"></head>')
-    .replace('</body>', '<script defer src="/world-shell.js?v=one-world-6"></script></body>');
-  response.end(themed);
+async function serveRoot(request, response) {
+  const localWarRoomHtml = require('./api/war-room-html.js');
+  await localWarRoomHtml(request, response);
 }
-
 async function proxy(request, response) {
-  const requestUrl = new URL(request.url || '/', 'https://kaykha-phase4.vercel.app');
+  const requestUrl = new URL(request.url || '/', 'https://kaykha-phase5.vercel.app');
 
   if (requestUrl.pathname === '/api/livekit-token') {
     await livekitToken(request, response);
@@ -272,8 +247,9 @@ async function proxy(request, response) {
     return;
   }
 
-  const upstream = await fetchOrigin(stableOrigin, request, requestUrl);
-  await pipeUpstream(upstream, response);
+  response.statusCode = 404;
+  response.setHeader('content-type', 'text/plain; charset=utf-8');
+  response.end('Not found');
 }
 
 module.exports = async function handler(request, response) {
