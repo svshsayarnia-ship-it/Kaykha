@@ -207,3 +207,75 @@ end;
 $$;
 revoke all on function public.set_kaykha_persona(uuid,text) from public, anon;
 grant execute on function public.set_kaykha_persona(uuid,text) to authenticated;
+
+
+-- Deterministic reveal and resolution. Every outcome is derived from persisted board state.
+create or replace function public.resolve_kaykha_round(p_game_id uuid)
+returns jsonb language plpgsql security definer set search_path = public, app_private, pg_temp as $$
+declare
+  v_game public.kaykha_games%rowtype;
+  v_member_count integer; v_order_count integer; v_power integer; v_defense integer;
+  v_bonus integer; v_outcomes integer := 0; o record;
+begin
+  if (select auth.uid()) is null then raise exception 'ورود به بازی لازم است'; end if;
+  select * into v_game from public.kaykha_games where id = p_game_id for update;
+  if not found then raise exception 'تالار پیدا نشد'; end if;
+  if v_game.host_user_id <> (select auth.uid()) then raise exception 'فقط میزبان می‌تواند سپیده‌دم را اجرا کند'; end if;
+  if v_game.status <> 'active' or v_game.phase <> 'orders' then raise exception 'فرمان‌ها هنوز آمادهٔ آشکارسازی نیستند'; end if;
+  select count(*) into v_member_count from public.kaykha_members where game_id=p_game_id and not is_ai;
+  select count(*) into v_order_count from app_private.kaykha_secret_orders where game_id=p_game_id and round_no=v_game.round_no;
+  if v_order_count < v_member_count then raise exception 'همهٔ فرماندهان هنوز فرمان مهر نکرده‌اند'; end if;
+
+  for o in
+    select so.*,m.house_id from app_private.kaykha_secret_orders so
+    join public.kaykha_members m on m.id=so.member_id
+    where so.game_id=p_game_id and so.round_no=v_game.round_no and so.order_type in ('defend','support','caravan','trade')
+    order by so.order_id
+  loop
+    if o.order_type='defend' then
+      update public.kaykha_territories set strength=least(99,strength+2),revision=revision+1
+      where game_id=p_game_id and territory_id=o.origin_territory_id and owner_member_id=o.member_id;
+      insert into public.kaykha_events(game_id,round_no,tone,body) values(p_game_id,v_game.round_no,'defense','پادگان‌های '||o.origin_territory_id||' آماده شدند؛ دیوار دفاعی تقویت شد.');
+    elsif o.order_type='support' then
+      v_bonus:=case when o.house_id='مهران' then 2 else 1 end;
+      update public.kaykha_territories set strength=least(99,strength+v_bonus),revision=revision+1
+      where game_id=p_game_id and territory_id=o.target_territory_id;
+      insert into public.kaykha_events(game_id,round_no,tone,body) values(p_game_id,v_game.round_no,'support','پشتیبانی به '||o.target_territory_id||' رسید؛ قدرت آن '||v_bonus||' افزایش یافت.');
+    elsif o.order_type='caravan' then
+      update public.kaykha_territories set economy=least(99,economy+1),revision=revision+1 where game_id=p_game_id and territory_id=o.target_territory_id;
+      insert into public.kaykha_events(game_id,round_no,tone,body) values(p_game_id,v_game.round_no,'market','کاروان به '||o.target_territory_id||' رسید؛ رونق بازار افزایش یافت.');
+    else
+      update public.kaykha_territories set economy=least(99,economy+1),revision=revision+1 where game_id=p_game_id and territory_id=o.origin_territory_id and owner_member_id=o.member_id;
+      insert into public.kaykha_events(game_id,round_no,tone,body) values(p_game_id,v_game.round_no,'market','سند تجاری در '||o.origin_territory_id||' ثبت شد؛ اقتصاد شهر رونق گرفت.');
+    end if;
+    v_outcomes:=v_outcomes+1;
+  end loop;
+
+  for o in
+    select so.*,m.house_id from app_private.kaykha_secret_orders so
+    join public.kaykha_members m on m.id=so.member_id
+    where so.game_id=p_game_id and so.round_no=v_game.round_no and so.order_type='attack'
+    order by so.order_id
+  loop
+    select strength+case when o.house_id='سورن' then 2 else 0 end into v_power
+    from public.kaykha_territories where game_id=p_game_id and territory_id=o.origin_territory_id and owner_member_id=o.member_id;
+    select strength into v_defense from public.kaykha_territories where game_id=p_game_id and territory_id=o.target_territory_id;
+    if v_power is null or v_defense is null then continue; end if;
+    if v_power>v_defense then
+      update public.kaykha_territories set owner_member_id=o.member_id,strength=greatest(1,v_power-v_defense),revision=revision+1 where game_id=p_game_id and territory_id=o.target_territory_id;
+      update public.kaykha_territories set strength=greatest(1,strength-1),revision=revision+1 where game_id=p_game_id and territory_id=o.origin_territory_id and owner_member_id=o.member_id;
+      insert into public.kaykha_events(game_id,round_no,tone,body) values(p_game_id,v_game.round_no,'victory',o.origin_territory_id||' با قدرت '||v_power||'، '||o.target_territory_id||' را فتح کرد.');
+    else
+      update public.kaykha_territories set strength=greatest(1,strength-1),revision=revision+1 where game_id=p_game_id and territory_id=o.origin_territory_id and owner_member_id=o.member_id;
+      insert into public.kaykha_events(game_id,round_no,tone,body) values(p_game_id,v_game.round_no,'defeat','حمله از '||o.origin_territory_id||' به '||o.target_territory_id||' با قدرت '||v_power||' در برابر دفاع '||v_defense||' متوقف شد.');
+    end if;
+    v_outcomes:=v_outcomes+1;
+  end loop;
+
+  update public.kaykha_games set phase='negotiation',round_no=round_no+1,updated_at=now() where id=p_game_id;
+  insert into public.kaykha_events(game_id,round_no,tone,body) values(p_game_id,v_game.round_no,'neutral','سپیده‌دم پایان یافت؛ بازار و دربار برای راند بعد گشوده شد.');
+  return jsonb_build_object('resolved_round',v_game.round_no,'next_round',v_game.round_no+1,'outcomes',v_outcomes,'next_phase','negotiation');
+end;
+$$;
+revoke all on function public.resolve_kaykha_round(uuid) from public, anon;
+grant execute on function public.resolve_kaykha_round(uuid) to authenticated;
