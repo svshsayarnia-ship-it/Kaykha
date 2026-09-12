@@ -1,9 +1,10 @@
 const legacyOrigin = 'https://kaykha-phase4-ihkf34ufk-svshsayarnia-ship-its-projects.vercel.app';
 const guide = require('./api/guide');
+const gameShell = require('./api/game-shell');
 
-function guidePayload() {
+function scriptPayload(script) {
   let body = '';
-  guide({}, {
+  script({}, {
     setHeader() {},
     status() { return this; },
     send(value) { body = value; }
@@ -14,11 +15,11 @@ function guidePayload() {
 async function proxy(request, response) {
   const requestUrl = new URL(request.url || '/', 'https://kaykha-phase4.vercel.app');
 
-  if (requestUrl.pathname === '/guide.js') {
+  if (requestUrl.pathname === '/guide.js' || requestUrl.pathname === '/game-shell.js') {
     response.setHeader('content-type', 'application/javascript; charset=utf-8');
     response.setHeader('cache-control', 'public, max-age=300, s-maxage=300');
     response.statusCode = 200;
-    response.end(guidePayload());
+    response.end(scriptPayload(requestUrl.pathname === '/guide.js' ? guide : gameShell));
     return;
   }
 
