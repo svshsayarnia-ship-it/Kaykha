@@ -4,7 +4,7 @@ function base64url(value) {
   return Buffer.from(value).toString('base64')
     .replace(/=/g, '')
     .replace(/\+/g, '-')
-    .replace(/\\//g, '_');
+    .replace(/\//g, '_');
 }
 
 function signJwt(payload, secret) {
@@ -14,7 +14,7 @@ function signJwt(payload, secret) {
   const signature = crypto.createHmac('sha256', secret).update(unsigned).digest('base64')
     .replace(/=/g, '')
     .replace(/\+/g, '-')
-    .replace(/\\//g, '_');
+    .replace(/\//g, '_');
   return unsigned + '.' + signature;
 }
 
