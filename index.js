@@ -244,22 +244,26 @@ async function proxy(request, response) {
   }
 
   if (requestUrl.pathname === '/game' || requestUrl.pathname === '/war-room.html') {
-    await serveRepoModuleAsset(response, 'api/war-room-html.js', 'text/html; charset=utf-8', '/war-room.html');
+    const localWarRoomHtml = require('./api/war-room-html.js');
+    await localWarRoomHtml(request, response);
     return;
   }
 
   if (requestUrl.pathname === '/war-room.css') {
-    await serveRepoModuleAsset(response, 'api/war-room-css.js', 'text/css; charset=utf-8', '/war-room.css');
+    const localWarRoomCss = require('./api/war-room-css.js');
+    await localWarRoomCss(request, response);
     return;
   }
 
   if (requestUrl.pathname === '/war-room.js') {
-    await serveRepoModuleAsset(response, 'api/war-room-client.js', 'application/javascript; charset=utf-8', '/war-room.js');
+    const localWarRoomClient = require('./api/war-room-client.js');
+    await localWarRoomClient(request, response);
     return;
   }
 
   if (requestUrl.pathname === '/kaykha-online.js') {
-    await serveRepoModuleAsset(response, 'api/kaykha-online.js', 'application/javascript; charset=utf-8', '/kaykha-online.js');
+    const localOnlineClient = require('./api/kaykha-online.js');
+    await localOnlineClient(request, response);
     return;
   }
 
