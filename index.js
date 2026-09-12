@@ -1,4 +1,6 @@
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 const rawRepo = 'https://raw.githubusercontent.com/svshsayarnia-ship-it/Kaykha/main';
 const rawRevision = 'a24eb98e84731ca2bc8f312b87f87d1d26541072';
@@ -148,6 +150,17 @@ async function serveRepoModuleAsset(response, repoPath, contentType, fallbackPat
   }
 }
 
+function serveLocalModuleAsset(response, modulePath) {
+  try {
+    require(modulePath)({}, response);
+  } catch (error) {
+    console.error(`local asset load for ${modulePath}`, error);
+    response.statusCode = 500;
+    response.setHeader('content-type', 'text/plain; charset=utf-8');
+    response.end('Asset unavailable');
+  }
+}
+
 async function serveCityAsset(request, response, requestUrl) {
   if (!['GET', 'HEAD'].includes(request.method)) {
     response.statusCode = 405;
@@ -161,6 +174,19 @@ async function serveCityAsset(request, response, requestUrl) {
     response.statusCode = 404;
     response.end('Not found');
     return;
+  }
+
+  const localPath = path.join(__dirname, 'public', 'assets', 'cities', fileName);
+  try {
+    const image = fs.readFileSync(localPath);
+    response.statusCode = 200;
+    response.setHeader('content-type', 'image/webp');
+    response.setHeader('cache-control', 'public, max-age=31536000, immutable');
+    if (request.method === 'HEAD') response.end();
+    else response.end(image);
+    return;
+  } catch (_) {
+    // The hosted bridge can fall back to the canonical repository asset.
   }
 
   const upstream = await fetch(`${rawRepo}/public/assets/cities/${encodeURIComponent(fileName)}?v=${rawRevision}`);
@@ -194,12 +220,12 @@ async function proxy(request, response) {
   }
 
   if (requestUrl.pathname === '/guide.js' || requestUrl.pathname === '/api/guide.js') {
-    await serveRepoModuleAsset(response, 'api/guide.js', 'application/javascript; charset=utf-8', '/guide.js');
+    serveLocalModuleAsset(response, './api/guide.js');
     return;
   }
 
   if (requestUrl.pathname === '/api/game-guide-html.js') {
-    await serveRepoModuleAsset(response, 'api/game-guide-html.js', 'text/html; charset=utf-8', '/api/game-guide-html.js');
+    serveLocalModuleAsset(response, './api/game-guide-html.js');
     return;
   }
 
@@ -209,12 +235,12 @@ async function proxy(request, response) {
   }
 
   if (requestUrl.pathname === '/world-shell.css') {
-    await serveRepoModuleAsset(response, 'api/world-shell-css.js', 'text/css; charset=utf-8', '/world-shell.css?v=one-world-2');
+    serveLocalModuleAsset(response, './api/world-shell-css.js');
     return;
   }
 
   if (requestUrl.pathname === '/world-shell.js') {
-    await serveRepoModuleAsset(response, 'api/world-shell-js.js', 'application/javascript; charset=utf-8', '/world-shell.js?v=one-world-2');
+    serveLocalModuleAsset(response, './api/world-shell-js.js');
     return;
   }
 
