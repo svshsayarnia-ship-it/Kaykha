@@ -234,8 +234,12 @@ async function proxy(request, response) {
   }
 
   if (requestUrl.pathname === '/war-room.html' || requestUrl.pathname === '/game') {
-    const upstream = await fetchOrigin(commandOrigin, request, requestUrl);
-    await pipeUpstream(upstream, response);
+    await serveRepoModuleAsset(response, 'api/war-room-html.js', 'text/html; charset=utf-8', '/war-room.html');
+    return;
+  }
+
+  if (requestUrl.pathname === '/kaykha-online.js') {
+    await serveRepoModuleAsset(response, 'api/kaykha-online.js', 'application/javascript; charset=utf-8', '/kaykha-online.js');
     return;
   }
 
