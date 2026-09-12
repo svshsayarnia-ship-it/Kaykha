@@ -2,46 +2,6 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const rawRepo = 'https://raw.githubusercontent.com/svshsayarnia-ship-it/Kaykha/main';
-const rawRevision = 'a24eb98e84731ca2bc8f312b87f87d1d26541072';
-
-function copyUpstreamHeaders(response, upstream, transformed = false) {
-  const blocked = new Set(['connection', 'content-encoding', 'transfer-encoding', 'set-cookie']);
-  if (transformed) {
-    blocked.add('content-length');
-    blocked.add('etag');
-  }
-  const setCookies = typeof upstream.headers.getSetCookie === 'function' ? upstream.headers.getSetCookie() : [];
-  if (setCookies.length) response.setHeader('set-cookie', setCookies);
-  upstream.headers.forEach((value, name) => {
-    if (!blocked.has(name.toLowerCase())) response.setHeader(name, value);
-  });
-}
-
-async function fetchOrigin(origin, request, requestUrl) {
-  return fetch(`${origin}${requestUrl.pathname}${requestUrl.search}`, {
-    method: request.method,
-    headers: {
-      accept: request.headers.accept || '*/*',
-      ...(request.headers['content-type'] ? { 'content-type': request.headers['content-type'] } : {}),
-      ...(request.headers.authorization ? { authorization: request.headers.authorization } : {}),
-      ...(request.headers.cookie ? { cookie: request.headers.cookie } : {})
-    },
-    ...(['GET', 'HEAD'].includes(request.method) ? {} : { body: request, duplex: 'half' })
-  });
-}
-
-async function pipeUpstream(upstream, response) {
-  response.statusCode = upstream.status;
-  copyUpstreamHeaders(response, upstream, false);
-  if (!upstream.body) {
-    response.end();
-    return;
-  }
-  for await (const chunk of upstream.body) response.write(chunk);
-  response.end();
-}
-
 function base64url(value) {
   return Buffer.from(value).toString('base64')
     .replace(/=/g, '')
@@ -121,35 +81,6 @@ async function livekitToken(request, response) {
   }
 }
 
-function extractStringRawModule(source) {
-  const marker = 'String.raw`';
-  const start = source.indexOf(marker);
-  const end = source.lastIndexOf('`);');
-  if (start === -1 || end === -1 || end <= start) throw new Error('Invalid embedded asset module');
-  return source.slice(start + marker.length, end);
-}
-
-async function serveRepoModuleAsset(response, repoPath, contentType, fallbackPath) {
-  try {
-    const upstream = await fetch(`${rawRepo}/${repoPath}?v=${rawRevision}`, {
-      headers: { accept: 'text/plain,*/*' },
-      cache: 'no-store'
-    });
-    if (!upstream.ok) throw new Error(`GitHub raw ${upstream.status}`);
-    const source = await upstream.text();
-    const payload = extractStringRawModule(source);
-    response.statusCode = 200;
-    response.setHeader('content-type', contentType);
-    response.setHeader('cache-control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400');
-    response.end(payload);
-  } catch (error) {
-    console.error(`repo asset load for ${repoPath}`, error);
-    response.statusCode = 502;
-    response.setHeader('content-type', 'text/plain; charset=utf-8');
-    response.end('Asset unavailable');
-  }
-}
-
 function serveLocalModuleAsset(response, modulePath) {
   try {
     require(modulePath)({}, response);
@@ -170,7 +101,7 @@ async function serveCityAsset(request, response, requestUrl) {
   }
 
   const fileName = requestUrl.pathname.split('/').pop() || '';
-  if (!/^[A-Za-z0-9_-]+\.webp$/.test(fileName)) {
+  if (!/^[A-Za-z0-9_-]+\\.webp$/.test(fileName)) {
     response.statusCode = 404;
     response.end('Not found');
     return;
@@ -178,29 +109,23 @@ async function serveCityAsset(request, response, requestUrl) {
 
   const localPath = path.join(__dirname, 'public', 'assets', 'cities', fileName);
   try {
-    const image = fs.readFileSync(localPath);
+    const image = await fs.promises.readFile(localPath);
     response.statusCode = 200;
     response.setHeader('content-type', 'image/webp');
     response.setHeader('cache-control', 'public, max-age=31536000, immutable');
     if (request.method === 'HEAD') response.end();
     else response.end(image);
-    return;
-  } catch (_) {
-    // The hosted bridge can fall back to the canonical repository asset.
+  } catch (error) {
+    if (error?.code !== 'ENOENT') {
+      console.error(`local city asset load failed for ${fileName}`, error);
+    }
+    response.statusCode = error?.code === 'ENOENT' ? 404 : 500;
+    response.setHeader('content-type', 'text/plain; charset=utf-8');
+    response.setHeader('cache-control', 'no-store');
+    if (request.method === 'HEAD') response.end();
+    else response.end(response.statusCode === 404 ? 'Not found' : 'Asset unavailable');
   }
-
-  const upstream = await fetch(`${rawRepo}/public/assets/cities/${encodeURIComponent(fileName)}?v=${rawRevision}`);
-  response.statusCode = upstream.status;
-  response.setHeader('content-type', 'image/webp');
-  response.setHeader('cache-control', 'public, max-age=31536000, immutable');
-  if (!upstream.ok || request.method === 'HEAD' || !upstream.body) {
-    response.end();
-    return;
-  }
-  for await (const chunk of upstream.body) response.write(chunk);
-  response.end();
 }
-
 async function serveRoot(request, response) {
   const localWarRoomHtml = require('./api/war-room-html.js');
   await localWarRoomHtml(request, response);
