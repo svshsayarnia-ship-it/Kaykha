@@ -6,7 +6,7 @@ module.exports = function asset(_request, response) {
   const KEY = 'sb_publishable_KIuxWr99zocUh2EBiXkQaQ_LB9PD8Wv';
   const CITY = { 'ری':'ray', 'تیسفون':'ctesiphon', 'اصفهان':'isfahan', 'هگمتانه':'hegmataneh', 'نیشابور':'nishapur', 'مرو':'merv', 'بلخ':'balkh', 'یزد':'yazd', 'الموت':'alamut', 'گرگان':'gorgan', 'تبریز':'tabriz', 'شوش':'susa', 'هرمز':'hormuz', 'شیراز':'shiraz', 'بم':'bam', 'زرنج':'zaranj', 'گمبرون':'gambroon' };
   const storageKey = 'kaykha.active-game-id';
-  const state = { gameId: localStorage.getItem(storageKey) || null, me: null, members: [], market: null, selectedTile: null };
+  const state = { gameId: localStorage.getItem(storageKey) || null, me: null, members: [], market: null, selectedTile: null, creditProfiles: [], loans: [], shadowRole: null };
   const $ = s => document.querySelector(s);
 
   function tokenFrom(value, depth = 0) {
@@ -77,7 +77,7 @@ module.exports = function asset(_request, response) {
     const membership = new Map(members.map(member => [member.id, member]));
     const self = members.find(member => member.user_id === me); state.me = self || null; state.members = members;
     if (self) window.dispatchEvent(new CustomEvent('kaykha:identity', {
-      detail: { house: self.house_id, persona: self.persona_key, prestige: self.prestige, awakened: self.shadow_awakened, locked: Boolean(self.persona_key) }
+      detail: { house: self.house_id, persona: self.persona_key, prestige: self.prestige, awakened: self.shadow_awakened, locked: Boolean(self.persona_key), reputation: self.reputation_score, creditLimit: self.credit_limit }
     }));
     territories.forEach(territory => {
       const name = Object.keys(CITY).find(city => CITY[city] === territory.territory_id);
@@ -123,14 +123,57 @@ module.exports = function asset(_request, response) {
     if (statusLine) statusLine.textContent = city + ' · ' + (state.selectedTile ? 'محلهٔ انتخابی: ' + state.selectedTile : 'یکی از چهار محله را انتخاب کن.');
     const economy = $('#economy-status');
     if (economy && state.me) economy.textContent = 'خزانه: '+new Intl.NumberFormat('fa-IR').format(state.me.coins || 0)+' سکه · نفوذ: '+new Intl.NumberFormat('fa-IR').format(state.me.influence_tokens || 0);
+    const memberOptions = state.members.filter(member => member.id !== state.me?.id).map(member => '<option value="'+esc(member.id)+'">'+esc(member.display_name || 'فرمانده')+'</option>').join('') || '<option value="">فرماندهٔ دیگری نیست</option>';
     const memberSelect = $('#contract-member');
-    if (memberSelect) memberSelect.innerHTML = state.members.filter(member => member.id !== state.me?.id).map(member => '<option value="'+esc(member.id)+'">'+esc(member.display_name || 'فرمانده')+'</option>').join('') || '<option value="">فرماندهٔ دیگری نیست</option>';
+    if (memberSelect) memberSelect.innerHTML = memberOptions;
+    const loanMember = $('#loan-member');
+    if (loanMember) loanMember.innerHTML = memberOptions;
     const board = $('#bounty-board');
     if (board) board.innerHTML = (data?.bounties || []).map(bounty => '<p class="'+(bounty.status === 'open' ? 'pulse' : '')+'"><b>'+esc(bounty.bounty_type)+' · '+esc(bounty.target_territory_id)+'</b><br>'+new Intl.NumberFormat('fa-IR').format(bounty.reward_coins)+' سکه · '+esc(bounty.status)+(bounty.status === 'open' ? '<button data-claim-bounty="'+esc(bounty.id)+'">برداشتن قرارداد</button>' : '')+'</p>').join('') || '<p>دیوار خون فعلاً ساکت است.</p>';
     const whispers = $('#whisper-feed');
     if (whispers) whispers.innerHTML = (data?.whispers || []).map(whisper => '<p><b>[نجوای ناشناس]</b><br>'+esc(whisper.body)+'</p>').join('') || '<p>هنوز نجوايی نرسیده.</p>';
     const contracts = $('#contract-list');
     if (contracts) contracts.innerHTML = (data?.contracts || []).map(contract => '<p><b>'+esc(contractName[contract.contract_type] || contract.contract_type)+'</b> · '+esc(contract.status)+(contract.due_round ? ' · موعد راند '+new Intl.NumberFormat('fa-IR').format(contract.due_round) : '')+'</p>').join('') || '<p>پیمانی در دفتر تو ثبت نشده است.</p>';
+    renderCredit();
+  }
+  function renderCredit() {
+    const formatter = new Intl.NumberFormat('fa-IR');
+    const own = state.creditProfiles.find(profile => profile.member_id === state.me?.id);
+    const summary = $('#credit-summary');
+    if (summary) {
+      summary.innerHTML = own ? '<b>اعتبار: '+formatter.format(own.reputation_score)+'/۱۰۰</b><br><small>سقف وام: '+formatter.format(own.credit_limit)+' · بدهی فعال: '+formatter.format(own.active_debt || 0)+(own.blacklist_until_round ? ' · سیاهه تا راند '+formatter.format(own.blacklist_until_round) : '')+'</small>' : '<small>دفتر اعتبار پس از اتصال به تالار خوانده می‌شود.</small>';
+    }
+    const role = $('#shadow-role');
+    if (role) {
+      const names = {banker:'بانکدار آهنین',logist:'ارباب کاروان‌ها',whisperer:'فروشنده اسرار'};
+      role.textContent = state.shadowRole?.role_key ? (names[state.shadowRole.role_key] || state.shadowRole.role_key) : 'نقش سایه هنوز به تو واگذار نشده یا پنهان است.';
+    }
+    const list = $('#loan-list');
+    if (list) list.innerHTML = state.loans.map(loan => {
+      const borrower = state.members.find(member => member.id === loan.borrower_member_id)?.display_name || 'وام‌گیرنده';
+      const lender = state.members.find(member => member.id === loan.lender_member_id)?.display_name || 'وام‌دهنده';
+      const action = loan.status === 'active' && loan.borrower_member_id === state.me?.id ? '<button data-settle-loan="'+esc(loan.id)+'">تسویه</button>' : '';
+      return '<p><b>'+formatter.format(loan.principal)+' سکه</b> · '+esc(loan.status)+' · موعد '+formatter.format(loan.due_round)+'<br><small>'+esc(lender)+' ← '+esc(borrower)+' · وثیقه: '+esc(loan.collateral_type)+'</small> '+action+'</p>';
+    }).join('') || '<p>هنوز وام فعالی در دفتر آهنین نیست.</p>';
+  }
+  async function readCredit() {
+    if (!state.gameId || !state.me) return;
+    try {
+      const token = accessToken();
+      const id = encodeURIComponent(state.gameId);
+      const [profile, loans] = await Promise.all([
+        rpc('get_kaykha_credit_profile', { p_game_id: state.gameId }),
+        apiPath('kaykha_loans?game_id=eq.' + id + '&select=id,lender_member_id,borrower_member_id,principal,interest_coins,collateral_type,due_round,status&order=created_at.desc', token)
+      ]);
+      state.creditProfiles = Array.isArray(profile) ? profile : [];
+      state.loans = loans.ok ? loans.body : [];
+      const shadow = await rpc('get_kaykha_shadow_role', { p_game_id: state.gameId });
+      state.shadowRole = Array.isArray(shadow) ? shadow[0] || null : null;
+      renderCredit();
+    } catch (error) {
+      const summary = $('#credit-summary');
+      if (summary) summary.innerHTML = '<small>دفتر اعتبار موقتاً قابل خواندن نیست.</small>';
+    }
   }
   function actionMessage(result) {
     const intel = result && result.intelligence;
@@ -153,7 +196,7 @@ module.exports = function asset(_request, response) {
     const [gameResult, territoryResult, memberResult, eventResult] = await Promise.all([
       apiPath('kaykha_games?id=eq.' + id + '&select=code,status,phase,round_no,mode', token),
       apiPath('kaykha_territories?game_id=eq.' + id + '&select=territory_id,owner_member_id,strength,economy', token),
-      apiPath('kaykha_members?game_id=eq.' + id + '&select=id,user_id,display_name,house_id,persona_key,prestige,shadow_awakened,coins,influence_tokens', token),
+      apiPath('kaykha_members?game_id=eq.' + id + '&select=id,user_id,display_name,house_id,persona_key,prestige,shadow_awakened,coins,influence_tokens,reputation_score,credit_limit,blacklist_until_round', token),
       apiPath('kaykha_events?game_id=eq.' + id + '&select=round_no,tone,body,created_at&order=created_at.desc&limit=12', token)
     ]);
     const games = gameResult.body;
@@ -166,7 +209,7 @@ module.exports = function asset(_request, response) {
     const phase = $('#phase');
     if (phase) phase.textContent = 'راند ' + new Intl.NumberFormat('fa-IR').format(game.round_no) + ' · ' + phaseName(game.phase);
     if (territoryResult.ok && memberResult.ok && eventResult.ok) {
-      hydrateBoard(territoryResult.body, memberResult.body, eventResult.body, token); await readMarket();
+      hydrateBoard(territoryResult.body, memberResult.body, eventResult.body, token); await Promise.all([readMarket(), readCredit()]);
     }
   }
   async function savePersona() {
@@ -252,8 +295,24 @@ module.exports = function asset(_request, response) {
         event.preventDefault(); event.stopImmediatePropagation();
         const type = $('#contract-type')?.value || 'treaty';
         const amount = Number($('#contract-amount')?.value || 8);
-        const terms = type === 'joint_venture' ? {creator_share:60,counterparty_share:40} : type === 'debt' ? {amount:amount,interest:2,duration_rounds:1} : {};
+        const level = $('#contract-level')?.value || 'sealed';
+        const terms = type === 'joint_venture' ? {creator_share:60,counterparty_share:40,contract_level:level} : type === 'debt' ? {amount:amount,interest:2,duration_rounds:1,contract_level:level} : {contract_level:level};
         run(() => rpc('create_kaykha_contract', { p_game_id: state.gameId, p_contract_type: type, p_counterparty_member_id: $('#contract-member')?.value || null, p_terms: terms }));
+        return;
+      }
+      if (event.target.closest('#create-loan') && state.gameId) {
+        event.preventDefault(); event.stopImmediatePropagation();
+        const choice = $('#choice')?.textContent || '';
+        const cities = Object.keys(CITY).filter(city => choice.includes(city));
+        const collateralType = $('#loan-collateral')?.value || 'income';
+        const collateralRef = collateralType === 'territory' ? { territory_id: CITY[cities[1] || cities[0] || 'ری'] } : {};
+        run(() => rpc('create_kaykha_loan', { p_game_id: state.gameId, p_borrower_member_id: $('#loan-member')?.value || null, p_principal: Number($('#loan-principal')?.value || 1), p_interest_coins: Number($('#loan-interest')?.value || 0), p_due_round: Number($('#loan-due')?.value || 0) || null, p_collateral_type: collateralType, p_collateral_ref: collateralRef }));
+        return;
+      }
+      const settle = event.target.closest('[data-settle-loan]');
+      if (settle && state.gameId) {
+        event.preventDefault(); event.stopImmediatePropagation();
+        run(() => rpc('settle_kaykha_loan', { p_loan_id: settle.dataset.settleLoan }));
         return;
       }
       const marketTile = event.target.closest('[data-market-position]');
