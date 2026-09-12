@@ -208,7 +208,13 @@ async function proxy(request, response) {
     return;
   }
 
-  if (requestUrl.pathname === '/game-guide.html') {\n    const localGameGuide = require('./api/game-guide-html.js');\n    await localGameGuide(request, response);\n    return;\n  }\n\n  if (requestUrl.pathname === '/guide.js' || requestUrl.pathname === '/api/guide.js') {
+  if (requestUrl.pathname === '/game-guide.html') {
+    const localGameGuide = require('./api/game-guide-html.js');
+    await localGameGuide(request, response);
+    return;
+  }
+
+  if (requestUrl.pathname === '/guide.js' || requestUrl.pathname === '/api/guide.js') {
     await serveRepoModuleAsset(response, 'api/guide.js', 'application/javascript; charset=utf-8', '/guide.js');
     return;
   }
