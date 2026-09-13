@@ -270,7 +270,7 @@ async function proxy(request, response) {
   }
 
   if (requestUrl.pathname === '/kaykha-online.js') {
-    const localOnlineClient = require('./api/kaykha-online.js');
+    const localOnlineClient = require('./api/kaykha-online-fixed.js');
     await localOnlineClient(request, response);
     return;
   }
