@@ -1,7 +1,7 @@
 module.exports = function referenceSkin(_request, response) {
   response.setHeader('content-type', 'text/css; charset=utf-8');
   response.setHeader('cache-control', 'public, max-age=300, s-maxage=300');
-  response.status(200).send(String.raw\`
+  response.status(200).send(String.raw`
 :root{
   --kk-night:#090807;--kk-walnut:#24140d;--kk-walnut-2:#4b2b18;
   --kk-bronze:#8d642f;--kk-gold:#d4ab66;--kk-gold-light:#f0d896;
@@ -288,5 +288,5 @@ select,input,textarea{
   .city-copy{padding:16px!important}.view-head h2{font-size:26px!important}
 }
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
-\`);
+`);
 };
