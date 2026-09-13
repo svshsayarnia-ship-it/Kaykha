@@ -172,7 +172,7 @@ async function proxy(request, response) {
   }
 
   if (requestUrl.pathname === '/command-reference.js') {
-    serveLocalModuleAsset(response, './api/command-reference.js');
+    serveLocalModuleAsset(response, './api/command-reference-live.js');
     return;
   }
 
