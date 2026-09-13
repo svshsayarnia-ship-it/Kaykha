@@ -19,6 +19,7 @@
     view.querySelector('.academy-research').addEventListener('click',()=>{if(!selected)return;const node=view.querySelector('[data-faculty="'+selected+'"]');node.classList.add('complete');node.classList.remove('focus');view.querySelector('.academy-research').disabled=true;view.querySelector('.academy-research').textContent='پژوهش قفل شد · بلور روشن است';window.kaykhaSound?.play?.('seal');});
     button.addEventListener('click',()=>{document.querySelectorAll('[data-game-view]').forEach(b=>b.classList.toggle('active',b===button));document.querySelectorAll('[data-view-panel]').forEach(p=>p.classList.toggle('active',p===view));main.scrollTo({top:0,behavior:'smooth'});});
   }
-  document.readyState==='loading'?document.addEventListener('DOMContentLoaded',build):build();
+  if(document.querySelector('.shell-nav')&&document.querySelector('.shell-scroll')) build();
+  else document.addEventListener('DOMContentLoaded',build,{once:true});
 })();
 // Architecture source: Keykha Academy of Sciences specification, revision 2026-09-13.
