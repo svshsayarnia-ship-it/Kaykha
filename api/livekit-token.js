@@ -18,6 +18,14 @@ function signJwt(payload, secret) {
   return unsigned + '.' + signature;
 }
 
+function cleanEnv(value) {
+  const trimmed = String(value || '').trim();
+  if (trimmed.length >= 2 && ((trimmed[0] === '"' && trimmed.at(-1) === '"') || (trimmed[0] === "'" && trimmed.at(-1) === "'"))) {
+    return trimmed.slice(1, -1).trim();
+  }
+  return trimmed;
+}
+
 async function readJson(request) {
   let raw = '';
   for await (const chunk of request) raw += chunk;
@@ -43,7 +51,10 @@ module.exports = async function livekitToken(request, response) {
   }
 
   try {
-    if (!process.env.LIVEKIT_API_KEY || !process.env.LIVEKIT_API_SECRET || !process.env.LIVEKIT_URL) {
+    const apiKey = cleanEnv(process.env.LIVEKIT_API_KEY);
+    const apiSecret = cleanEnv(process.env.LIVEKIT_API_SECRET);
+    const livekitUrl = cleanEnv(process.env.LIVEKIT_URL).replace(/^https:/i, 'wss:').replace(/^http:/i, 'ws:');
+    if (!apiKey || !apiSecret || !livekitUrl) {
       throw new Error('LiveKit environment is not configured');
     }
     const input = await readJson(request);
@@ -57,7 +68,7 @@ module.exports = async function livekitToken(request, response) {
 
     const now = Math.floor(Date.now() / 1000);
     const token = signJwt({
-      iss: process.env.LIVEKIT_API_KEY,
+      iss: apiKey,
       sub: identity,
       nbf: now - 10,
       exp: now + 3600,
@@ -68,10 +79,10 @@ module.exports = async function livekitToken(request, response) {
         canSubscribe: true,
         canPublishData: true
       }
-    }, process.env.LIVEKIT_API_SECRET);
+    }, apiSecret);
 
     response.statusCode = 200;
-    response.end(JSON.stringify({ token, url: process.env.LIVEKIT_URL }));
+    response.end(JSON.stringify({ token, url: livekitUrl }));
   } catch (error) {
     console.error('livekit token failed', error);
     response.statusCode = 500;
