@@ -18,9 +18,10 @@ module.exports = function asset(request, response) {
   const bootstrap = String.raw`
 ;(()=>{
   try {
-    const MIGRATION='kaykha.simple-hall-v1';
+    const MIGRATION='kaykha.simple-hall-v2';
     if(localStorage.getItem(MIGRATION)!=='1'){
       localStorage.removeItem('kaykha.account-session');
+      localStorage.removeItem('kaykha.guest-session');
       localStorage.removeItem('kaykha.active-game-id');
       localStorage.setItem(MIGRATION,'1');
     }
@@ -83,11 +84,8 @@ module.exports = function asset(request, response) {
       body:'{}'
     });
     const data=await response.json().catch(()=>({}));
-    if(!response.ok||!data?.session?.access_token){
-      throw new Error(data?.error||'اتصال سریع تالار آماده نشد.');
-    }
+    if(!response.ok||!data?.session?.access_token)throw new Error(data?.error||'اتصال سریع تالار آماده نشد.');
     localStorage.removeItem(ACCOUNT_KEY);
-    localStorage.removeItem(GAME_KEY);
     saveGuest(data.session);
     return data.session;
   }
@@ -98,13 +96,10 @@ module.exports = function asset(request, response) {
     sessionPromise=(async()=>{
       const saved=parseStored(GUEST_KEY);
       if(saved?.refresh_token){
-        try{
-          const refreshed=await refreshGuest(saved);
-          return refreshed.access_token;
-        }catch(_){localStorage.removeItem(GUEST_KEY);}
+        try{return (await refreshGuest(saved)).access_token;}
+        catch(_){localStorage.removeItem(GUEST_KEY);}
       }
-      const session=await mintGuest();
-      return session.access_token;
+      return (await mintGuest()).access_token;
     })();
     try{return await sessionPromise;}finally{sessionPromise=null;}
   }
@@ -127,7 +122,7 @@ module.exports = function asset(request, response) {
     const hint=document.createElement('p');
     hint.id='simple-hall-hint';
     hint.style.cssText='margin:.15rem 0 .65rem;color:#a9babb;font-size:10px;line-height:1.8';
-    hint.textContent='بدون ثبت‌نام: نام فرمانده را بنویس؛ برای ساخت تالار دکمه «ساخت تالار» را بزن، یا کد ۶ کاراکتری دوستت را وارد کن و «ورود» را بزن.';
+    hint.textContent='بدون ثبت‌نام: نام فرمانده را بنویس؛ «ساخت تالار» را بزن، یا کد ۶ کاراکتری دوستت را وارد کن و «ورود» را بزن.';
     commander.insertAdjacentElement('beforebegin',hint);
   }
   function ensureCodeBox(){
@@ -137,8 +132,7 @@ module.exports = function asset(request, response) {
     if(!anchor)return null;
     box=document.createElement('div');
     box.id='lobby-code-display';
-    box.hidden=true;
-    box.style.cssText='margin:.7rem 0;padding:.75rem .85rem;border:1px solid rgba(200,167,92,.48);border-radius:12px;background:rgba(200,167,92,.08);display:flex;align-items:center;justify-content:space-between;gap:.7rem;flex-wrap:wrap';
+    box.style.cssText='display:none;margin:.7rem 0;padding:.75rem .85rem;border:1px solid rgba(200,167,92,.48);border-radius:12px;background:rgba(200,167,92,.08);align-items:center;justify-content:space-between;gap:.7rem;flex-wrap:wrap';
     box.innerHTML='<div><small style="display:block;color:#aab8b7">کد تالار</small><strong id="lobby-code-value" style="font-size:1.35rem;letter-spacing:.16em;color:#f0d58e">——</strong></div><button type="button" id="copy-lobby-code" style="min-height:2.2rem">کپی کد</button>';
     anchor.insertAdjacentElement('afterend',box);
     return box;
@@ -149,14 +143,22 @@ module.exports = function asset(request, response) {
     const box=ensureCodeBox();
     const value=$('#lobby-code-value');
     if(value)value.textContent=clean;
-    if(box)box.hidden=false;
+    if(box)box.style.display='flex';
     const input=$('#lobby-code');
     if(input)input.value=clean;
     if(message)status(message,false);
   }
+  function syncLobbyControls(){
+    const active=Boolean(localStorage.getItem(GAME_KEY));
+    const start=$('#start-lobby');
+    const orders=$('#open-orders');
+    if(start)start.disabled=!active;
+    if(orders)orders.disabled=!active;
+  }
   async function recoverLobbyCode(kind='create'){
     const gameId=localStorage.getItem(GAME_KEY);
     const token=guestToken();
+    syncLobbyControls();
     if(!gameId||!token)return null;
     const response=await fetch(URL+'/rest/v1/kaykha_games?id=eq.'+encodeURIComponent(gameId)+'&select=code,status,phase,round_no',{
       headers:{apikey:KEY,Authorization:'Bearer '+token}
@@ -168,7 +170,6 @@ module.exports = function asset(request, response) {
     return code;
   }
   async function prepareAndReplay(button,kind){
-    if(button.dataset.kaykhaReplay==='1'){delete button.dataset.kaykhaReplay;return;}
     button.disabled=true;
     status('در حال اتصال سریع به تالار…');
     try{
@@ -177,7 +178,7 @@ module.exports = function asset(request, response) {
       button.dataset.kaykhaReplay='1';
       button.disabled=false;
       button.click();
-      setTimeout(()=>recoverLobbyCode(kind).catch(()=>{}),700);
+      setTimeout(()=>recoverLobbyCode(kind).catch(()=>{}),800);
     }catch(error){
       button.disabled=false;
       status(error?.message||'اتصال تالار برقرار نشد؛ دوباره تلاش کن.',true);
@@ -188,11 +189,12 @@ module.exports = function asset(request, response) {
     ensureHint();
     ensureCodeBox();
     ensureIdentityDefaults();
+    syncLobbyControls();
     status('نام فرمانده را بنویس؛ تالار بساز یا با کد وارد شو.');
     ensureGuest().then(()=>{
       if(!localStorage.getItem(GAME_KEY))status('آماده‌ای؛ تالار بساز یا کد تالار را وارد کن.');
     }).catch(()=>{
-      status('برای ورود، دکمه «ساخت تالار» یا «ورود» را بزن؛ اتصال خودکار انجام می‌شود.');
+      status('برای ورود، «ساخت تالار» یا «ورود» را بزن؛ اتصال خودکار انجام می‌شود.');
     });
   }
 
@@ -211,7 +213,7 @@ module.exports = function asset(request, response) {
     if(button.dataset.kaykhaReplay==='1'){
       delete button.dataset.kaykhaReplay;
       ensureIdentityDefaults();
-      setTimeout(()=>recoverLobbyCode(kind).catch(()=>{}),700);
+      setTimeout(()=>recoverLobbyCode(kind).catch(()=>{}),800);
       return;
     }
     if(!tokenHealthy(guestToken())){
@@ -221,7 +223,7 @@ module.exports = function asset(request, response) {
       return;
     }
     ensureIdentityDefaults();
-    setTimeout(()=>recoverLobbyCode(kind).catch(()=>{}),700);
+    setTimeout(()=>recoverLobbyCode(kind).catch(()=>{}),800);
   },true);
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});
