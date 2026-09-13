@@ -176,6 +176,21 @@ async function proxy(request, response) {
     return;
   }
 
+  if (requestUrl.pathname === '/market-reference.js') {
+    serveLocalModuleAsset(response, './api/market-reference.js');
+    return;
+  }
+
+  if (requestUrl.pathname === '/market-reference.css') {
+    serveLocalModuleAsset(response, './api/market-reference-css.js');
+    return;
+  }
+
+  if (requestUrl.pathname === '/market-goods.webp') {
+    serveLocalModuleAsset(response, './api/market-goods.js');
+    return;
+  }
+
   if (requestUrl.pathname === '/command-map.webp') {
     serveLocalModuleAsset(response, './api/command-map.js');
     return;
