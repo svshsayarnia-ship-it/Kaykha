@@ -112,7 +112,7 @@ async function servePublicAsset(request, response, requestUrl) {
     const asset = await fs.promises.readFile(path.join(__dirname, 'public', fileName));
     response.statusCode = 200;
     response.setHeader('content-type', types[path.extname(fileName)] || 'application/octet-stream');
-    response.setHeader('cache-control', fileName.endsWith('.webp') ? 'public, max-age=31536000, immutable' : 'public, max-age=300');
+    response.setHeader('cache-control', fileName.endsWith('.webp') ? 'public, max-age=31536000, immutable' : 'no-store');
     if (request.method === 'HEAD') response.end();
     else response.end(asset);
   } catch (error) {
