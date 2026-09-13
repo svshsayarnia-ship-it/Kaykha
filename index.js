@@ -139,6 +139,12 @@ async function proxy(request, response) {
     return;
   }
 
+  if (requestUrl.pathname === '/api/auth-health') {
+    const authHealth = require('./api/auth-health.js');
+    await authHealth(request, response);
+    return;
+  }
+
   if (requestUrl.pathname === '/game-guide.html') {
     const localGameGuide = require('./api/game-guide-html.js');
     await localGameGuide(request, response);
