@@ -7,22 +7,32 @@ module.exports = function asset(request, response) {
     statusCode: 200,
     setHeader(name, value) { headers[String(name).toLowerCase()] = value; },
     getHeader(name) { return headers[String(name).toLowerCase()]; },
-    write(chunk) {
-      if (chunk != null) baseBody += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk);
-    },
-    end(chunk) {
-      if (chunk != null) baseBody += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk);
-    },
+    write(chunk) { if (chunk != null) baseBody += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk); },
+    end(chunk) { if (chunk != null) baseBody += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk); },
     status(code) { this.statusCode = code; return this; },
     send(chunk) { this.end(chunk); return this; }
   };
 
   baseOnline(request || {}, capture);
 
+  const bootstrap = String.raw`
+;(()=>{
+  try {
+    const MIGRATION='kaykha.simple-hall-v1';
+    if(localStorage.getItem(MIGRATION)!=='1'){
+      localStorage.removeItem('kaykha.account-session');
+      localStorage.removeItem('kaykha.active-game-id');
+      localStorage.setItem(MIGRATION,'1');
+    }
+  } catch (_) {}
+})();
+`;
+
   const enhancement = String.raw`
 ;(()=>{
   const URL='https://uwhfxmiguugujcomwmds.supabase.co';
   const KEY='sb_publishable_KIuxWr99zocUh2EBiXkQaQ_LB9PD8Wv';
+  const GUEST_ENDPOINT=URL+'/functions/v1/kaykha-guest-auth';
   const GAME_KEY='kaykha.active-game-id';
   const GUEST_KEY='kaykha.guest-session';
   const ACCOUNT_KEY='kaykha.account-session';
@@ -44,16 +54,6 @@ module.exports = function asset(request, response) {
     }
     return null;
   }
-  function accessToken(){
-    const accountToken=tokenFrom(parseStored(ACCOUNT_KEY));
-    if(accountToken)return accountToken;
-    const guestToken=tokenFrom(parseStored(GUEST_KEY));
-    if(guestToken)return guestToken;
-    for(let i=0;i<localStorage.length;i+=1){
-      try{const value=JSON.parse(localStorage.getItem(localStorage.key(i)));const token=tokenFrom(value);if(token)return token;}catch(_){ }
-    }
-    return null;
-  }
   function jwtExp(token){
     try{
       const payload=token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
@@ -61,75 +61,52 @@ module.exports = function asset(request, response) {
     }catch(_){return 0;}
   }
   function tokenHealthy(token){return Boolean(token)&&jwtExp(token)>Math.floor(Date.now()/1000)+45;}
-  function saveSession(session,key){
-    if(session?.access_token)localStorage.setItem(key,JSON.stringify(session));
+  function guestToken(){return tokenFrom(parseStored(GUEST_KEY));}
+  function saveGuest(session){
+    if(session?.access_token)localStorage.setItem(GUEST_KEY,JSON.stringify(session));
     return session;
   }
-  async function authRequest(path,body){
-    const authResponse=await fetch(URL+path,{
+  async function refreshGuest(saved){
+    const response=await fetch(URL+'/auth/v1/token?grant_type=refresh_token',{
       method:'POST',
       headers:{apikey:KEY,'Content-Type':'application/json'},
-      body:JSON.stringify(body||{})
+      body:JSON.stringify({refresh_token:saved.refresh_token})
     });
-    const data=await authResponse.json().catch(()=>({}));
-    if(!authResponse.ok){
-      const raw=data?.msg||data?.message||data?.error_description||data?.error||'ارتباط هویت با بازی برقرار نشد.';
-      const lower=String(raw).toLowerCase();
-      if(lower.includes('anonymous')&&(lower.includes('disable')||lower.includes('not enabled'))){
-        throw new Error('ورود مهمان Supabase غیرفعال است؛ Anonymous Sign-Ins باید برای تالارهای بدون ثبت‌نام فعال باشد.');
-      }
-      throw new Error(String(raw));
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok||!data?.access_token)throw new Error('refresh failed');
+    return saveGuest(data);
+  }
+  async function mintGuest(){
+    const response=await fetch(GUEST_ENDPOINT,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:'{}'
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok||!data?.session?.access_token){
+      throw new Error(data?.error||'اتصال سریع تالار آماده نشد.');
     }
-    return data;
-  }
-  async function ensureGuestSession(){
-    const account=parseStored(ACCOUNT_KEY);
-    if(account?.access_token&&tokenHealthy(account.access_token))return account.access_token;
-    const existing=parseStored(GUEST_KEY);
-    if(existing?.access_token&&tokenHealthy(existing.access_token))return existing.access_token;
-    if(sessionPromise)return sessionPromise;
-    sessionPromise=(async()=>{
-      let saved=parseStored(GUEST_KEY);
-      if(saved?.refresh_token){
-        try{
-          const refreshed=await authRequest('/auth/v1/token?grant_type=refresh_token',{refresh_token:saved.refresh_token});
-          saveSession(refreshed,GUEST_KEY);
-          if(refreshed?.access_token)return refreshed.access_token;
-        }catch(_){localStorage.removeItem(GUEST_KEY);}
-      }
-      const created=await authRequest('/auth/v1/signup',{data:{client:'kaykha',purpose:'multiplayer_guest'}});
-      saveSession(created,GUEST_KEY);
-      if(!created?.access_token)throw new Error('هویت مهمان ساخته شد اما نشست بازی دریافت نشد.');
-      return created.access_token;
-    })();
-    try{return await sessionPromise;}finally{sessionPromise=null;}
-  }
-  async function registerAccount(email,password){
-    if(!email||!email.includes('@'))throw new Error('ایمیل معتبر وارد کن.');
-    if(String(password||'').length<6)throw new Error('رمز باید حداقل ۶ کاراکتر باشد.');
-    const created=await authRequest('/auth/v1/signup',{email:email,password:password,data:{client:'kaykha',purpose:'player_account'}});
-    if(created?.access_token){
-      saveSession(created,ACCOUNT_KEY);
-      localStorage.removeItem(GUEST_KEY);
-      localStorage.removeItem(GAME_KEY);
-      return {ready:true,message:'حساب فرمانده ساخته شد و وارد شدی.'};
-    }
-    return {ready:false,message:'ثبت‌نام انجام شد. ایمیل تأیید را باز کن و بعد دکمه «ورود» را بزن.'};
-  }
-  async function signInAccount(email,password){
-    if(!email||!password)throw new Error('ایمیل و رمز را وارد کن.');
-    const session=await authRequest('/auth/v1/token?grant_type=password',{email:email,password:password});
-    if(!session?.access_token)throw new Error('نشست حساب دریافت نشد.');
-    saveSession(session,ACCOUNT_KEY);
-    localStorage.removeItem(GUEST_KEY);
-    localStorage.removeItem(GAME_KEY);
-    return session.access_token;
-  }
-  async function switchToGuest(){
     localStorage.removeItem(ACCOUNT_KEY);
     localStorage.removeItem(GAME_KEY);
-    localStorage.removeItem(GUEST_KEY);
-    return ensureGuestSession();
+    saveGuest(data.session);
+    return data.session;
+  }
+  async function ensureGuest(){
+    const token=guestToken();
+    if(tokenHealthy(token))return token;
+    if(sessionPromise)return sessionPromise;
+    sessionPromise=(async()=>{
+      const saved=parseStored(GUEST_KEY);
+      if(saved?.refresh_token){
+        try{
+          const refreshed=await refreshGuest(saved);
+          return refreshed.access_token;
+        }catch(_){localStorage.removeItem(GUEST_KEY);}
+      }
+      const session=await mintGuest();
+      return session.access_token;
+    })();
+    try{return await sessionPromise;}finally{sessionPromise=null;}
   }
   function ensureIdentityDefaults(){
     const faction=$('#faction');
@@ -143,27 +120,15 @@ module.exports = function asset(request, response) {
       persona.selectedIndex=0;
     }
   }
-  function authLabel(){
-    const account=parseStored(ACCOUNT_KEY);
-    if(account?.access_token&&tokenHealthy(account.access_token))return 'حساب ثبت‌شده متصل است';
-    const guest=parseStored(GUEST_KEY);
-    if(guest?.access_token&&tokenHealthy(guest.access_token))return 'هویت مهمان آماده است';
-    return 'در حال آماده‌سازی هویت…';
-  }
-  function renderAuthState(message){
-    const label=$('#kaykha-auth-state');
-    if(label)label.textContent=message||authLabel();
-  }
-  function ensureAuthPanel(){
-    if($('#kaykha-auth-panel'))return;
+  function ensureHint(){
+    $('#kaykha-auth-panel')?.remove();
     const commander=$('#commander-name');
-    if(!commander)return;
-    const panel=document.createElement('section');
-    panel.id='kaykha-auth-panel';
-    panel.style.cssText='margin:0 0 12px;padding:12px;border:1px solid rgba(200,167,92,.38);border-radius:12px;background:rgba(5,17,26,.62);display:grid;gap:9px';
-    panel.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><b style="color:#f0d58e">هویت بازیکن</b><small id="kaykha-auth-state" style="color:#a9c4c1">در حال آماده‌سازی هویت…</small></div><p style="margin:0;color:#9fb1b4;font-size:10px;line-height:1.8">برای شروع بازی ثبت‌نام اجباری نیست؛ مهمان به‌صورت خودکار وارد می‌شود. برای نگه‌داشتن حساب بین دستگاه‌ها، حساب دائمی بساز.</p><div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px"><input id="kaykha-auth-email" type="email" autocomplete="email" placeholder="ایمیل"><input id="kaykha-auth-password" type="password" autocomplete="current-password" minlength="6" placeholder="رمز عبور"></div><div class="online-actions"><button type="button" id="kaykha-auth-register">ثبت‌نام</button><button type="button" id="kaykha-auth-login">ورود</button><button type="button" id="kaykha-auth-guest">ادامه به‌عنوان مهمان</button></div>';
-    commander.insertAdjacentElement('beforebegin',panel);
-    renderAuthState();
+    if(!commander||$('#simple-hall-hint'))return;
+    const hint=document.createElement('p');
+    hint.id='simple-hall-hint';
+    hint.style.cssText='margin:.15rem 0 .65rem;color:#a9babb;font-size:10px;line-height:1.8';
+    hint.textContent='بدون ثبت‌نام: نام فرمانده را بنویس؛ برای ساخت تالار دکمه «ساخت تالار» را بزن، یا کد ۶ کاراکتری دوستت را وارد کن و «ورود» را بزن.';
+    commander.insertAdjacentElement('beforebegin',hint);
   }
   function ensureCodeBox(){
     let box=$('#lobby-code-display');
@@ -191,122 +156,83 @@ module.exports = function asset(request, response) {
   }
   async function recoverLobbyCode(kind='create'){
     const gameId=localStorage.getItem(GAME_KEY);
-    const token=accessToken();
+    const token=guestToken();
     if(!gameId||!token)return null;
-    const gameResponse=await fetch(URL+'/rest/v1/kaykha_games?id=eq.'+encodeURIComponent(gameId)+'&select=code,status,phase,round_no',{
+    const response=await fetch(URL+'/rest/v1/kaykha_games?id=eq.'+encodeURIComponent(gameId)+'&select=code,status,phase,round_no',{
       headers:{apikey:KEY,Authorization:'Bearer '+token}
     });
-    const body=await gameResponse.json().catch(()=>[]);
-    if(!gameResponse.ok||!Array.isArray(body)||!body[0]?.code)return null;
+    const body=await response.json().catch(()=>[]);
+    if(!response.ok||!Array.isArray(body)||!body[0]?.code)return null;
     const code=body[0].code;
-    showCode(code,kind==='join'?'وارد تالار '+code+' شدی.':'تالار '+code+' ساخته شد؛ این کد را برای بازیکن‌های دیگر بفرست.');
+    showCode(code,kind==='join'?'وارد تالار '+code+' شدی.':'تالار '+code+' ساخته شد؛ کد را برای بقیه بفرست.');
     return code;
   }
   async function prepareAndReplay(button,kind){
-    if(button.dataset.kaykhaAuthReplay==='1'){delete button.dataset.kaykhaAuthReplay;return false;}
-    if(tokenHealthy(accessToken())){ensureIdentityDefaults();setTimeout(()=>recoverLobbyCode(kind).catch(()=>{}),650);return false;}
+    if(button.dataset.kaykhaReplay==='1'){delete button.dataset.kaykhaReplay;return;}
     button.disabled=true;
-    status('در حال آماده‌سازی ورود سریع مهمان…');
+    status('در حال اتصال سریع به تالار…');
     try{
-      await ensureGuestSession();
-      renderAuthState();
+      await ensureGuest();
       ensureIdentityDefaults();
-      button.dataset.kaykhaAuthReplay='1';
+      button.dataset.kaykhaReplay='1';
       button.disabled=false;
       button.click();
-      setTimeout(()=>recoverLobbyCode(kind).catch(()=>{}),650);
+      setTimeout(()=>recoverLobbyCode(kind).catch(()=>{}),700);
     }catch(error){
       button.disabled=false;
-      status(error?.message||'ورود سریع به تالار برقرار نشد.',true);
-      renderAuthState('هویت آماده نشد');
+      status(error?.message||'اتصال تالار برقرار نشد؛ دوباره تلاش کن.',true);
     }
-    return true;
   }
-  async function initializeAuth(){
-    ensureAuthPanel();
+  function initialize(){
+    localStorage.removeItem(ACCOUNT_KEY);
+    ensureHint();
     ensureCodeBox();
-    const create=$('#create-lobby');
-    const join=$('#join-lobby');
-    if(create)create.disabled=true;
-    if(join)join.disabled=true;
-    if(!tokenHealthy(accessToken()))status('در حال ساخت هویت مهمان برای ورود مستقیم به بازی…');
-    try{
-      await ensureGuestSession();
-      renderAuthState();
-      if(!localStorage.getItem(GAME_KEY))status('هویت آماده است؛ نام فرمانده را بنویس و تالار بساز یا با کد وارد شو.');
-    }catch(error){
-      renderAuthState('هویت آماده نشد');
-      status(error?.message||'هویت بازی آماده نشد.',true);
-    }finally{
-      if(create)create.disabled=false;
-      if(join)join.disabled=false;
-    }
+    ensureIdentityDefaults();
+    status('نام فرمانده را بنویس؛ تالار بساز یا با کد وارد شو.');
+    ensureGuest().then(()=>{
+      if(!localStorage.getItem(GAME_KEY))status('آماده‌ای؛ تالار بساز یا کد تالار را وارد کن.');
+    }).catch(()=>{
+      status('برای ورود، دکمه «ساخت تالار» یا «ورود» را بزن؛ اتصال خودکار انجام می‌شود.');
+    });
   }
 
   document.addEventListener('click',event=>{
-    const register=event.target.closest('#kaykha-auth-register');
-    const login=event.target.closest('#kaykha-auth-login');
-    const guest=event.target.closest('#kaykha-auth-guest');
-    if(register||login||guest){
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      const email=String($('#kaykha-auth-email')?.value||'').trim();
-      const password=String($('#kaykha-auth-password')?.value||'');
-      const button=register||login||guest;
-      button.disabled=true;
-      (async()=>{
-        try{
-          if(register){
-            const result=await registerAccount(email,password);
-            renderAuthState(result.ready?'حساب ثبت‌شده متصل است':'ثبت‌نام در انتظار تأیید ایمیل');
-            status(result.message,!result.ready);
-          }else if(login){
-            await signInAccount(email,password);
-            renderAuthState('حساب ثبت‌شده متصل است');
-            status('وارد حساب فرمانده شدی؛ حالا تالار را بساز یا با کد وارد شو.');
-          }else{
-            await switchToGuest();
-            renderAuthState('هویت مهمان آماده است');
-            status('حالت مهمان فعال است؛ نام فرمانده را بنویس و وارد بازی شو.');
-          }
-        }catch(error){status(error?.message||'عملیات حساب انجام نشد.',true);}finally{button.disabled=false;}
-      })();
-      return;
-    }
-
-    const create=event.target.closest('#create-lobby');
-    const join=event.target.closest('#join-lobby');
     const copy=event.target.closest('#copy-lobby-code');
     if(copy){
       const code=$('#lobby-code-value')?.textContent?.trim();
-      if(code&&code!=='——')navigator.clipboard?.writeText(code).then(()=>{copy.textContent='کپی شد';setTimeout(()=>copy.textContent='کپی کد',1000);}).catch(()=>{});
+      if(code&&code!=='——')navigator.clipboard?.writeText(code).then(()=>{copy.textContent='کپی شد';setTimeout(()=>copy.textContent='کپی کد',900);}).catch(()=>{});
       return;
     }
+    const create=event.target.closest('#create-lobby');
+    const join=event.target.closest('#join-lobby');
     const button=create||join;
     if(!button)return;
     const kind=create?'create':'join';
-    if(button.dataset.kaykhaAuthReplay==='1'){delete button.dataset.kaykhaAuthReplay;ensureIdentityDefaults();setTimeout(()=>recoverLobbyCode(kind).catch(()=>{}),650);return;}
-    if(!tokenHealthy(accessToken())){
+    if(button.dataset.kaykhaReplay==='1'){
+      delete button.dataset.kaykhaReplay;
+      ensureIdentityDefaults();
+      setTimeout(()=>recoverLobbyCode(kind).catch(()=>{}),700);
+      return;
+    }
+    if(!tokenHealthy(guestToken())){
       event.preventDefault();
       event.stopImmediatePropagation();
       prepareAndReplay(button,kind);
       return;
     }
     ensureIdentityDefaults();
-    setTimeout(()=>recoverLobbyCode(kind).catch(()=>{}),650);
+    setTimeout(()=>recoverLobbyCode(kind).catch(()=>{}),700);
   },true);
 
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initializeAuth,{once:true});
-  else initializeAuth();
-  window.addEventListener('focus',()=>recoverLobbyCode('create').catch(()=>{}));
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)recoverLobbyCode('create').catch(()=>{});});
-  setTimeout(()=>recoverLobbyCode('create').catch(()=>{}),300);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});
+  else initialize();
 })();
 `;
 
   response.statusCode = capture.statusCode || 200;
+  for (const [name, value] of Object.entries(headers)) response.setHeader(name, value);
   response.setHeader('content-type', 'application/javascript; charset=utf-8');
   response.setHeader('cache-control', 'no-store, max-age=0');
   response.setHeader('x-robots-tag', 'noindex');
-  response.end(baseBody + '\n' + enhancement);
+  response.end(bootstrap + baseBody + enhancement);
 };
