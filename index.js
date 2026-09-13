@@ -191,6 +191,16 @@ async function proxy(request, response) {
     return;
   }
 
+  if (requestUrl.pathname === '/market-typography-v2.css') {
+    serveLocalModuleAsset(response, './api/market-typography-v2.js');
+    return;
+  }
+
+  if (requestUrl.pathname === '/market-all-cities.js') {
+    serveLocalModuleAsset(response, './api/market-all-cities.js');
+    return;
+  }
+
   if (requestUrl.pathname === '/command-map.webp') {
     serveLocalModuleAsset(response, './api/command-map.js');
     return;
