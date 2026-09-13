@@ -176,6 +176,21 @@ async function proxy(request, response) {
     return;
   }
 
+  if (requestUrl.pathname === '/astrolabe-core.webp') {
+    serveLocalModuleAsset(response, './api/astrolabe-core-image.js');
+    return;
+  }
+
+  if (requestUrl.pathname === '/astrolabe-dashboard.css') {
+    serveLocalModuleAsset(response, './api/astrolabe-dashboard-css.js');
+    return;
+  }
+
+  if (requestUrl.pathname === '/astrolabe-dashboard.js') {
+    serveLocalModuleAsset(response, './api/astrolabe-dashboard-js.js');
+    return;
+  }
+
   if (requestUrl.pathname === '/market-reference.js') {
     serveLocalModuleAsset(response, './api/market-reference.js');
     return;
