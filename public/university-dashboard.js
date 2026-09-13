@@ -21,3 +21,4 @@
   }
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',build):build();
 })();
+// Architecture source: Keykha Academy of Sciences specification, revision 2026-09-13.
