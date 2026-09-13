@@ -1,8 +1,6 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "builds": [
-    { "src": "index.js", "use": "@vercel/node" }
-  ],
   "functions": {
     "index.js": {
       "includeFiles": "public/assets/cities/*.webp"
