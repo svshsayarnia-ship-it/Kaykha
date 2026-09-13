@@ -160,6 +160,12 @@ async function proxy(request, response) {
     return;
   }
 
+  if (requestUrl.pathname === '/reference-skin.css') {
+    const localReferenceSkin = require('./api/reference-skin.js');
+    await localReferenceSkin(request, response);
+    return;
+  }
+
   if (requestUrl.pathname === '/world-shell.css') {
     serveLocalModuleAsset(response, './api/world-shell-css.js');
     return;
