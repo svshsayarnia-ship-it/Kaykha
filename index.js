@@ -176,6 +176,16 @@ async function proxy(request, response) {
     return;
   }
 
+  if (requestUrl.pathname === '/command-map.webp') {
+    serveLocalModuleAsset(response, './api/command-map.js');
+    return;
+  }
+
+  if (requestUrl.pathname === '/command-visual-v2.css') {
+    serveLocalModuleAsset(response, './api/command-visual-v2.js');
+    return;
+  }
+
   if (requestUrl.pathname === '/world-shell.css') {
     serveLocalModuleAsset(response, './api/world-shell-css.js');
     return;
