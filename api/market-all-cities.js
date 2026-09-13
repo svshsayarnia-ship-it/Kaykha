@@ -1,0 +1,6 @@
+module.exports = function asset(_request, response) {
+  response.setHeader('content-type', 'application/javascript; charset=utf-8');
+  response.setHeader('cache-control', 'public, max-age=300');
+  response.statusCode = 200;
+  response.end(Buffer.from('KCgpPT57Y29uc3QgY2l0aWVzPVsn2LHbjCcsJ9in2LXZgdmH2KfZhicsJ9mG24zYtNin2KjZiNixJywn2q/Ysdqv2KfZhicsJ9mH2YXYr9in2YYnLCfZh9qv2YXYqtin2YbZhycsJ9mF2LHZiCcsJ9iq24zYs9mB2YjZhicsJ9io2YTYricsJ9uM2LLYrycsJ9in2YTZhdmI2KonLCfYqtio2LHbjNiyJywn2LTZiNi0Jywn2YfYsdmF2LInLCfYtNuM2LHYp9iyJywn2KjZhScsJ9iy2LHZhtisJ107ZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignY2xpY2snLGV2ZW50PT57aWYoIWV2ZW50LnRhcmdldC5jbG9zZXN0KCdbZGF0YS1waWNrZXI9ImNpdHkiXScpKXJldHVybjtzZXRUaW1lb3V0KCgpPT57Y29uc3QgbGlzdD1kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnY2l0eS1saXN0Jyk7aWYoIWxpc3QpcmV0dXJuO2xpc3QuaW5uZXJIVE1MPWNpdGllcy5tYXAoY2l0eT0+JzxidXR0b24gZGF0YS1jaXR5PSInK2NpdHkrJyI+JytjaXR5Kyc8L2J1dHRvbj4nKS5qb2luKCcnKX0sMCl9LHRydWUpfSkoKTsK', 'base64').toString('utf8'));
+};
