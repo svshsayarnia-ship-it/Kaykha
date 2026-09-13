@@ -420,8 +420,13 @@ module.exports = function asset(_request, response) {
     } catch (error) {
       state.voiceRoom = null;
       state.voiceMicEnabled = false;
-      setVoiceStatus(error.message || 'اتصال صوتی ناموفق بود.', true);
-      throw error;
+      const rawMessage = String(error?.message || '');
+      const friendlyMessage = /invalid token|unauthorized|401/i.test(rawMessage)
+        ? 'کلید اتصال تالار صوتی نیاز به نوسازی دارد؛ مدیر بازی در حال بررسی است.'
+        : (rawMessage || 'اتصال صوتی ناموفق بود؛ دوباره تلاش کن.');
+      setVoiceStatus(friendlyMessage, true);
+      console.warn('Voice connection failed:', rawMessage || error);
+      return;
     } finally {
       state.voiceConnecting = false;
       updateVoiceControls();
