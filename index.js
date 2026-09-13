@@ -245,6 +245,7 @@ async function proxy(request, response) {
   response.end('Not found');
 }
 
+// Bazaar reference assets are routed above.
 module.exports = async function handler(request, response) {
   try {
     await proxy(request, response);
