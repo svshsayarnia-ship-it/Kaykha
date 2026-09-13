@@ -166,6 +166,16 @@ async function proxy(request, response) {
     return;
   }
 
+  if (requestUrl.pathname === '/command-reference.css' || requestUrl.pathname === '/command-reference-css.js') {
+    serveLocalModuleAsset(response, './api/command-reference-css.js');
+    return;
+  }
+
+  if (requestUrl.pathname === '/command-reference.js') {
+    serveLocalModuleAsset(response, './api/command-reference.js');
+    return;
+  }
+
   if (requestUrl.pathname === '/world-shell.css') {
     serveLocalModuleAsset(response, './api/world-shell-css.js');
     return;
