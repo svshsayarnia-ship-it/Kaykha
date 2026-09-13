@@ -9,9 +9,10 @@
       <h2>فرمان این راند <small>(خنجرهای پنهان)</small></h2>
       <p id="choice" class="reference-choice">مبدأ: ری · هدف: اصفهان</p>
       <section class="reference-route" aria-label="مسیر فرمان">
-        <div class="route-city route-origin"><span class="route-citadel">♜</span><b id="route-origin">ری</b><small id="route-origin-army">۵ سپاه</small></div>
-        <div class="route-line"><i></i><span>مسیر فرمان</span><i></i></div>
-        <div class="route-city route-target"><span class="route-citadel">♜</span><b id="route-target">اصفهان</b><small id="route-target-army">۴ سپاه</small></div>
+        <img class="route-map-art" src="/command-map.webp" alt="نقشهٔ مسیر میان دو شهر باستانی">
+        <div class="route-map-shade"></div>
+        <div class="route-city route-origin"><span class="route-citadel">●</span><b id="route-origin">ری</b><small id="route-origin-army">۵ سپاه</small></div>
+        <div class="route-city route-target"><span class="route-citadel">●</span><b id="route-target">اصفهان</b><small id="route-target-army">۴ سپاه</small></div>
       </section>
       <section class="route-selectors"><label>مبدأ<select id="command-origin" aria-label="انتخاب شهر مبدأ"></select></label><label>هدف<select id="command-target" aria-label="انتخاب شهر هدف"></select></label></section>
       <section class="reference-order-area">
@@ -31,11 +32,12 @@
       <div class="reference-actions"><button id="seal" class="gold">مهر و ثبت فرمان</button><button id="resolve" class="red">آشکارسازی و اجرای سپیده‌دم</button></div>
     </main>
     <section class="reference-ledgers">
-      <article><div class="ledger-icon">⌕</div><small>دفتر خصوصی فرمانده</small><h3>پرونده‌های جاسوسی</h3><div id="intel-panel"><p>هنوز پروندهٔ جاسوسی نداری؛ جاسوسی موفق، اطلاعات واقعی شهر هدف را اینجا تعیین می‌کند.</p></div></article>
+      <article><div class="ledger-icon">⌕</div><small>دفتر خصوصی فرمانده</small><h3>پرونده‌های جاسوسی</h3><div id="intel-panel"><p>هنوز ردی پیدا نشده است؛ یک مهر جست‌وجو بسوزان و بر پایهٔ حدس خودت مسیری را بگرد. ممکن است آنجا هیچ اتفاقی نیفتاده باشد.</p></div></article>
       <article><div class="ledger-icon">✎</div><small>دفتر وقایع</small><h3>میز فرمان کیخا</h3><ol id="log"></ol></article>
     </section>
     <div class="command-engine" aria-hidden="true"><select id="faction"></select><select id="persona"></select><span id="identity-title"></span><span id="prestige"></span><span id="prestige-fill"></span><span id="faction-card"></span><span id="persona-card"></span><span id="awakening-state"></span><button id="class-action"></button><button id="awaken"></button></div>
   </section>`;
   const phase=document.getElementById('phase'),round=document.getElementById('reference-round');
   if(phase&&round)new MutationObserver(()=>round.textContent=phase.textContent).observe(phase,{childList:true,characterData:true,subtree:true});
+  document.addEventListener('click',event=>{const button=event.target.closest('#orders [data-order]');if(!button)return;const intel=document.getElementById('order-intel');intel?.classList.remove('is-opening');requestAnimationFrame(()=>intel?.classList.add('is-opening'))});
 })();

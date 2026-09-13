@@ -93,6 +93,35 @@ function serveLocalModuleAsset(response, modulePath) {
   }
 }
 
+async function servePublicAsset(request, response, requestUrl) {
+  if (!['GET', 'HEAD'].includes(request.method)) {
+    response.statusCode = 405;
+    response.setHeader('allow', 'GET, HEAD');
+    response.end();
+    return;
+  }
+  const fileName = requestUrl.pathname.slice(1);
+  const allowed = /^(command-reference\.css|command-reference\.js|command-visual-v2\.css|market-reference\.css|market-reference\.js|market-all-cities\.js|market-typography-v2\.css|war-room\.js|command-map\.webp|market-goods\.webp)$/;
+  if (!allowed.test(fileName)) {
+    response.statusCode = 404;
+    response.end('Not found');
+    return;
+  }
+  const types = { '.css': 'text/css; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.webp': 'image/webp' };
+  try {
+    const asset = await fs.promises.readFile(path.join(__dirname, 'public', fileName));
+    response.statusCode = 200;
+    response.setHeader('content-type', types[path.extname(fileName)] || 'application/octet-stream');
+    response.setHeader('cache-control', fileName.endsWith('.webp') ? 'public, max-age=31536000, immutable' : 'public, max-age=300');
+    if (request.method === 'HEAD') response.end();
+    else response.end(asset);
+  } catch (error) {
+    response.statusCode = error?.code === 'ENOENT' ? 404 : 500;
+    response.setHeader('cache-control', 'no-store');
+    response.end(response.statusCode === 404 ? 'Not found' : 'Asset unavailable');
+  }
+}
+
 async function serveCityAsset(request, response, requestUrl) {
   if (!['GET', 'HEAD'].includes(request.method)) {
     response.statusCode = 405;
@@ -139,12 +168,6 @@ async function proxy(request, response) {
     return;
   }
 
-  if (requestUrl.pathname === '/api/auth-health') {
-    const authHealth = require('./api/auth-health.js');
-    await authHealth(request, response);
-    return;
-  }
-
   if (requestUrl.pathname === '/game-guide.html') {
     const localGameGuide = require('./api/game-guide-html.js');
     await localGameGuide(request, response);
@@ -166,84 +189,14 @@ async function proxy(request, response) {
     return;
   }
 
+  if (/^\/(command-reference\.css|command-reference\.js|command-visual-v2\.css|market-reference\.css|market-reference\.js|market-all-cities\.js|market-typography-v2\.css|command-map\.webp|market-goods\.webp)$/.test(requestUrl.pathname)) {
+    await servePublicAsset(request, response, requestUrl);
+    return;
+  }
+
   if (requestUrl.pathname === '/reference-skin.css') {
     const localReferenceSkin = require('./api/reference-skin.js');
     await localReferenceSkin(request, response);
-    return;
-  }
-
-  if (requestUrl.pathname === '/command-reference.css' || requestUrl.pathname === '/command-reference-css.js') {
-    serveLocalModuleAsset(response, './api/command-reference-css.js');
-    return;
-  }
-
-  if (requestUrl.pathname === '/command-reference.js') {
-    serveLocalModuleAsset(response, './api/command-reference-live.js');
-    return;
-  }
-
-  if (requestUrl.pathname === '/cinematic-icon-sprite.webp') {
-    serveLocalModuleAsset(response, './api/cinematic-icon-sprite.js');
-    return;
-  }
-
-  if (requestUrl.pathname === '/cinematic-controls.css') {
-    serveLocalModuleAsset(response, './api/cinematic-controls-css.js');
-    return;
-  }
-
-  if (requestUrl.pathname === '/cinematic-controls.js') {
-    serveLocalModuleAsset(response, './api/cinematic-controls-js.js');
-    return;
-  }
-
-  if (requestUrl.pathname === '/astrolabe-core.webp') {
-    serveLocalModuleAsset(response, './api/astrolabe-core-image.js');
-    return;
-  }
-
-  if (requestUrl.pathname === '/astrolabe-dashboard.css') {
-    serveLocalModuleAsset(response, './api/astrolabe-dashboard-css.js');
-    return;
-  }
-
-  if (requestUrl.pathname === '/astrolabe-dashboard.js') {
-    serveLocalModuleAsset(response, './api/astrolabe-dashboard-js.js');
-    return;
-  }
-
-  if (requestUrl.pathname === '/market-reference.js') {
-    serveLocalModuleAsset(response, './api/market-reference.js');
-    return;
-  }
-
-  if (requestUrl.pathname === '/market-reference.css') {
-    serveLocalModuleAsset(response, './api/market-reference-css.js');
-    return;
-  }
-
-  if (requestUrl.pathname === '/market-goods.webp') {
-    serveLocalModuleAsset(response, './api/market-goods.js');
-    return;
-  }
-
-  if (requestUrl.pathname === '/market-typography-v2.css') {
-    serveLocalModuleAsset(response, './api/market-typography-v2.js');
-    return;
-  }
-
-  if (requestUrl.pathname === '/market-all-cities.js') {
-    serveLocalModuleAsset(response, './api/market-all-cities.js');
-    return;
-  }
-
-  if (requestUrl.pathname === '/command-map.webp') {
-    serveLocalModuleAsset(response, './api/command-map.js');
-    return;
-  }
-
-  if (requestUrl.pathname === '/command-visual-v2.css') {
-    serveLocalModuleAsset(response, './api/command-visual-v2.js');
     return;
   }
 
@@ -270,13 +223,12 @@ async function proxy(request, response) {
   }
 
   if (requestUrl.pathname === '/war-room.js') {
-    const localWarRoomClient = require('./api/war-room-client.js');
-    await localWarRoomClient(request, response);
+    await servePublicAsset(request, response, requestUrl);
     return;
   }
 
   if (requestUrl.pathname === '/kaykha-online.js') {
-    const localOnlineClient = require('./api/kaykha-online-fixed.js');
+    const localOnlineClient = require('./api/kaykha-online.js');
     await localOnlineClient(request, response);
     return;
   }
@@ -291,7 +243,6 @@ async function proxy(request, response) {
   response.end('Not found');
 }
 
-// Bazaar reference assets and readability controls are routed above.
 module.exports = async function handler(request, response) {
   try {
     await proxy(request, response);
