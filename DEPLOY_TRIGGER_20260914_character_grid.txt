@@ -1,0 +1,1 @@
+Deploy latest main including independent character card bundle and bribe-network bindings.
