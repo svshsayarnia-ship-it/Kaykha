@@ -112,13 +112,14 @@ module.exports = function asset(_request, response) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   }
   const zoneName = {gates:'دروازه و گمرک',royal_square:'میدان شاهی',guild_alleys:'راستهٔ اصناف',undercity:'دخمه‌ها'};
-  const resourceName = {copper:'مس',carpet:'فرش',silk:'ابریشم',herbs:'گیاهان',armor:'زره'};
+  const resourceName = {copper:'مس',carpet:'فرش',silk:'ابریشم',herbs:'گیاهان',armor:'زره',saffron:'زعفران',grain:'غله',dates:'خرما',lapis:'لاجورد'};
   const contractName = {joint_venture:'شراکت تیمچه',debt:'سفته',blood_debt:'خون‌بها',treaty:'پیمان',vassalage:'دست‌نشاندگی'};
   function renderMarket(data) {
     state.market = data || {};
     const tiles = data?.tiles || [];
-    const grid = $('#market');
     const city = $('#market-city')?.value || 'ری';
+    window.dispatchEvent(new CustomEvent('kaykha:market-data', { detail: { city, pricing: data?.pricing || null } }));
+    const grid = $('#market');
     if (grid) grid.innerHTML = tiles.map(tile => {
       const deed = tile.deed;
       const selected = state.selectedTile != null && Number(state.selectedTile) === Number(tile.position_no) ? ' selected' : '';
@@ -180,7 +181,7 @@ module.exports = function asset(_request, response) {
       node.innerHTML = '<small>فعلاً بحران فعالی نیست؛ اما هر سپیده‌دم می‌تواند معادله را عوض کند.</small>';
       return;
     }
-    const resourceName = {silk:'ابریشم',copper:'مس',carpet:'فرش',herbs:'گیاهان',armor:'زره'};
+    const resourceName = {silk:'ابریشم',copper:'مس',carpet:'فرش',herbs:'گیاهان',armor:'زره',saffron:'زعفران',grain:'غله',dates:'خرما',lapis:'لاجورد'};
     const payload = current.payload || {};
     const title = current.crisis_key === 'market_crash' ? 'سقوط بازار · ' + (resourceName[payload.resource_key] || payload.resource_key || 'کالای ناشناخته')
       : current.crisis_key === 'peasant_rebellion' ? 'شورش دهقانان · ' + (payload.target_territory_id || 'یک شهر')
@@ -585,7 +586,7 @@ module.exports = function asset(_request, response) {
       if (event.target.closest('#buy-deed') && state.gameId) {
         event.preventDefault(); event.stopImmediatePropagation();
         if (!state.selectedTile) { status('اول یکی از چهار محله را انتخاب کن.', true); return; }
-        run(async () => { const result = await rpc('buy_kaykha_deed', { p_game_id: state.gameId, p_city_id: CITY[$('#market-city')?.value || 'ری'], p_position_no: state.selectedTile, p_property_level: $('#property-level')?.value || 'stall' }); window.dispatchEvent(new CustomEvent('kaykha:deed-purchased', { detail: result || {} })); return result; });
+        run(async () => { const result = await rpc('buy_kaykha_deed', { p_game_id: state.gameId, p_city_id: CITY[$('#market-city')?.value || 'ری'], p_position_no: state.selectedTile, p_property_level: $('#property-level')?.value || 'stall' }); window.dispatchEvent(new CustomEvent('kaykha:deed-purchased', { detail: result || {} })); await readMarket(); return result; });
         return;
       }
       if (event.target.closest('#post-bounty') && state.gameId) {
