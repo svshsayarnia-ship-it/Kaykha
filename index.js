@@ -200,7 +200,7 @@ async function proxy(request, response) {
     return;
   }
 
-  if (/^\/(command-reference\.css|command-reference\.js|command-visual-v2\.css|market-reference\.css|market-reference\.js|market-all-cities\.js|market-typography-v2\.css|astrolabe-dashboard\.css|astrolabe-dashboard\.js|cinematic-controls\.css|cinematic-controls\.js|university-dashboard\.css|university-dashboard\.js|world-map-v2\.css|world-map-v2\.js|city-interactions-v2\.css|city-interactions-v2\.js|diwan-diorama\.css|diwan-diorama\.js|command-map\.webp|market-goods\.webp|astrolabe-core\.webp|astrolabe-sun-moon-v2\.webp|armillary-sphere\.webp|academy-four-faculties-v2\.webp|cinematic-icon-sprite\.webp|iran-greater-map\.webp)$/.test(requestUrl.pathname)) {
+  if (/^\/(command-reference\.css|command-reference\.js|command-visual-v2\.css|market-reference\.css|market-reference\.js|market-all-cities\.js|market-typography-v2\.css|astrolabe-dashboard\.css|astrolabe-dashboard\.js|cinematic-controls\.css|cinematic-controls\.js|university-dashboard\.css|university-dashboard\.js|world-map-v2\.css|world-map-v2\.js|city-interactions-v2\.css|city-interactions-v2\.js|diwan-diorama\.css|diwan-diorama\.js|war-room\.js|command-map\.webp|market-goods\.webp|astrolabe-core\.webp|astrolabe-sun-moon-v2\.webp|armillary-sphere\.webp|academy-four-faculties-v2\.webp|cinematic-icon-sprite\.webp|iran-greater-map\.webp)$/.test(requestUrl.pathname)) {
     await servePublicAsset(request, response, requestUrl);
     return;
   }
@@ -242,9 +242,11 @@ async function proxy(request, response) {
     const localOnlineClient = require('./api/kaykha-online-fixed.js');
     const localIndependentRoleClient = require('./api/kaykha-independent-role-ui.js');
     const localBribeNetworkClient = require('./api/kaykha-bribe-network-ui.js');
+    const localIndependentCharacterCards = require('./api/kaykha-independent-character-cards.js');
     let onlineBody = '';
     let roleBody = '';
     let bribeBody = '';
+    let characterBody = '';
     const makeCapture = sink => ({
       statusCode: 200,
       setHeader() {},
@@ -257,11 +259,12 @@ async function proxy(request, response) {
     await localOnlineClient(request, makeCapture(chunk => { onlineBody += chunk; }));
     await localIndependentRoleClient(request, makeCapture(chunk => { roleBody += chunk; }));
     await localBribeNetworkClient(request, makeCapture(chunk => { bribeBody += chunk; }));
+    await localIndependentCharacterCards(request, makeCapture(chunk => { characterBody += chunk; }));
     response.statusCode = 200;
     response.setHeader('content-type', 'application/javascript; charset=utf-8');
     response.setHeader('cache-control', 'no-store, max-age=0');
     response.setHeader('x-robots-tag', 'noindex');
-    response.end(onlineBody + '\n' + roleBody + '\n' + bribeBody);
+    response.end(onlineBody + '\n' + roleBody + '\n' + bribeBody + '\n' + characterBody);
     return;
   }
 
