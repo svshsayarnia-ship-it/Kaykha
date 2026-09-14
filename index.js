@@ -148,7 +148,8 @@ async function serveCityAsset(request, response, requestUrl) {
     return;
   }
 
-  const localPath = path.join(__dirname, 'public', 'assets', 'cities', fileName);
+  const assetFolder = requestUrl.pathname.startsWith('/assets/characters/') ? 'characters' : 'cities';
+  const localPath = path.join(__dirname, 'public', 'assets', assetFolder, fileName);
   try {
     const image = await fs.promises.readFile(localPath);
     response.statusCode = 200;
@@ -158,7 +159,7 @@ async function serveCityAsset(request, response, requestUrl) {
     else response.end(image);
   } catch (error) {
     if (error?.code !== 'ENOENT') {
-      console.error(`local city asset load failed for ${fileName}`, error);
+      console.error(`local ${assetFolder} asset load failed for ${fileName}`, error);
     }
     response.statusCode = error?.code === 'ENOENT' ? 404 : 500;
     response.setHeader('content-type', 'text/plain; charset=utf-8');
@@ -195,7 +196,7 @@ async function proxy(request, response) {
     return;
   }
 
-  if (requestUrl.pathname.startsWith('/assets/cities/')) {
+  if (requestUrl.pathname.startsWith('/assets/cities/') || requestUrl.pathname.startsWith('/assets/characters/')) {
     await serveCityAsset(request, response, requestUrl);
     return;
   }
