@@ -124,6 +124,13 @@ module.exports = function asset(request, response) {
     hint.style.cssText='margin:.15rem 0 .65rem;color:#a9babb;font-size:10px;line-height:1.8';
     hint.textContent='بدون ثبت‌نام: نام فرمانده را بنویس؛ «ساخت تالار» را بزن، یا کد ۶ کاراکتری دوستت را وارد کن و «ورود» را بزن.';
     commander.insertAdjacentElement('beforebegin',hint);
+    if(!$('#lobby-capacity')){
+      const capacity=document.createElement('select');
+      capacity.id='lobby-capacity';
+      capacity.setAttribute('aria-label','ظرفیت تالار');
+      capacity.innerHTML='<option value="4">۴ بازیکن</option><option value="6">۶ بازیکن</option><option value="8" selected>۸ بازیکن</option>';
+      commander.insertAdjacentElement('afterend',capacity);
+    }
   }
   function ensureCodeBox(){
     let box=$('#lobby-code-display');
@@ -178,7 +185,6 @@ module.exports = function asset(request, response) {
       button.dataset.kaykhaReplay='1';
       button.disabled=false;
       button.click();
-      setTimeout(()=>recoverLobbyCode(kind).catch(()=>{}),800);
     }catch(error){
       button.disabled=false;
       status(error?.message||'اتصال تالار برقرار نشد؛ دوباره تلاش کن.',true);
@@ -213,7 +219,6 @@ module.exports = function asset(request, response) {
     if(button.dataset.kaykhaReplay==='1'){
       delete button.dataset.kaykhaReplay;
       ensureIdentityDefaults();
-      setTimeout(()=>recoverLobbyCode(kind).catch(()=>{}),800);
       return;
     }
     if(!tokenHealthy(guestToken())){
@@ -223,8 +228,15 @@ module.exports = function asset(request, response) {
       return;
     }
     ensureIdentityDefaults();
-    setTimeout(()=>recoverLobbyCode(kind).catch(()=>{}),800);
   },true);
+
+  window.addEventListener('kaykha:lobby-success',event=>{
+    const detail=event.detail||{};
+    if(!detail.code)return;
+    showCode(detail.code,detail.kind==='join'
+      ?'وارد تالار '+detail.code+' شدی؛ کد تالار همان کد میزبان است.'
+      :'تالار '+detail.code+' ساخته شد؛ کد را برای بقیه بفرست.');
+  });
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});
   else initialize();
