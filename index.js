@@ -241,8 +241,10 @@ async function proxy(request, response) {
   if (requestUrl.pathname === '/kaykha-online.js') {
     const localOnlineClient = require('./api/kaykha-online-fixed.js');
     const localIndependentRoleClient = require('./api/kaykha-independent-role-ui.js');
+    const localBribeNetworkClient = require('./api/kaykha-bribe-network-ui.js');
     let onlineBody = '';
     let roleBody = '';
+    let bribeBody = '';
     const makeCapture = sink => ({
       statusCode: 200,
       setHeader() {},
@@ -254,11 +256,12 @@ async function proxy(request, response) {
     });
     await localOnlineClient(request, makeCapture(chunk => { onlineBody += chunk; }));
     await localIndependentRoleClient(request, makeCapture(chunk => { roleBody += chunk; }));
+    await localBribeNetworkClient(request, makeCapture(chunk => { bribeBody += chunk; }));
     response.statusCode = 200;
     response.setHeader('content-type', 'application/javascript; charset=utf-8');
     response.setHeader('cache-control', 'no-store, max-age=0');
     response.setHeader('x-robots-tag', 'noindex');
-    response.end(onlineBody + '\n' + roleBody);
+    response.end(onlineBody + '\n' + roleBody + '\n' + bribeBody);
     return;
   }
 
