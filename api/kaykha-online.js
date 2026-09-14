@@ -552,7 +552,7 @@ module.exports = function asset(_request, response) {
       if (event.target.closest('#buy-deed') && state.gameId) {
         event.preventDefault(); event.stopImmediatePropagation();
         if (!state.selectedTile) { status('اول یکی از چهار محله را انتخاب کن.', true); return; }
-        run(() => rpc('buy_kaykha_deed', { p_game_id: state.gameId, p_city_id: CITY[$('#market-city')?.value || 'ری'], p_position_no: state.selectedTile, p_property_level: $('#property-level')?.value || 'stall' }));
+        run(async () => { const result = await rpc('buy_kaykha_deed', { p_game_id: state.gameId, p_city_id: CITY[$('#market-city')?.value || 'ری'], p_position_no: state.selectedTile, p_property_level: $('#property-level')?.value || 'stall' }); window.dispatchEvent(new CustomEvent('kaykha:deed-purchased', { detail: result || {} })); return result; });
         return;
       }
       if (event.target.closest('#post-bounty') && state.gameId) {
