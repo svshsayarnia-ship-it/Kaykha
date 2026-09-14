@@ -240,7 +240,25 @@ async function proxy(request, response) {
 
   if (requestUrl.pathname === '/kaykha-online.js') {
     const localOnlineClient = require('./api/kaykha-online-fixed.js');
-    await localOnlineClient(request, response);
+    const localIndependentRoleClient = require('./api/kaykha-independent-role-ui.js');
+    let onlineBody = '';
+    let roleBody = '';
+    const makeCapture = sink => ({
+      statusCode: 200,
+      setHeader() {},
+      getHeader() { return undefined; },
+      write(chunk) { if (chunk != null) sink(Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk)); },
+      end(chunk) { if (chunk != null) sink(Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk)); },
+      status(code) { this.statusCode = code; return this; },
+      send(chunk) { this.end(chunk); return this; }
+    });
+    await localOnlineClient(request, makeCapture(chunk => { onlineBody += chunk; }));
+    await localIndependentRoleClient(request, makeCapture(chunk => { roleBody += chunk; }));
+    response.statusCode = 200;
+    response.setHeader('content-type', 'application/javascript; charset=utf-8');
+    response.setHeader('cache-control', 'no-store, max-age=0');
+    response.setHeader('x-robots-tag', 'noindex');
+    response.end(onlineBody + '\n' + roleBody);
     return;
   }
 
