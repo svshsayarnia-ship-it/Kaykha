@@ -511,7 +511,26 @@ module.exports = function asset(_request, response) {
     const code = normalizeLobbyCode($('#lobby-code')?.value);
     if (!/^[A-F0-9]{6}$/.test(code)) throw new Error('کد شش‌کاراکتری تالار را کامل وارد کن.');
     if ($('#lobby-code')) $('#lobby-code').value = code;
-    const rows = await rpc('join_kaykha_game', { p_code: code, p_display_name: userName(), p_house_id: faction() });
+    const houseOptions = [...($('#faction')?.options || [])].map(option => option.textContent.trim()).filter(Boolean);
+    const preferredHouse = faction();
+    const candidates = [preferredHouse, ...houseOptions.filter(house => house !== preferredHouse)];
+    let rows = null;
+    let lastError = null;
+    for (const house of candidates) {
+      try {
+        rows = await rpc('join_kaykha_game', { p_code: code, p_display_name: userName(), p_house_id: house });
+        const select = $('#faction');
+        if (select) {
+          const option = [...select.options].find(item => item.textContent.trim() === house);
+          if (option) select.value = option.value;
+        }
+        break;
+      } catch (error) {
+        lastError = error;
+        if (!/خاندان.*انتخاب|house.*taken|already.*house/i.test(String(error?.message || ''))) throw error;
+      }
+    }
+    if (!rows?.[0]) throw lastError || new Error('همهٔ خاندان‌های این تالار انتخاب شده‌اند.');
     if (state.gameId && state.gameId !== rows[0].game_id) await disconnectVoice(false);
     state.gameId = rows[0].game_id; localStorage.setItem(storageKey, state.gameId);
     updateVoiceControls();
