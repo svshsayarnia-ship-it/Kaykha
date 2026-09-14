@@ -21,6 +21,11 @@ module.exports = function asset(_request, response) {
     return null;
   }
   function accessToken() {
+    try {
+      const guest = JSON.parse(localStorage.getItem('kaykha.guest-session') || 'null');
+      const guestAccessToken = tokenFrom(guest);
+      if (guestAccessToken) return guestAccessToken;
+    } catch (_) {}
     for (let i = 0; i < localStorage.length; i += 1) {
       try {
         const value = JSON.parse(localStorage.getItem(localStorage.key(i)));
@@ -333,7 +338,7 @@ module.exports = function asset(_request, response) {
     if (state.voiceIdentity) return state.voiceIdentity;
     const token = accessToken();
     const base = (authUserId(token) || 'guest').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 48) || 'guest';
-    state.voiceIdentity = 'player-' + base + '-v' + Math.random().toString(36).slice(2, 8);
+    state.voiceIdentity = 'player-' + base;
     return state.voiceIdentity;
   }
   function livekitRoomName() {
@@ -458,7 +463,7 @@ module.exports = function asset(_request, response) {
     if (!token) { status('نسخهٔ آفلاین آماده است؛ برای اتصال به تالار، از ورود اصلی بازی وارد شو.'); return; }
     const id = encodeURIComponent(state.gameId);
     const [gameResult, territoryResult, memberResult, eventResult] = await Promise.all([
-      apiPath('kaykha_games?id=eq.' + id + '&select=code,status,phase,round_no,mode', token),
+      apiPath('kaykha_games?id=eq.' + id + '&select=code,status,phase,round_no,mode,total_seats', token),
       apiPath('kaykha_territories?game_id=eq.' + id + '&select=territory_id,owner_member_id,strength,economy', token),
       apiPath('kaykha_members?game_id=eq.' + id + '&select=id,user_id,display_name,house_id,persona_key,prestige,shadow_awakened,coins,influence_tokens,reputation_score,credit_limit,blacklist_until_round', token),
       apiPath('kaykha_events?game_id=eq.' + id + '&select=round_no,tone,body,created_at&order=created_at.desc&limit=12', token)
@@ -471,7 +476,7 @@ module.exports = function asset(_request, response) {
     }
     const game = games[0];
     state.roundNo = Number(game.round_no || 1);
-    status('تالار ' + game.code + ' · راند ' + new Intl.NumberFormat('fa-IR').format(game.round_no) + ' · ' + phaseName(game.phase));
+    status('تالار ' + game.code + ' · ' + new Intl.NumberFormat('fa-IR').format((memberResult.body || []).length) + ' از ' + new Intl.NumberFormat('fa-IR').format(game.total_seats || 8) + ' بازیکن · راند ' + new Intl.NumberFormat('fa-IR').format(game.round_no) + ' · ' + phaseName(game.phase));
     const phase = $('#phase');
     if (phase) phase.textContent = 'راند ' + new Intl.NumberFormat('fa-IR').format(game.round_no) + ' · ' + phaseName(game.phase);
     if (territoryResult.ok && memberResult.ok) {
@@ -488,23 +493,32 @@ module.exports = function asset(_request, response) {
   }
   async function createLobby() {
     if (userName().length < 2) throw new Error('نام فرمانده را کامل بنویس.');
-    const rows = await rpc('create_kaykha_game', { p_display_name: userName(), p_house_id: faction(), p_total_seats: 6, p_mode: ($('#game-mode')?.value || 'hegemony') });
+    const capacity = Number($('#lobby-capacity')?.value || 8);
+    const rows = await rpc('create_kaykha_game', { p_display_name: userName(), p_house_id: faction(), p_total_seats: [4,6,8].includes(capacity) ? capacity : 8, p_mode: ($('#game-mode')?.value || 'hegemony') });
     if (state.gameId && state.gameId !== rows[0].game_id) await disconnectVoice(false);
     state.gameId = rows[0].game_id; localStorage.setItem(storageKey, state.gameId);
     updateVoiceControls();
     await savePersona();
     status('تالار ' + rows[0].game_code + ' ساخته شد. کدش را برای یاران بفرست.');
+    window.dispatchEvent(new CustomEvent('kaykha:lobby-success', { detail: { kind: 'create', gameId: rows[0].game_id, code: rows[0].game_code } }));
+  }
+  function normalizeLobbyCode(value) {
+    const digits = {'۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9','٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9'};
+    return String(value || '').replace(/[۰-۹٠-٩]/g, digit => digits[digit]).toUpperCase().replace(/[^A-Z0-9]/g, '');
   }
   async function joinLobby() {
     if (userName().length < 2) throw new Error('نام فرمانده را کامل بنویس.');
-    const code = ($('#lobby-code')?.value || '').trim();
-    if (code.length !== 6) throw new Error('کد شش‌کاراکتری تالار را وارد کن.');
+    const code = normalizeLobbyCode($('#lobby-code')?.value);
+    if (!/^[A-F0-9]{6}$/.test(code)) throw new Error('کد شش‌کاراکتری تالار را کامل وارد کن.');
+    if ($('#lobby-code')) $('#lobby-code').value = code;
     const rows = await rpc('join_kaykha_game', { p_code: code, p_display_name: userName(), p_house_id: faction() });
     if (state.gameId && state.gameId !== rows[0].game_id) await disconnectVoice(false);
     state.gameId = rows[0].game_id; localStorage.setItem(storageKey, state.gameId);
     updateVoiceControls();
     await savePersona();
-    status('وارد تالار ' + rows[0].game_code + ' شدی؛ صندلی ' + new Intl.NumberFormat('fa-IR').format(rows[0].seat_no) + ' برای توست.');
+    status('وارد تالار ' + rows[0].game_code + ' شدی؛ صندلی ' + new Intl.NumberFormat('fa-IR').format(rows[0].seat_no) + ' برای توست. اتصال صوتی در حال برقراری است…');
+    window.dispatchEvent(new CustomEvent('kaykha:lobby-success', { detail: { kind: 'join', gameId: rows[0].game_id, code: rows[0].game_code, seatNo: rows[0].seat_no } }));
+    await connectVoice();
   }
   async function run(action, done) {
     try { await action(); await readGame(); }
