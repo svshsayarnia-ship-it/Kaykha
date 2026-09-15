@@ -1,9 +1,11 @@
 const baseOnline = require('./kaykha-online.js');
 const voiceSession = require('./kaykha-voice-session.js');
+const sharedEngineClient = require('./kaykha-shared-engine-client.js');
 
 module.exports = function asset(request, response) {
   let baseBody = '';
   let voiceBody = '';
+  let sharedBody = '';
   const headers = {};
   const capture = {
     statusCode: 200,
@@ -23,9 +25,19 @@ module.exports = function asset(request, response) {
     status(code) { this.statusCode = code; return this; },
     send(chunk) { this.end(chunk); return this; }
   };
+  const sharedCapture = {
+    statusCode: 200,
+    setHeader() {},
+    getHeader() { return undefined; },
+    write(chunk) { if (chunk != null) sharedBody += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk); },
+    end(chunk) { if (chunk != null) sharedBody += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk); },
+    status(code) { this.statusCode = code; return this; },
+    send(chunk) { this.end(chunk); return this; }
+  };
 
   baseOnline(request || {}, capture);
   voiceSession(request || {}, voiceCapture);
+  sharedEngineClient(request || {}, sharedCapture);
 
   const bootstrap = String.raw`
 ;(()=>{
@@ -260,5 +272,5 @@ module.exports = function asset(request, response) {
   response.setHeader('content-type', 'application/javascript; charset=utf-8');
   response.setHeader('cache-control', 'no-store, max-age=0');
   response.setHeader('x-robots-tag', 'noindex');
-  response.end(bootstrap + baseBody + enhancement + '\n' + voiceBody);
+  response.end(bootstrap + baseBody + enhancement + '\n' + voiceBody + '\n' + sharedBody);
 };
