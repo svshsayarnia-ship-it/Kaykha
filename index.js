@@ -2,7 +2,6 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-
 function base64url(value) {
   return Buffer.from(value).toString('base64')
     .replace(/=/g, '')
@@ -57,9 +56,7 @@ async function livekitToken(request, response) {
     const apiKey = cleanEnv(process.env.LIVEKIT_API_KEY);
     const apiSecret = cleanEnv(process.env.LIVEKIT_API_SECRET);
     const livekitUrl = cleanEnv(process.env.LIVEKIT_URL).replace(/^https:/i, 'wss:').replace(/^http:/i, 'ws:');
-    if (!apiKey || !apiSecret || !livekitUrl) {
-      throw new Error('LiveKit environment is not configured');
-    }
+    if (!apiKey || !apiSecret || !livekitUrl) throw new Error('LiveKit environment is not configured');
     const input = await readJson(request);
     const room = String(input.room || '').trim();
     const identity = String(input.identity || '').trim();
@@ -68,22 +65,14 @@ async function livekitToken(request, response) {
       response.end(JSON.stringify({ error: 'Invalid room or identity' }));
       return;
     }
-
     const now = Math.floor(Date.now() / 1000);
     const token = signJwt({
       iss: apiKey,
       sub: identity,
       nbf: now - 10,
       exp: now + 3600,
-      video: {
-        room,
-        roomJoin: true,
-        canPublish: true,
-        canSubscribe: true,
-        canPublishData: true
-      }
+      video: { room, roomJoin: true, canPublish: true, canSubscribe: true, canPublishData: true }
     }, apiSecret);
-
     response.statusCode = 200;
     response.end(JSON.stringify({ token, url: livekitUrl }));
   } catch (error) {
@@ -140,14 +129,12 @@ async function serveCityAsset(request, response, requestUrl) {
     response.end();
     return;
   }
-
   const fileName = requestUrl.pathname.split('/').pop() || '';
   if (!/^[A-Za-z0-9_-]+\.webp$/.test(fileName)) {
     response.statusCode = 404;
     response.end('Not found');
     return;
   }
-
   const assetFolder = requestUrl.pathname.startsWith('/assets/characters/') ? 'characters' : 'cities';
   const localPath = path.join(__dirname, 'public', 'assets', assetFolder, fileName);
   try {
@@ -158,9 +145,7 @@ async function serveCityAsset(request, response, requestUrl) {
     if (request.method === 'HEAD') response.end();
     else response.end(image);
   } catch (error) {
-    if (error?.code !== 'ENOENT') {
-      console.error(`local ${assetFolder} asset load failed for ${fileName}`, error);
-    }
+    if (error?.code !== 'ENOENT') console.error(`local ${assetFolder} asset load failed for ${fileName}`, error);
     response.statusCode = error?.code === 'ENOENT' ? 404 : 500;
     response.setHeader('content-type', 'text/plain; charset=utf-8');
     response.setHeader('cache-control', 'no-store');
@@ -168,10 +153,12 @@ async function serveCityAsset(request, response, requestUrl) {
     else response.end(response.statusCode === 404 ? 'Not found' : 'Asset unavailable');
   }
 }
+
 async function serveRoot(request, response) {
   const localWarRoomHtml = require('./api/war-room-html.js');
   await localWarRoomHtml(request, response);
 }
+
 async function proxy(request, response) {
   const requestUrl = new URL(request.url || '/', 'https://kaykha-phase5.vercel.app');
 
@@ -179,61 +166,50 @@ async function proxy(request, response) {
     await livekitToken(request, response);
     return;
   }
-
   if (requestUrl.pathname === '/game-guide.html') {
     const localGameGuide = require('./api/game-guide-html.js');
     await localGameGuide(request, response);
     return;
   }
-
   if (requestUrl.pathname === '/guide.js' || requestUrl.pathname === '/api/guide.js') {
     serveLocalModuleAsset(response, './api/guide.js');
     return;
   }
-
   if (requestUrl.pathname === '/api/game-guide-html.js') {
     serveLocalModuleAsset(response, './api/game-guide-html.js');
     return;
   }
-
   if (requestUrl.pathname.startsWith('/assets/cities/') || requestUrl.pathname.startsWith('/assets/characters/')) {
     await serveCityAsset(request, response, requestUrl);
     return;
   }
-
   if (/^\/(command-reference\.css|command-reference\.js|command-visual-v2\.css|market-reference\.css|market-reference\.js|market-all-cities\.js|market-typography-v2\.css|economy-city-v3\.css|astrolabe-dashboard\.css|astrolabe-dashboard\.js|cinematic-controls\.css|cinematic-controls\.js|university-dashboard\.css|university-dashboard\.js|world-map-v2\.css|world-map-v2\.js|city-interactions-v2\.css|city-interactions-v2\.js|diwan-diorama\.css|diwan-diorama\.js|war-room\.js|command-map\.webp|market-goods\.webp|astrolabe-core\.webp|astrolabe-sun-moon-v2\.webp|armillary-sphere\.webp|academy-four-faculties-v2\.webp|cinematic-icon-sprite\.webp|iran-greater-map\.webp)$/.test(requestUrl.pathname)) {
     await servePublicAsset(request, response, requestUrl);
     return;
   }
-
   if (requestUrl.pathname === '/reference-skin.css') {
     const localReferenceSkin = require('./api/reference-skin.js');
     await localReferenceSkin(request, response);
     return;
   }
-
   if (requestUrl.pathname === '/world-shell.css') {
     serveLocalModuleAsset(response, './api/world-shell-css.js');
     return;
   }
-
   if (requestUrl.pathname === '/world-shell.js') {
     serveLocalModuleAsset(response, './api/world-shell-js.js');
     return;
   }
-
   if (requestUrl.pathname === '/game' || requestUrl.pathname === '/war-room.html') {
     const localWarRoomHtml = require('./api/war-room-html.js');
     await localWarRoomHtml(request, response);
     return;
   }
-
   if (requestUrl.pathname === '/war-room.css') {
     const localWarRoomCss = require('./api/war-room-css.js');
     await localWarRoomCss(request, response);
     return;
   }
-
   if (requestUrl.pathname === '/war-room.js') {
     await servePublicAsset(request, response, requestUrl);
     return;
@@ -244,10 +220,12 @@ async function proxy(request, response) {
     const localIndependentRoleClient = require('./api/kaykha-independent-role-ui.js');
     const localBribeNetworkClient = require('./api/kaykha-bribe-network-ui.js');
     const localIndependentCharacterCards = require('./api/kaykha-independent-character-cards.js');
+    const localFinalizationClient = require('./api/kaykha-finalization-client.js');
     let onlineBody = '';
     let roleBody = '';
     let bribeBody = '';
     let characterBody = '';
+    let finalizationBody = '';
     const makeCapture = sink => ({
       statusCode: 200,
       setHeader() {},
@@ -261,11 +239,12 @@ async function proxy(request, response) {
     await localIndependentRoleClient(request, makeCapture(chunk => { roleBody += chunk; }));
     await localBribeNetworkClient(request, makeCapture(chunk => { bribeBody += chunk; }));
     await localIndependentCharacterCards(request, makeCapture(chunk => { characterBody += chunk; }));
+    await localFinalizationClient(request, makeCapture(chunk => { finalizationBody += chunk; }));
     response.statusCode = 200;
     response.setHeader('content-type', 'application/javascript; charset=utf-8');
     response.setHeader('cache-control', 'no-store, max-age=0');
     response.setHeader('x-robots-tag', 'noindex');
-    response.end(onlineBody + '\n' + roleBody + '\n' + bribeBody + '\n' + characterBody);
+    response.end(onlineBody + '\n' + roleBody + '\n' + bribeBody + '\n' + characterBody + '\n' + finalizationBody);
     return;
   }
 
