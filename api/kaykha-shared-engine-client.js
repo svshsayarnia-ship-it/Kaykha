@@ -40,10 +40,10 @@ module.exports = function asset(_request, response) {
     }
     async function waitForToken(){for(let i=0;i<36;i++){if(token())return token();await sleep(250)}return null;}
 
+    // Realtime is the primary update path. Existing 7/8-second loops remain only as a 60s safety net.
     const nativeSetInterval=window.setInterval.bind(window);
     window.setInterval=(fn,delay,...args)=>{
-      const source=typeof fn==='function'?Function.prototype.toString.call(fn):'';
-      if(Number(delay)>=6000&&Number(delay)<=9000&&source.includes('safeReadGame'))delay=60000;
+      if(Number(delay)>=6000&&Number(delay)<=9000)delay=60000;
       return nativeSetInterval(fn,delay,...args);
     };
 
@@ -143,7 +143,17 @@ module.exports = function asset(_request, response) {
     }
     async function refreshMeta(){const gameId=localStorage.getItem(GAME_KEY);if(!gameId||!token())return;try{const meta=await readGameMeta(gameId);if(meta){phaseCache=meta.phase;practiceCache=Boolean(meta.is_practice);syncAiPanel()}}catch(_){}}
 
+    // The legacy join handler used to try every house after a conflict. Temporarily expose only
+    // the explicitly selected house to it, then immediately restore the selector.
+    function guardExplicitHouseChoice(){
+      const select=$('#faction');if(!select||select.options.length<2)return;
+      const saved=select.innerHTML,selected=select.value;
+      [...select.options].forEach(option=>{if(option.value!==selected)option.remove()});
+      setTimeout(()=>{if(!select.isConnected)return;select.innerHTML=saved;select.value=selected;},0);
+    }
+
     document.addEventListener('click',event=>{
+      if(event.target.closest('#join-lobby'))guardExplicitHouseChoice();
       const ai=event.target.closest('[data-ai-mode]');
       if(ai&&practiceCache){
         event.preventDefault();event.stopImmediatePropagation();const d=ai.dataset.aiMode;if(!['easy','hard','mastermind'].includes(d))return;
