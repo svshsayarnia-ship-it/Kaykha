@@ -80,12 +80,15 @@ module.exports = function asset(_request, response) {
       feedback('اثر «'+title+'» روی موتور بازی ثبت شد'+(detail?'؛ '+detail:'')+'.','done');
     }
     function normalizeIndependentCostUi(){
+      const statHtml='هزینه واقعی<b>۱ تا ۳ مهر رشوه</b>';
+      const costHtml='هزینه اجرا: <b>۱ تا ۳ مهر رشوه</b>';
+      const noteHtml='<b>مدل هزینه واحد:</b> برای همهٔ شخصیت‌های مستقل فقط «مهر رشوه» خرج می‌شود؛ مقدار هر پیشنهاد ۱ تا ۳ مهر است. عدد روایی جداگانه‌ای به‌عنوان هزینه وجود ندارد.';
       document.querySelectorAll('#independent-character-gallery .ind-char-card').forEach(card=>{
         const stats=card.querySelectorAll('.ind-char-stat');
-        if(stats[2])stats[2].innerHTML='هزینه واقعی<b>۱ تا ۳ مهر رشوه</b>';
-        const cost=card.querySelector('.ind-char-cost');if(cost)cost.innerHTML='هزینه اجرا: <b>۱ تا ۳ مهر رشوه</b>';
+        if(stats[2]&&stats[2].innerHTML!==statHtml)stats[2].innerHTML=statHtml;
+        const cost=card.querySelector('.ind-char-cost');if(cost&&cost.innerHTML!==costHtml)cost.innerHTML=costHtml;
       });
-      const note=$('.ind-char-engine-note');if(note)note.innerHTML='<b>مدل هزینه واحد:</b> برای همهٔ شخصیت‌های مستقل فقط «مهر رشوه» خرج می‌شود؛ مقدار هر پیشنهاد ۱ تا ۳ مهر است. عدد روایی جداگانه‌ای به‌عنوان هزینه وجود ندارد.';
+      const note=$('.ind-char-engine-note');if(note&&note.innerHTML!==noteHtml)note.innerHTML=noteHtml;
     }
     async function ruleAudit(){
       try{
@@ -115,7 +118,14 @@ module.exports = function asset(_request, response) {
         if(event.target.closest('#seal'))feedback('فرمان مهر شد؛ در انتظار Server Sync و سپیده‌دم…','processing');
         if(event.target.closest('#resolve'))feedback('Shared Resolver در حال حل همهٔ اثرهاست…','processing');
       },true);
-      const observer=new MutationObserver(normalizeIndependentCostUi);observer.observe(document.documentElement,{childList:true,subtree:true});normalizeIndependentCostUi();
+      let normalizeQueued=false;
+      const observer=new MutationObserver(()=>{
+        if(normalizeQueued)return;
+        normalizeQueued=true;
+        requestAnimationFrame(()=>{normalizeQueued=false;normalizeIndependentCostUi();});
+      });
+      observer.observe(document.documentElement,{childList:true,subtree:true});
+      normalizeIndependentCostUi();
       window.addEventListener('storage',event=>{if(event.key===GAME_KEY)bind();});
       window.addEventListener('kaykha:lobby-success',()=>setTimeout(bind,100));
     }
