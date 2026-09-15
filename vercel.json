@@ -8,9 +8,14 @@
       "config": {
         "includeFiles": ["public/assets/cities/*.webp", "public/assets/characters/*.webp", "public/*.css", "public/*.js", "public/*.webp", "api/*.js"]
       }
+    },
+    {
+      "src": "api/livekit-token.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
+    { "src": "/api/livekit-token", "dest": "/api/livekit-token.js" },
     { "src": "/(.*)", "dest": "/index.js" }
   ]
 }
