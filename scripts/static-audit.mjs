@@ -32,6 +32,13 @@ run('mobile',()=>{
   has(body,'20260916-mobile-v3','mobile v3 marker missing');
   has(body,'kx-map-scroll-frame','map mobile controller missing');
   has(body,'kx-v3-fold','Diwan accordion not owned by mobile controller');
+
+  const linear=require(path.join(root,'api/kaykha-mobile-linear-v4.js'));
+  let linearBody='';linear({},capture(chunk=>linearBody+=chunk));new Function(linearBody);
+  has(linearBody,'20260916-mobile-linear-v4','linear mobile v4 marker missing');
+  has(linearBody,'kx-mobile-resource-bar','mobile resource bar missing');
+  has(linearBody,'data-mobile-seal','linear command seal control missing');
+  has(linearBody,'kx-causal-sheet','causal result sheet missing');
 });
 
 run('authority',()=>{
@@ -66,6 +73,9 @@ run('security',()=>{
   if(secure!=="module.exports = require('./livekit-token.js');")fail('LiveKit token handlers are not unified');
   const migration=read('supabase/migrations/20260916061000_kaykha_canonical_secret_order_routes.sql');
   has(migration,"new.order_type in ('defend','trade')",'origin-scoped order canonicalization migration missing');
+  const progressive=read('supabase/migrations/20260916202500_kaykha_phase5_progressive_disclosure_guards.sql');
+  has(progressive,"new.order_type in ('caravan','spy')",'progressive order guard missing');
+  has(progressive,'kaykha_progressive_loan_guard','progressive loan guard missing');
 });
 
 if(section==='all'||section==='bundle'){
@@ -75,9 +85,11 @@ if(section==='all'||section==='bundle'){
   await index({url:'/kaykha-online.js',method:'GET',headers:{}},response);
   if(statusCode!==200)fail('assembled /kaykha-online.js did not return 200');
   new Function(bundle);
-  has(bundle,'server-score-v2','objective HUD missing from assembled bundle');
+  has(bundle,'server-score-v3','objective HUD/deadline sync missing from assembled bundle');
   has(bundle,'kaykhaDiwanAuthority','Diwan authority missing from assembled bundle');
   has(bundle,'20260916-mobile-v3','mobile v3 missing from assembled bundle');
+  has(bundle,'20260916-mobile-linear-v4','linear mobile v4 missing from assembled bundle');
+  has(bundle,'nextDawnAt','authoritative dawn deadline missing from assembled bundle');
   lacks(bundle,"window.dispatchEvent(new Event('focus'))",'assembled bundle contains fake focus sync');
   console.log('PASS bundle');
 }
