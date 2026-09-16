@@ -174,13 +174,13 @@ async function proxy(request, response) {
     roleBody = roleBody.replace('refreshTimer=setInterval(()=>{if(!document.hidden)refresh();},7000);', 'refreshTimer=setInterval(()=>{if(!document.hidden)refresh();},60000);');
     bribeBody = bribeBody.replace('timer=setInterval(()=>{if(!document.hidden)refresh();},8000);', 'timer=setInterval(()=>{if(!document.hidden)refresh();},60000);');
 
-    // The mobile UX needs to re-run only when structural UI modules are inserted.
-    // Ordinary logs, counters and realtime text changes must not trigger a full layout pass.
+    // The mobile UX needs to re-run only for structural UI changes. Dynamic panels
+    // must still refresh their close/accordion affordances when their own content changes.
     mobileUxBody = mobileUxBody.replace(
       'const mo=new MutationObserver(schedule);mo.observe(document.body,{childList:true,subtree:true});',
       `const relevant='.diwan-diorama,.independent-role-console,.bribe-network,.role-gallery-panel,.context-rail,.market-picker,[data-view-panel="diwan"],[data-view-panel="map"],.astrolabe-desk';
       window.__KAYKHA_MOBILE_OBSERVER_FILTERED__=true;
-      const mo=new MutationObserver(records=>{for(const record of records){for(const node of record.addedNodes){if(node.nodeType!==1)continue;if(node.matches?.(relevant)||node.querySelector?.(relevant)){schedule();return;}}}});mo.observe(document.body,{childList:true,subtree:true});`
+      const mo=new MutationObserver(records=>{for(const record of records){const target=record.target;if(target?.nodeType===1&&(target.matches?.(relevant)||target.closest?.(relevant))){schedule();return;}for(const node of record.addedNodes){if(node.nodeType!==1)continue;if(node.matches?.(relevant)||node.querySelector?.(relevant)){schedule();return;}}}});mo.observe(document.body,{childList:true,subtree:true});`
     );
 
     // Legacy seal confirmation must never contradict the server action manifest.
