@@ -145,8 +145,9 @@ async function proxy(request, response) {
     const localAuthoritativeControls = require('./api/kaykha-authoritative-controls.js');
     const localObjectiveSync = require('./api/kaykha-objective-sync.js');
     const localDiwanAuthority = require('./api/kaykha-diwan-authority.js');
+    const localInteractionFix = require('./api/kaykha-phase5-interaction-fix.js');
 
-    const bodies = { online:'', role:'', bribe:'', character:'', finalization:'', mobile:'', authority:'', objective:'', diwan:'' };
+    const bodies = { online:'', role:'', bribe:'', character:'', finalization:'', mobile:'', authority:'', objective:'', diwan:'', interaction:'' };
     const makeCapture = key => ({
       statusCode: 200,
       setHeader() {},
@@ -166,6 +167,7 @@ async function proxy(request, response) {
     await localAuthoritativeControls(request, makeCapture('authority'));
     await localObjectiveSync(request, makeCapture('objective'));
     await localDiwanAuthority(request, makeCapture('diwan'));
+    await localInteractionFix(request, makeCapture('interaction'));
 
     // Realtime/focus events are primary. These module-local timers are only safety fallbacks.
     bodies.role = bodies.role.replace('refreshTimer=setInterval(()=>{if(!document.hidden)refresh();},7000);', 'refreshTimer=setInterval(()=>{if(!document.hidden)refresh();},60000);');
@@ -181,7 +183,7 @@ async function proxy(request, response) {
     response.setHeader('x-robots-tag', 'noindex');
     response.end([
       bodies.online,bodies.role,bodies.bribe,bodies.character,bodies.finalization,
-      bodies.mobile,bodies.authority,bodies.objective,bodies.diwan
+      bodies.mobile,bodies.authority,bodies.objective,bodies.diwan,bodies.interaction
     ].join('\n'));
     return;
   }
