@@ -12,10 +12,15 @@
     {
       "src": "api/livekit-token.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "api/kaykha-online-hardened.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
     { "src": "/api/livekit-token", "dest": "/api/livekit-token.js" },
+    { "src": "/kaykha-online.js", "dest": "/api/kaykha-online-hardened.js" },
     { "src": "/(.*)", "dest": "/index.js" }
   ]
 }
