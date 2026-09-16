@@ -1,70 +1,158 @@
-module.exports = function asset(_request,response){
-  response.setHeader('content-type','application/javascript; charset=utf-8');
-  response.setHeader('cache-control','no-store, max-age=0');
-  response.statusCode=200;
-  response.end(String.raw`
-;(()=>{
-  'use strict';
-  const URL='https://uwhfxmiguugujcomwmds.supabase.co';
-  const KEY='sb_publishable_KIuxWr99zocUh2EBiXkQaQ_LB9PD8Wv';
-  const GAME_KEY='kaykha.active-game-id';
-  const GUEST_KEY='kaykha.guest-session';
-  const ORDERS=['attack','defend','support','caravan','trade','spy','revolt','raid','sabotage'];
-  const CITY={ray:'ری',ctesiphon:'تیسفون',isfahan:'اصفهان',hegmataneh:'هگمتانه',nishapur:'نیشابور',merv:'مرو',balkh:'بلخ',yazd:'یزد',alamut:'الموت',gorgan:'گرگان',tabriz:'تبریز',susa:'شوش',hormuz:'هرمز',shiraz:'شیراز',bam:'بم',zaranj:'زرنج'};
-  const META={attack:{label:'حمله',icon:'⚔',sound:'danger',copy:'نبرد روی نقشه حل شد.'},defend:{label:'دفاع',icon:'⛨',sound:'seal',copy:'پادگان مستحکم شد.'},support:{label:'پشتیبانی',icon:'✦',sound:'seal',copy:'نیروی کمکی رسید.'},caravan:{label:'کاروان',icon:'⌘',sound:'market',copy:'اثر مسیر و اقتصاد کاروان ثبت شد.'},trade:{label:'تجارت',icon:'◈',sound:'market',copy:'اثر اقتصادی تجارت ثبت شد.'},spy:{label:'جاسوسی',icon:'◉',sound:'whisper',copy:'پروندهٔ اطلاعاتی در دفتر خصوصی ثبت شد.'},revolt:{label:'شورش',icon:'☁',sound:'danger',copy:'فشار سیاسی و آشوب روی شهر اعمال شد.'},raid:{label:'غارت',icon:'⌁',sound:'danger',copy:'غارت و اختلال اقتصادی ثبت شد.'},sabotage:{label:'خرابکاری',icon:'✹',sound:'danger',copy:'خرابکاری اجرا یا توسط ضدبازی خنثی شد.'}};
-  const seen=new Set();
-  let guide=null;
-  let catchupBusy=false;
-  const $=selector=>document.querySelector(selector);
+module.exports = function asset(_request, response) {
+  function finalizationController() {
+    'use strict';
 
-  function stored(key){try{return JSON.parse(localStorage.getItem(key)||'null');}catch(_){return null;}}
-  function tokenFrom(value,depth=0){if(!value||depth>4)return null;if(typeof value==='object'){if(typeof value.access_token==='string'&&value.access_token.split('.').length===3)return value.access_token;for(const child of Object.values(value)){const token=tokenFrom(child,depth+1);if(token)return token;}}return null;}
-  function token(){return tokenFrom(stored(GUEST_KEY));}
-  function headers(){return {apikey:KEY,Authorization:'Bearer '+token(),'Content-Type':'application/json'};}
-  async function rpc(name,payload={}){if(!token())throw new Error('هویت تالار هنوز آماده نیست.');const response=await fetch(URL+'/rest/v1/rpc/'+name,{method:'POST',headers:headers(),body:JSON.stringify(payload)});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.message||body.hint||body.error||'درخواست موتور بازی ناموفق بود.');return body;}
-  async function table(path){const response=await fetch(URL+'/rest/v1/'+path,{headers:headers()});const body=await response.json().catch(()=>[]);if(!response.ok)throw new Error(body.message||body.hint||'دفتر اثرها خوانده نشد.');return body;}
+    const ORDERS = ['attack','defend','support','caravan','trade','spy','revolt','raid','sabotage'];
+    const CITY = {
+      ray:'ری',ctesiphon:'تیسفون',isfahan:'اصفهان',hegmataneh:'هگمتانه',nishapur:'نیشابور',merv:'مرو',balkh:'بلخ',
+      yazd:'یزد',alamut:'الموت',gorgan:'گرگان',tabriz:'تبریز',susa:'شوش',hormuz:'هرمز',shiraz:'شیراز',bam:'بم',zaranj:'زرنج'
+    };
+    const META = {
+      attack:{label:'حمله',icon:'⚔',sound:'danger',copy:'نتیجه نبرد روی Shared Resolver ثبت شد.'},
+      defend:{label:'دفاع',icon:'⛨',sound:'seal',copy:'پادگان مستحکم شد.'},
+      support:{label:'پشتیبانی',icon:'✦',sound:'seal',copy:'نیروی کمکی رسید.'},
+      caravan:{label:'کاروان',icon:'⌘',sound:'market',copy:'اثر مسیر و اقتصاد کاروان ثبت شد.'},
+      trade:{label:'تجارت',icon:'◈',sound:'market',copy:'اثر اقتصادی تجارت ثبت شد.'},
+      spy:{label:'جاسوسی',icon:'◉',sound:'whisper',copy:'پرونده اطلاعاتی در دفتر خصوصی ثبت شد.'},
+      revolt:{label:'شورش',icon:'☁',sound:'danger',copy:'فشار سیاسی و آشوب روی شهر اعمال شد.'},
+      raid:{label:'غارت',icon:'⌁',sound:'danger',copy:'نتیجه غارت توسط سرور ثبت شد.'},
+      sabotage:{label:'خرابکاری',icon:'✹',sound:'danger',copy:'نتیجه خرابکاری توسط سرور ثبت شد.'}
+    };
+    const seen = new Set();
+    const $ = selector => document.querySelector(selector);
 
-  function installStyles(){
-    if($('#kaykha-finalization-style'))return;
-    const style=document.createElement('style');style.id='kaykha-finalization-style';style.textContent=`
-      #kaykha-action-feedback{margin:.7rem 0;padding:9px 11px;border:1px solid rgba(226,201,128,.24);background:rgba(4,13,20,.72);border-radius:10px;color:#aebfc0;font-size:10px;line-height:1.75}#kaykha-action-feedback b{color:#ead28a}#kaykha-action-feedback[data-state="processing"]{border-color:rgba(214,170,74,.6)}#kaykha-action-feedback[data-state="done"]{border-color:rgba(71,157,137,.55);color:#c4e3dc}
-      #kaykha-order-fx{position:fixed;z-index:260;inset:0;pointer-events:none;display:grid;place-items:center;opacity:0;transition:opacity .18s ease}#kaykha-order-fx.show{opacity:1}#kaykha-order-fx .fx-card{min-width:min(420px,84vw);max-width:560px;padding:16px 18px;border:1px solid rgba(226,201,128,.45);background:rgba(5,11,17,.93);box-shadow:0 24px 80px rgba(0,0,0,.58);text-align:center;border-radius:14px;animation:kaykhaFxCard 1.65s ease both}#kaykha-order-fx .fx-icon{font-size:32px;color:#e7c86f}#kaykha-order-fx strong{display:block;margin-top:4px;color:#f1dc9c;font-size:18px}#kaykha-order-fx small{display:block;margin-top:6px;color:#b2c2c2;line-height:1.8}@keyframes kaykhaFxCard{0%{transform:scale(.92)}25%{transform:scale(1.025)}100%{transform:scale(1)}}
-      #territories button.kfx{position:relative;z-index:4;animation:kfxPulse 1.2s ease both}#territories button.kfx-attack{box-shadow:0 0 0 3px rgba(176,65,55,.7),0 0 34px rgba(176,65,55,.55)!important}#territories button.kfx-defend{box-shadow:0 0 0 3px rgba(85,133,185,.75),0 0 34px rgba(85,133,185,.5)!important}#territories button.kfx-support{box-shadow:0 0 0 3px rgba(208,178,85,.72),0 0 34px rgba(208,178,85,.5)!important}#territories button.kfx-caravan,#territories button.kfx-trade{box-shadow:0 0 0 3px rgba(74,154,145,.72),0 0 34px rgba(74,154,145,.48)!important}#territories button.kfx-spy{box-shadow:0 0 0 3px rgba(147,107,190,.72),0 0 34px rgba(147,107,190,.5)!important}#territories button.kfx-revolt{animation:kfxShake .7s ease both;box-shadow:0 0 0 3px rgba(160,77,68,.72),0 0 38px rgba(160,77,68,.58)!important}#territories button.kfx-raid{filter:saturate(.45) contrast(1.2);box-shadow:0 0 0 3px rgba(157,103,57,.72),0 0 34px rgba(157,103,57,.5)!important}#territories button.kfx-sabotage{animation:kfxGlitch .85s steps(2,end) both;box-shadow:0 0 0 3px rgba(178,74,102,.72),0 0 36px rgba(178,74,102,.5)!important}@keyframes kfxPulse{0%{transform:scale(.97)}35%{transform:scale(1.045)}100%{transform:none}}@keyframes kfxShake{0%,100%{transform:none}25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-2px)}}@keyframes kfxGlitch{0%{transform:none;filter:hue-rotate(0)}35%{transform:translate(2px,-1px);filter:hue-rotate(28deg)}70%{transform:translate(-2px,1px);filter:hue-rotate(-28deg)}100%{transform:none}}
-      .kaykha-rule-audit{display:inline-flex;align-items:center;gap:5px;margin-inline-start:5px;padding:3px 7px;border:1px solid rgba(72,157,137,.45);border-radius:999px;color:#aee0d5;font-size:8px}.kaykha-rule-audit.bad{border-color:rgba(177,71,62,.55);color:#e6aaa0}.logic-guide{margin:0 0 14px;border:1px solid rgba(226,201,128,.28);background:rgba(5,15,22,.72);border-radius:12px;padding:0 12px}.logic-guide summary{cursor:pointer;padding:11px 0;color:#efd68e;font-weight:800;font-size:11px}.logic-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding-bottom:12px}.logic-card{border:1px solid rgba(255,255,255,.08);background:#0003;padding:9px}.logic-card b{display:block;color:#e7cf91;font-size:10px;margin-bottom:4px}.logic-card p{margin:3px 0;color:#aebfbe;font-size:9px;line-height:1.75}.shadow-risk{margin-top:8px;border:1px solid rgba(170,114,80,.28);padding:8px;background:#120c0a80}.shadow-risk-head{display:flex;justify-content:space-between;gap:8px;color:#d8c19a;font-size:9px}.shadow-risk-bar{height:7px;background:#0008;border-radius:99px;overflow:hidden;margin-top:6px}.shadow-risk-bar span{display:block;height:100%;background:linear-gradient(90deg,#4a9a91,#c9a45d,#a24d48);width:0}.loan-rules{margin-top:8px;padding:8px;border:1px solid rgba(201,164,93,.2);background:#0002;color:#aebdbc;font-size:9px;line-height:1.75}.resource-wait{opacity:.45!important;cursor:not-allowed!important}@media(max-width:720px){.logic-grid{grid-template-columns:1fr}}
-    `;document.head.appendChild(style);
+    function installStyles() {
+      if ($('#kaykha-finalization-style')) return;
+      const style = document.createElement('style');
+      style.id = 'kaykha-finalization-style';
+      style.textContent = `
+        #kaykha-action-feedback{margin:.7rem 0;padding:9px 11px;border:1px solid rgba(226,201,128,.24);background:rgba(4,13,20,.72);border-radius:10px;color:#aebfc0;font-size:10px;line-height:1.75}
+        #kaykha-action-feedback b{color:#ead28a}#kaykha-action-feedback[data-state="processing"]{border-color:rgba(214,170,74,.6)}#kaykha-action-feedback[data-state="done"]{border-color:rgba(71,157,137,.55);color:#c4e3dc}
+        #kaykha-order-fx{position:fixed;z-index:1260;inset:0;pointer-events:none;display:grid;place-items:center;opacity:0;transition:opacity .18s ease}
+        #kaykha-order-fx.show{opacity:1}#kaykha-order-fx .fx-card{min-width:min(420px,84vw);max-width:560px;padding:16px 18px;border:1px solid rgba(226,201,128,.45);background:rgba(5,11,17,.94);box-shadow:0 24px 80px rgba(0,0,0,.58);text-align:center;border-radius:14px;animation:kaykhaFxCard 1.4s ease both}
+        #kaykha-order-fx .fx-icon{font-size:32px;color:#e7c86f}#kaykha-order-fx strong{display:block;margin-top:4px;color:#f1dc9c;font-size:18px}#kaykha-order-fx small{display:block;margin-top:6px;color:#b2c2c2;line-height:1.8}
+        #territories button.kfx{position:relative;z-index:4;animation:kfxPulse 1.05s ease both}#territories button.kfx-attack{box-shadow:0 0 0 3px rgba(176,65,55,.7),0 0 34px rgba(176,65,55,.55)!important}#territories button.kfx-defend{box-shadow:0 0 0 3px rgba(85,133,185,.75),0 0 34px rgba(85,133,185,.5)!important}#territories button.kfx-support{box-shadow:0 0 0 3px rgba(208,178,85,.72),0 0 34px rgba(208,178,85,.5)!important}#territories button.kfx-caravan,#territories button.kfx-trade{box-shadow:0 0 0 3px rgba(74,154,145,.72),0 0 34px rgba(74,154,145,.48)!important}#territories button.kfx-spy{box-shadow:0 0 0 3px rgba(147,107,190,.72),0 0 34px rgba(147,107,190,.5)!important}#territories button.kfx-revolt,#territories button.kfx-raid,#territories button.kfx-sabotage{box-shadow:0 0 0 3px rgba(178,74,84,.72),0 0 36px rgba(178,74,84,.5)!important}
+        @keyframes kaykhaFxCard{0%{transform:scale(.94)}30%{transform:scale(1.02)}100%{transform:scale(1)}}@keyframes kfxPulse{0%{transform:scale(.97)}35%{transform:scale(1.04)}100%{transform:none}}
+      `;
+      document.head.appendChild(style);
+    }
+
+    function ensureFeedback() {
+      let node = $('#kaykha-action-feedback');
+      if (node) return node;
+      const anchor = $('#choice') || $('#order-intel-summary') || $('#orders');
+      if (!anchor) return null;
+      node = document.createElement('div');
+      node.id = 'kaykha-action-feedback';
+      node.dataset.state = 'idle';
+      node.innerHTML = '<b>وضعیت فرمان:</b> آماده انتخاب و مهر.';
+      anchor.insertAdjacentElement('afterend', node);
+      return node;
+    }
+
+    function feedback(text, state = 'idle') {
+      const node = ensureFeedback();
+      if (!node) return;
+      node.dataset.state = state;
+      node.innerHTML = '<b>وضعیت فرمان:</b> ' + text;
+    }
+
+    function ensureFx() {
+      let node = $('#kaykha-order-fx');
+      if (node) return node;
+      node = document.createElement('div');
+      node.id = 'kaykha-order-fx';
+      node.innerHTML = '<div class="fx-card"><span class="fx-icon">✦</span><strong>نتیجه فرمان</strong><small></small></div>';
+      document.body.appendChild(node);
+      return node;
+    }
+
+    function cityButton(id) {
+      const name = CITY[id] || id;
+      return Array.from(document.querySelectorAll('#territories button')).find(button => button.querySelector('b')?.textContent?.trim() === name) || null;
+    }
+
+    function deltaText(delta = {}) {
+      const parts = [];
+      [['strength','سپاه'],['economy','اقتصاد'],['legitimacy','مشروعیت'],['poverty','فقر'],['coins','سکه'],['influence_tokens','نفوذ'],['suspicion_level','سوءظن'],['reputation_score','اعتبار مالی'],['prestige','اعتبار درباری']].forEach(([key,label]) => {
+        const value = Number(delta?.[key] || 0);
+        if (value) parts.push(label + ' ' + (value > 0 ? '+' : '') + value);
+      });
+      return parts.join(' · ');
+    }
+
+    function flashCity(order, territory) {
+      const button = cityButton(territory);
+      if (!button) return;
+      const classes = ['kfx'].concat(ORDERS.map(item => 'kfx-' + item));
+      button.classList.remove(...classes);
+      void button.offsetWidth;
+      button.classList.add('kfx', 'kfx-' + order);
+      setTimeout(() => button.classList.remove(...classes), 1300);
+    }
+
+    function showOrder(row) {
+      const delta = row.delta || {};
+      const order = ORDERS.includes(row.source_order_type) ? row.source_order_type :
+        (ORDERS.includes(row.effect_kind) ? row.effect_kind :
+          (row.effect_kind === 'combat_result' ? 'attack' : null));
+      if (!order) return;
+      const meta = META[order];
+      const territory = delta.affected_territory_id || delta.target || delta.origin || delta.territory_id;
+      flashCity(order, territory);
+      const fx = ensureFx();
+      const detail = deltaText(delta);
+      fx.querySelector('.fx-icon').textContent = meta.icon;
+      fx.querySelector('strong').textContent = meta.label + (territory ? ' · ' + (CITY[territory] || territory) : '');
+      fx.querySelector('small').textContent = meta.copy + (detail ? ' ' + detail : '');
+      fx.classList.add('show');
+      setTimeout(() => fx.classList.remove('show'), 1450);
+      feedback(meta.label + ' حل شد' + (detail ? '؛ ' + detail : '') + '.', 'done');
+      try { window.kaykhaSound?.play?.(meta.sound); } catch (_) {}
+      window.dispatchEvent(new CustomEvent('kaykha:visual-outcome', { detail: { order, event: row } }));
+    }
+
+    function showGeneric(row) {
+      const detail = deltaText(row.delta || {});
+      const label = String(row.effect_kind || 'اثر بازی').replaceAll('_', ' ');
+      feedback('اثر «' + label + '» روی موتور مرکزی ثبت شد' + (detail ? '؛ ' + detail : '') + '.', 'done');
+      window.dispatchEvent(new CustomEvent('kaykha:visual-outcome', { detail: { event: row } }));
+    }
+
+    function processEffect(row) {
+      if (!row) return;
+      const id = row.id || [row.game_id,row.round_no,row.entity_type,row.entity_id,row.effect_kind].join(':');
+      if (seen.has(id)) return;
+      seen.add(id);
+      if (row.entity_type === 'order' || ORDERS.includes(row.source_order_type) || row.effect_kind === 'combat_result') showOrder(row);
+      else showGeneric(row);
+    }
+
+    function bind() {
+      window.addEventListener('kaykha:effect-event', event => {
+        const detail = event.detail || {};
+        processEffect(detail.event || detail);
+      });
+      window.addEventListener('kaykha:order-state', event => {
+        const state = event.detail?.state;
+        if (state === 'sealed') feedback('فرمان مهر شد؛ تا سپیده‌دم منتظر Resolver سرور است.', 'processing');
+        else if (state === 'resolving') feedback('سپیده‌دم روی سرور در حال محاسبه است…', 'processing');
+      });
+    }
+
+    function boot() {
+      installStyles();
+      ensureFeedback();
+      bind();
+      window.__KAYKHA_FINALIZATION__ = 'shared-effect-bus-v3';
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
+    else boot();
   }
-  function ensureFeedback(){let node=$('#kaykha-action-feedback');if(node)return node;const anchor=$('#choice')||$('#order-intel-summary')||$('#orders');if(!anchor)return null;node=document.createElement('div');node.id='kaykha-action-feedback';node.dataset.state='idle';node.innerHTML='<b>وضعیت فرمان:</b> آماده انتخاب و مهر.';anchor.insertAdjacentElement('afterend',node);return node;}
-  function feedback(text,state='idle'){const node=ensureFeedback();if(node){node.dataset.state=state;node.innerHTML='<b>وضعیت فرمان:</b> '+text;}}
-  function ensureFx(){let node=$('#kaykha-order-fx');if(node)return node;node=document.createElement('div');node.id='kaykha-order-fx';node.innerHTML='<div class="fx-card"><span class="fx-icon">✦</span><strong>نتیجه فرمان</strong><small></small></div>';document.body.appendChild(node);return node;}
-  function cityButton(id){const name=CITY[id]||id;return [...document.querySelectorAll('#territories button')].find(button=>button.querySelector('b')?.textContent?.trim()===name)||null;}
-  function deltaText(delta={}){const parts=[];[['strength','سپاه'],['economy','اقتصاد'],['legitimacy','مشروعیت'],['poverty','فقر'],['coins','سکه'],['influence_tokens','نفوذ'],['suspicion_level','سوءظن'],['reputation_score','اعتبار مالی'],['prestige','اعتبار درباری']].forEach(([key,label])=>{const value=Number(delta?.[key]||0);if(value)parts.push(label+' '+(value>0?'+':'')+value);});return parts.join(' · ');}
-  function flashCity(order,territory){const button=cityButton(territory);if(!button)return;const classes=['kfx',...ORDERS.map(item=>'kfx-'+item)];button.classList.remove(...classes);void button.offsetWidth;button.classList.add('kfx','kfx-'+order);setTimeout(()=>button.classList.remove(...classes),1450);}
-  function showOrder(event){const order=ORDERS.includes(event.source_order_type)?event.source_order_type:(ORDERS.includes(event.effect_kind)?event.effect_kind:null);if(!order)return;const delta=event.delta||{},territory=delta.affected_territory_id||delta.target||delta.origin,meta=META[order];flashCity(order,territory);const fx=ensureFx(),detail=deltaText(delta);fx.querySelector('.fx-icon').textContent=meta.icon;fx.querySelector('strong').textContent=meta.label+(territory?' · '+(CITY[territory]||territory):'');fx.querySelector('small').textContent=meta.copy+(detail?' '+detail:'');fx.classList.add('show');setTimeout(()=>fx.classList.remove('show'),1650);feedback(meta.label+' اجرا شد'+(detail?'؛ '+detail:'')+'.','done');try{window.kaykhaSound?.play?.(meta.sound);}catch(_){}window.dispatchEvent(new CustomEvent('kaykha:visual-outcome',{detail:{order,event}}));}
-  function showIndependent(event){if(event.entity_type!=='independent')return;const title=(event.effect_kind||'اثر مستقل').replace(/^independent_/,'').replace(/^role_/,'');const detail=deltaText(event.delta||{});feedback('اثر «'+title+'» روی موتور مرکزی ثبت شد'+(detail?'؛ '+detail:'')+'.','done');if(event.effect_kind==='shadow_exposure')refreshShadowRisk();}
-  function processEffect(event,animate=true){if(!event?.id||seen.has(event.id))return;seen.add(event.id);if(!animate)return;if(event.entity_type==='order')showOrder(event);else if(event.entity_type==='independent')showIndependent(event);}
 
-  function textList(items){return (items||[]).join(' · ');}
-  function ensureLogicPanel(){if(!guide||$('#kaykha-logic-guide'))return;const anchor=$('.command-hero');if(!anchor)return;const panel=document.createElement('details');panel.id='kaykha-logic-guide';panel.className='logic-guide';panel.innerHTML='<summary>منطق بازی · فرمول نبرد، اقتصاد و زمان‌بندی</summary><div class="logic-grid"><div class="logic-card"><b>نبرد</b><p>'+guide.combat.formula+'</p><p>'+guide.combat.resolution_order+'</p><p>مسدودکننده قطعی: '+textList(guide.combat.hard_blocks)+'</p><p>'+guide.combat.intel+'</p></div><div class="logic-card"><b>اقتصاد: فرمان ≠ مالکیت</b><p>'+guide.economy.trade+'</p><p>'+guide.economy.caravan+'</p><p>'+guide.economy.market+'</p></div><div class="logic-card"><b>ساعت بازی</b><p><strong>فوری:</strong> '+textList(guide.clock.immediate)+'</p><p><strong>سپیده‌دم:</strong> '+textList(guide.clock.dawn)+'</p><p>'+guide.clock.rule+'</p></div><div class="logic-card"><b>سه منبع متفاوت</b><p>'+guide.currencies.prestige+'</p><p>'+guide.currencies.credit+'</p><p>'+guide.currencies.influence+'</p></div></div>';anchor.insertAdjacentElement('afterend',panel);}
-  function ensureLoanRules(){if(!guide||$('#kaykha-loan-rules'))return;const anchor=$('#credit-summary');if(!anchor)return;const node=document.createElement('div');node.id='kaykha-loan-rules';node.className='loan-rules';node.innerHTML='<b>قانون نکول وثیقه</b><br>'+guide.loans.territory+'<br>'+guide.loans.income+'<br>'+guide.loans.route+'<br>'+guide.loans.credit_penalty;anchor.insertAdjacentElement('afterend',node);}
-  function renameCurrencies(){const prestige=$('#prestige');const parent=prestige?.parentElement;if(!parent)return;[...parent.childNodes].filter(node=>node.nodeType===3).forEach(node=>{const value=node.nodeValue||'';if(value.includes('Prestige'))return;if(value.trim()==='اعتبار' || value.includes('اعتبار:'))node.nodeValue=value.replace('اعتبار','اعتبار درباری (Prestige)');});}
-  function syncResourceGuards(){const resource=$('#economy-status');if(!resource)return;const ready=!resource.textContent.includes('—');['send-whisper','post-bounty','create-contract','create-loan','buy-deed'].forEach(id=>{const button=$('#'+id);if(!button)return;if(!ready){if(!button.dataset.logicGuard){button.dataset.logicGuard='1';button.dataset.logicWasDisabled=button.disabled?'1':'0';}button.disabled=true;button.classList.add('resource-wait');button.title='ابتدا خزانه و نفوذ باید از سرور همگام شوند.';}else if(button.dataset.logicGuard==='1'){const was=button.dataset.logicWasDisabled==='1';delete button.dataset.logicGuard;delete button.dataset.logicWasDisabled;button.classList.remove('resource-wait');button.title='';if(!was)button.disabled=false;}});}
-  async function loadGuide(){try{guide=await rpc('get_kaykha_logic_guide',{});ensureLogicPanel();ensureLoanRules();renameCurrencies();}catch(_){}}
-  async function refreshShadowRisk(){const gameId=localStorage.getItem(GAME_KEY);if(!gameId||!token())return;try{const [network,roleRows]=await Promise.all([rpc('get_kaykha_independent_bribe_state',{p_game_id:gameId}),rpc('get_kaykha_shadow_role',{p_game_id:gameId})]);const role=Array.isArray(roleRows)?roleRows[0]:null;const suspicion=Number(network?.resources?.suspicion||0);const host=$('#shadow-role')?.closest('.rp-card')||$('#independent-role-console');if(!host)return;let node=$('#kaykha-shadow-risk');if(!node){node=document.createElement('div');node.id='kaykha-shadow-risk';node.className='shadow-risk';node.innerHTML='<div class="shadow-risk-head"><b>ریسک افشای نقش سایه</b><span></span></div><div class="shadow-risk-bar"><span></span></div><small></small>';host.appendChild(node);}node.querySelector('.shadow-risk-head span').textContent=suspicion+'/۱۰۰';node.querySelector('.shadow-risk-bar span').style.width=Math.min(100,suspicion)+'%';node.querySelector('small').textContent=role?.revealed_at?'نقش سایه افشا شده است.':suspicion>=70?'رد شبکه خطرناک شده؛ اکشن بعدی ممکن است افشا کند.':'اکشن‌های پنهان سوءظن می‌سازند؛ آستانه افشا ۸۵ است.';}catch(_){}}
-  async function ruleAudit(){try{const audit=await rpc('get_kaykha_rule_integrity',{});window.KAYKHA_RULE_INTEGRITY=audit;let chip=$('.kaykha-rule-audit');if(!chip){chip=document.createElement('span');chip.className='kaykha-rule-audit';($('.top-state')||$('.topbar'))?.appendChild(chip);}if(chip){const coverage=Boolean(audit.catalog_complete??audit.ok);const verified=Number(audit.verified_test_count||0);const expected=Number(audit.implementation_registry_count||40);chip.classList.toggle('bad',!coverage);chip.textContent=coverage?'قواعد '+expected+'/'+expected+' ثبت‌شده · تست خودکار '+verified+'/'+expected:'نقص در پوشش قواعد';}}catch(_){}}
-
-  async function primeEffects(){const gameId=localStorage.getItem(GAME_KEY);if(!gameId||!token())return;try{const rows=await table('kaykha_effect_events?game_id=eq.'+encodeURIComponent(gameId)+'&select=id,created_at&order=created_at.desc&limit=30');rows.forEach(event=>seen.add(event.id));}catch(_){}}
-  async function catchUpEffects(){if(catchupBusy)return;const gameId=localStorage.getItem(GAME_KEY);if(!gameId||!token())return;catchupBusy=true;try{const rows=await table('kaykha_effect_events?game_id=eq.'+encodeURIComponent(gameId)+'&select=id,entity_type,entity_id,effect_kind,source_order_type,delta,created_at&order=created_at.asc&limit=40');rows.forEach(event=>processEffect(event,true));}catch(_){}finally{catchupBusy=false;}}
-
-  function bindUi(){
-    document.addEventListener('click',event=>{const order=event.target.closest('[data-order]');if(order){const meta=META[order.dataset.order];if(meta)feedback(meta.label+' انتخاب شد؛ هزینه و ضدبازی را بررسی کن و سپس مهر کن.','idle');}if(event.target.closest('#seal'))feedback('فرمان مهر شد؛ در انتظار Server Sync و سپیده‌دم…','processing');if(event.target.closest('#resolve'))feedback('Shared Resolver در حال حل همه اثرهاست…','processing');},true);
-    window.addEventListener('kaykha:effect-event',event=>processEffect(event.detail,true));
-    window.addEventListener('kaykha:server-sync-request',()=>{syncResourceGuards();renameCurrencies();ensureLogicPanel();ensureLoanRules();catchUpEffects();refreshShadowRisk();});
-    window.addEventListener('kaykha:lobby-success',()=>setTimeout(async()=>{seen.clear();await primeEffects();refreshShadowRisk();ruleAudit();},120));
-    window.addEventListener('storage',event=>{if(event.key===GAME_KEY){seen.clear();primeEffects();refreshShadowRisk();}});
-  }
-
-  async function start(){installStyles();ensureFeedback();ensureFx();bindUi();await primeEffects();Promise.allSettled([ruleAudit(),loadGuide(),refreshShadowRisk()]);syncResourceGuards();renameCurrencies();document.documentElement.dataset.kaykhaEffects='shared-bus-v2';}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
-})();
-`);
+  response.setHeader('content-type', 'application/javascript; charset=utf-8');
+  response.setHeader('cache-control', 'no-store, max-age=0');
+  response.statusCode = 200;
+  response.end(';(' + finalizationController.toString() + ')();');
 };
