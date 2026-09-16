@@ -46,7 +46,7 @@ function minimalPage() {
     <ul id="log"></ul>
     <script>
       (()=>{
-        const b64 = value => btoa(JSON.stringify(value)).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+        const b64 = value => btoa(JSON.stringify(value)).replace(/=/g,'').replaceAll('+','-').replaceAll('/','_');
         const token = b64({alg:'none',typ:'JWT'})+'.'+b64({sub:'${USER_ID}',exp:Math.floor(Date.now()/1000)+3600})+'.sig';
         const json = (value,status=200)=>Promise.resolve(new Response(JSON.stringify(value),{status,headers:{'content-type':'application/json'}}));
         const nativeFetch = window.fetch.bind(window);
