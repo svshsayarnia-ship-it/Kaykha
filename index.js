@@ -158,6 +158,10 @@ async function proxy(request, response) {
       status(code) { this.statusCode = code; return this; },
       send(chunk) { this.end(chunk); return this; }
     });
+    const replaceBundleContract = (body, needle, replacement, label) => {
+      if (!body.includes(needle)) throw new Error('Kaykha bundle contract changed: ' + label);
+      return body.replace(needle, replacement);
+    };
 
     await localOnlineClient(request, makeCapture('online'));
     await localIndependentRoleClient(request, makeCapture('role'));
@@ -181,7 +185,32 @@ async function proxy(request, response) {
     // Legacy seal confirmation copy must not contradict the server action manifest.
     bodies.online = bodies.online.replace("caravan: 'کاروان مهر شد؛ در سپیده‌دم دارایی اقتصادی و سند ابریشم ثبت می‌شود.'", "caravan: 'کاروان مهر شد؛ اگر مسیر باز باشد، Shared Resolver در سپیده‌دم اقتصاد شهر هدف را ۱ واحد افزایش می‌دهد.'");
     bodies.online = bodies.online.replace("trade: 'تجارت مهر شد؛ در سپیده‌دم اعتبار و سند مذاکره در دفتر سیاسی می‌نشیند.'", "trade: 'تجارت مهر شد؛ اگر اختلال بازار مانع نشود، Shared Resolver در سپیده‌دم اقتصاد شهر مبدأ را ۱ واحد افزایش می‌دهد.'");
-    bodies.online = bodies.online.replace("status(tacticalMessage(order));", "status(tacticalMessage(route.order));");
+
+    // Mobile may only enter the sealed state after the authoritative submit RPC succeeds.
+    bodies.online = replaceBundleContract(
+      bodies.online,
+      "status(tacticalMessage(order));",
+      "status(tacticalMessage(route.order)); window.dispatchEvent(new CustomEvent('kaykha:order-state', { detail: { state: 'sealed', order: route.order } }));",
+      'seal success acknowledgment'
+    );
+    bodies.online = replaceBundleContract(
+      bodies.online,
+      "          const outcome = await rpc('resolve_kaykha_round', { p_game_id: state.gameId });",
+      "          window.dispatchEvent(new CustomEvent('kaykha:order-state', { detail: { state: 'resolving' } }));\n          const outcome = await rpc('resolve_kaykha_round', { p_game_id: state.gameId });\n          window.dispatchEvent(new CustomEvent('kaykha:order-state', { detail: { state: 'resolved', outcomes: Number(outcome?.outcomes || 0) } }));",
+      'dawn state acknowledgment'
+    );
+    bodies.mobileLinear = replaceBundleContract(
+      bodies.mobileLinear,
+      "seal.click(); sealedThisRound=true; flow.classList.add('kx-after-seal'); syncCommandFlow();",
+      "seal.click(); syncCommandFlow();",
+      'remove optimistic mobile seal state'
+    );
+    bodies.mobileLinear = replaceBundleContract(
+      bodies.mobileLinear,
+      "      window.addEventListener('kaykha:server-sync-request', ()=>{renderResourceBar(lastResourceState);syncCommandFlow();applyProgressiveDisclosure();schedulePhaseReminder();});",
+      "      window.addEventListener('kaykha:order-state', event=>{const state=event.detail?.state;if(state==='sealed'){sealedThisRound=true;syncCommandFlow();}else if(state==='resolved'){sealedThisRound=false;syncCommandFlow();}});\n      window.addEventListener('kaykha:server-sync-request', ()=>{renderResourceBar(lastResourceState);syncCommandFlow();applyProgressiveDisclosure();schedulePhaseReminder();});",
+      'mobile authoritative order-state listener'
+    );
 
     response.statusCode = 200;
     response.setHeader('content-type', 'application/javascript; charset=utf-8');
