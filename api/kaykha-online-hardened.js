@@ -41,6 +41,13 @@ module.exports = async function hardenedOnline(request, response) {
     'host automatic voice connection'
   );
 
+  body = replaceRequired(
+    body,
+    "    function isPracticeUrl(){return new URLSearchParams(location.search).get('mode')!=='online'}",
+    "    function isPracticeUrl(){return new URLSearchParams(location.search).get('mode')==='practice'}",
+    'explicit practice mode only'
+  );
+
   response.statusCode = 200;
   response.setHeader('content-type', 'application/javascript; charset=utf-8');
   response.setHeader('cache-control', 'no-store, max-age=0');
