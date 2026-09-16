@@ -22,7 +22,7 @@
    const stage=q('.diwan-diorama');if(!stage)return;
    let context=q('.diwan-city-context',stage);
    if(!context){context=document.createElement('section');context.className='diwan-city-context';stage.prepend(context)}
-   context.innerHTML='<span>𐎭</span><div><small>پروندهٔ شهری فعال</small><b>'+city+'</b><p>سفته، پیمان و نفوذی که اینجا ثبت شود به پروندهٔ '+city+' متصل است.</p></div>';
+   context.innerHTML='<span>𐎭</span><div><small>زمینهٔ شهری فعال</small><b>'+city+'</b><p>این شهر زمینهٔ تصمیم فعلی توست؛ سفته، پیمان و وام طبق قواعد عمومی دیوان و state سرور ثبت می‌شوند.</p></div>';
    stage.dataset.cityContext=city;stage.classList.add('city-file-open');
    window.dispatchEvent(new CustomEvent('kaykha:diwan-city',{detail:{city}}));
    context.scrollIntoView({behavior:'smooth',block:'center'});
@@ -50,7 +50,7 @@
   let console=q('.city-command-console',container);
   if(!console){
    console=document.createElement('section');console.className='city-command-console';
-   console.innerHTML='<header><span>⌘</span><div><small>میز تصمیم دروازه</small><b>فرمان را آماده کن؛ هنوز اجرا نمی‌شود</b></div></header><div class="city-consequence-flow"><span><i>۱</i>انتخاب اکنون</span><em></em><span><i>۲</i>مهر در فرماندهی</span><em></em><span><i>۳</i>اثر در سپیده‌دم</span></div><div class="city-command-options"><button type="button" data-city-command="defend"><span>🛡</span><b>تقویت دروازه<small>فقط شهر خودی · +۲ سپاه پس از سپیده‌دم</small></b></button><button type="button" data-city-command="attack"><span>⚔</span><b>هدف محاصره<small>فقط شهر غیرخودی · نتیجه با مقایسهٔ سپاه</small></b></button><button type="button" data-city-command="caravan"><span>♢</span><b>مسیر کاروان<small>شهر به مبدأ یا مقصد تجارت تبدیل می‌شود</small></b></button></div>';
+   console.innerHTML='<header><span>⌘</span><div><small>میز تصمیم دروازه</small><b>فرمان را آماده کن؛ هنوز اجرا نمی‌شود</b></div></header><div class="city-consequence-flow"><span><i>۱</i>انتخاب اکنون</span><em></em><span><i>۲</i>مهر در فرماندهی</span><em></em><span><i>۳</i>اثر در سپیده‌دم</span></div><div class="city-command-options"><button type="button" data-city-command="defend"><span>🛡</span><b>تقویت دروازه<small>فقط شهر خودی · +۲ سپاه پس از سپیده‌دم</small></b></button><button type="button" data-city-command="attack"><span>⚔</span><b>هدف محاصره<small>فقط شهر غیرخودی · نتیجه با مقایسهٔ قدرت‌ها و دفاع‌های فعال</small></b></button><button type="button" data-city-command="caravan"><span>♢</span><b>مسیر کاروان<small>اگر مسیر باز باشد، اقتصاد شهر هدف در سپیده‌دم +۱</small></b></button></div>';
    container.append(console);resultBoard(container);
    console.addEventListener('click',event=>{const button=event.target.closest('[data-city-command]');if(!button)return;pulse(button.dataset.cityCommand);window.dispatchEvent(new CustomEvent('kaykha:city-command',{detail:{city:cityName(),action:button.dataset.cityCommand}}))});
   }
@@ -63,7 +63,7 @@
   q('.city-entry-actions',copy)?.remove();
   const old=q('.city-decision-panel',copy);if(old)return;
   const panel=document.createElement('section');panel.className='city-decision-panel';
-  panel.innerHTML='<div class="city-destinations"><button type="button" data-city-destination="market"><span>◈</span><b>بازار شهر<small>قیمت روز، نوسان و معاملهٔ کالا</small></b></button><button type="button" data-city-destination="shop"><span>⌂</span><b>دکان‌ها<small>خرید سند و درآمد پایدار سپیده‌دم</small></b></button><button type="button" data-city-destination="teamche"><span>◇</span><b>تیمچهٔ اصناف<small>اتصال چهار سند و پاداش شبکه‌ای</small></b></button><button type="button" data-city-destination="diwan"><span>𐎭</span><b>دیوان شهر<small>سفته، پیمان و نفوذ سیاسی</small></b></button><button type="button" data-city-destination="gates"><span>⌘</span><b>دروازه و کاروان<small>دفاع، حمله و کنترل مسیر</small></b></button></div>';
+  panel.innerHTML='<div class="city-destinations"><button type="button" data-city-destination="market"><span>◈</span><b>بازار شهر<small>کالا، قیمت و وضعیت بازار همین شهر</small></b></button><button type="button" data-city-destination="shop"><span>⌂</span><b>دکان‌ها<small>خرید سند و درآمد پایدار طبق قانون بازار</small></b></button><button type="button" data-city-destination="teamche"><span>◇</span><b>تیمچهٔ اصناف<small>اسناد و مالکیت‌های اقتصادی بازار</small></b></button><button type="button" data-city-destination="diwan"><span>𐎭</span><b>دیوان<small>پیمان، سفته، وام و نفوذ طبق قواعد عمومی دیوان</small></b></button><button type="button" data-city-destination="gates"><span>⌘</span><b>دروازه و کاروان<small>آماده‌سازی دفاع، حمله یا کاروان؛ اجرا در سپیده‌دم</small></b></button></div>';
   copy.insertBefore(panel,q('.city-entry-seal',copy));
   panel.addEventListener('click',event=>{const button=event.target.closest('[data-city-destination]');if(!button)return;const city=cityName(),zone=button.dataset.cityDestination;if(['market','shop','teamche'].includes(zone))routeMarket(city,zone);else if(zone==='diwan')routeDiwan(city);else showGateConsole(panel,city)});
  }
