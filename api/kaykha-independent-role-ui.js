@@ -20,7 +20,7 @@ module.exports = function asset(_request, response) {
   const phaseName={lobby:'تالار',negotiation:'بازار و دربار',orders:'خنجرهای پنهان',reveal:'آشکارسازی',resolution:'سپیده‌دم'};
 
   function esc(value){
-    return String(value==null?'':value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    return String(value==null?'':value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[char]));
   }
   function tokenFrom(value,depth=0){
     if(depth>4||!value)return null;
@@ -214,7 +214,7 @@ module.exports = function asset(_request, response) {
       window.kaykhaSound?.play?.(result.action_key==='seed_rumor'||result.action_key==='buy_dossier'?'whisper':'seal');
       window.dispatchEvent(new CustomEvent('kaykha:independent-role-action',{detail:result}));
       await refresh();
-      setTimeout(()=>window.dispatchEvent(new Event('focus')),120);
+      setTimeout(()=>window.dispatchEvent(new CustomEvent('kaykha:server-sync-request')),120);
     }catch(error){
       renderResult(error?.message||'تعامل ثبت نشد.',true);
     }finally{busy=false;renderTargets();}
