@@ -92,8 +92,11 @@ if(section==='all'||section==='bundle'){
   has(bundle,'nextDawnAt','authoritative dawn deadline missing from assembled bundle');
   has(bundle,"state: 'sealed', order: route.order",'authoritative seal success acknowledgment missing');
   has(bundle,"state: 'resolved', outcomes:",'authoritative dawn completion acknowledgment missing');
+  has(bundle,"state==='sealed'){sealedThisRound=true;saveTutorialStep(1);syncCommandFlow();}",'mobile must advance seal UI/tutorial only after server acknowledgment');
   has(bundle,"window.addEventListener('kaykha:order-state'",'mobile order-state acknowledgment listener missing');
   lacks(bundle,'seal.click(); sealedThisRound=true','mobile shell must not seal optimistically before server success');
+  lacks(bundle,"if(event.target.closest('#seal')){sealedThisRound=true",'capture-phase listener must not seal optimistically');
+  lacks(bundle,"if(event.target.closest('#resolve'))setTimeout(()=>{sealedThisRound=false",'capture-phase listener must not reset resolved state optimistically');
   lacks(bundle,"window.dispatchEvent(new Event('focus'))",'assembled bundle contains fake focus sync');
   console.log('PASS bundle');
 }
