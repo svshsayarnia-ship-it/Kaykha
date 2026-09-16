@@ -221,11 +221,13 @@ async function proxy(request, response) {
     const localBribeNetworkClient = require('./api/kaykha-bribe-network-ui.js');
     const localIndependentCharacterCards = require('./api/kaykha-independent-character-cards.js');
     const localFinalizationClient = require('./api/kaykha-finalization-client.js');
+    const localMobileUxV2 = require('./api/kaykha-mobile-ux-v2.js');
     let onlineBody = '';
     let roleBody = '';
     let bribeBody = '';
     let characterBody = '';
     let finalizationBody = '';
+    let mobileUxBody = '';
     const makeCapture = sink => ({
       statusCode: 200,
       setHeader() {},
@@ -240,11 +242,12 @@ async function proxy(request, response) {
     await localBribeNetworkClient(request, makeCapture(chunk => { bribeBody += chunk; }));
     await localIndependentCharacterCards(request, makeCapture(chunk => { characterBody += chunk; }));
     await localFinalizationClient(request, makeCapture(chunk => { finalizationBody += chunk; }));
+    await localMobileUxV2(request, makeCapture(chunk => { mobileUxBody += chunk; }));
     response.statusCode = 200;
     response.setHeader('content-type', 'application/javascript; charset=utf-8');
     response.setHeader('cache-control', 'no-store, max-age=0');
     response.setHeader('x-robots-tag', 'noindex');
-    response.end(onlineBody + '\n' + roleBody + '\n' + bribeBody + '\n' + characterBody + '\n' + finalizationBody);
+    response.end(onlineBody + '\n' + roleBody + '\n' + bribeBody + '\n' + characterBody + '\n' + finalizationBody + '\n' + mobileUxBody);
     return;
   }
 
