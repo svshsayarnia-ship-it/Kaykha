@@ -67,9 +67,10 @@ module.exports = function asset(_request, response) {
       const node = $('#kx-route-warning');
       if (!node) return;
       clearTimeout(warningTimer);
+      warningTimer = null;
       node.textContent = message;
       node.classList.toggle('bad', bad);
-      if (!sticky) warningTimer = setTimeout(() => syncRouteUi(), 2600);
+      if (!sticky) warningTimer = setTimeout(() => { warningTimer = null; syncRouteUi(); }, 2600);
     }
 
     function optionLabel(option) {
