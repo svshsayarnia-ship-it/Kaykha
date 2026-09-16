@@ -182,6 +182,38 @@ async function proxy(request, response) {
     // Practice is local-first in presentation: never leave the mobile resource bar on a dash while sync warms up.
     bodies.interaction = bodies.interaction.replaceAll('renderResources({ coins:50, influence:10, authoritative:false, fallback:true })', 'renderResources({ coins:50, influence:15, authoritative:false, fallback:true })');
 
+    // Lobby auth is a dependency of the RPC itself. Do not cancel the player's click and replay it later.
+    bodies.online = replaceBundleContract(
+      bodies.online,
+      "  function ensureIdentityDefaults(){",
+      "  window.kaykhaEnsureGuest=ensureGuest;\n  function ensureIdentityDefaults(){",
+      'guest auth export'
+    );
+    bodies.online = replaceBundleContract(
+      bodies.online,
+      "  async function rpc(name, payload) {\n    const token = accessToken();\n    if (!token) throw new Error('برای تالار هم‌زمان، ابتدا از ورود اصلی بازی وارد شو.');",
+      "  async function rpc(name, payload) {\n    let token = accessToken();\n    if (!token && typeof window.kaykhaEnsureGuest === 'function') token = await window.kaykhaEnsureGuest();\n    if (!token) throw new Error('اتصال سریع تالار آماده نشد؛ دوباره تلاش کن.');",
+      'rpc guest auth fallback'
+    );
+    bodies.online = replaceBundleContract(
+      bodies.online,
+      "    if(!tokenHealthy(guestToken())){event.preventDefault();event.stopImmediatePropagation();prepareAndReplay(button);return;}\n    ensureIdentityDefaults();",
+      "    if(!tokenHealthy(guestToken())){status('در حال اتصال سریع به تالار…');ensureGuest().catch(error=>status(error?.message||'اتصال تالار برقرار نشد؛ دوباره تلاش کن.',true));}\n    ensureIdentityDefaults();",
+      'non-blocking lobby click auth'
+    );
+    bodies.online = replaceBundleContract(
+      bodies.online,
+      "    const rows = await rpc('create_kaykha_game', { p_display_name: userName(), p_house_id: faction(), p_total_seats: [4,6,8].includes(capacity) ? capacity : 8, p_mode: ($('#game-mode')?.value || 'hegemony') });",
+      "    const rows = await rpc('create_kaykha_game', { p_display_name: userName(), p_house_id: faction(), p_total_seats: [4,6,8].includes(capacity) ? capacity : 8, p_mode: ($('#game-mode')?.value || 'hegemony') });\n    if (!rows?.[0]?.game_id || !rows?.[0]?.game_code) throw new Error('ساخت تالار از سرور تأیید نشد.');",
+      'create lobby server acknowledgment'
+    );
+    bodies.online = replaceBundleContract(
+      bodies.online,
+      "    $('#create-lobby')?.addEventListener('click', () => run(createLobby));\n    $('#join-lobby')?.addEventListener('click', () => run(joinLobby));",
+      "    $('#create-lobby')?.addEventListener('click', event => { const button=event.currentTarget; button.disabled=true; status('در حال ساخت تالار…'); run(createLobby,()=>{button.disabled=false;}); });\n    $('#join-lobby')?.addEventListener('click', event => { const button=event.currentTarget; button.disabled=true; status('در حال ورود به تالار…'); run(joinLobby,()=>{button.disabled=false;}); });",
+      'lobby progress feedback'
+    );
+
     // Legacy seal confirmation copy must not contradict the server action manifest.
     bodies.online = bodies.online.replace("caravan: 'کاروان مهر شد؛ در سپیده‌دم دارایی اقتصادی و سند ابریشم ثبت می‌شود.'", "caravan: 'کاروان مهر شد؛ اگر مسیر باز باشد، Shared Resolver در سپیده‌دم اقتصاد شهر هدف را ۱ واحد افزایش می‌دهد.'");
     bodies.online = bodies.online.replace("trade: 'تجارت مهر شد؛ در سپیده‌دم اعتبار و سند مذاکره در دفتر سیاسی می‌نشیند.'", "trade: 'تجارت مهر شد؛ اگر اختلال بازار مانع نشود، Shared Resolver در سپیده‌دم اقتصاد شهر مبدأ را ۱ واحد افزایش می‌دهد.'");
