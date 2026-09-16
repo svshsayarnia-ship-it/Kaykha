@@ -90,6 +90,10 @@ if(section==='all'||section==='bundle'){
   has(bundle,'20260916-mobile-v3','mobile v3 missing from assembled bundle');
   has(bundle,'20260916-mobile-linear-v4','linear mobile v4 missing from assembled bundle');
   has(bundle,'nextDawnAt','authoritative dawn deadline missing from assembled bundle');
+  has(bundle,"state: 'sealed', order: route.order",'authoritative seal success acknowledgment missing');
+  has(bundle,"state: 'resolved', outcomes:",'authoritative dawn completion acknowledgment missing');
+  has(bundle,"window.addEventListener('kaykha:order-state'",'mobile order-state acknowledgment listener missing');
+  lacks(bundle,'seal.click(); sealedThisRound=true','mobile shell must not seal optimistically before server success');
   lacks(bundle,"window.dispatchEvent(new Event('focus'))",'assembled bundle contains fake focus sync');
   console.log('PASS bundle');
 }
