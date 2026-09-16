@@ -146,8 +146,9 @@ async function proxy(request, response) {
     const localObjectiveSync = require('./api/kaykha-objective-sync.js');
     const localDiwanAuthority = require('./api/kaykha-diwan-authority.js');
     const localInteractionFix = require('./api/kaykha-phase5-interaction-fix.js');
+    const localMobileLinear = require('./api/kaykha-mobile-linear-v4.js');
 
-    const bodies = { online:'', role:'', bribe:'', character:'', finalization:'', mobile:'', authority:'', objective:'', diwan:'', interaction:'' };
+    const bodies = { online:'', role:'', bribe:'', character:'', finalization:'', mobile:'', authority:'', objective:'', diwan:'', interaction:'', mobileLinear:'' };
     const makeCapture = key => ({
       statusCode: 200,
       setHeader() {},
@@ -168,10 +169,14 @@ async function proxy(request, response) {
     await localObjectiveSync(request, makeCapture('objective'));
     await localDiwanAuthority(request, makeCapture('diwan'));
     await localInteractionFix(request, makeCapture('interaction'));
+    await localMobileLinear(request, makeCapture('mobileLinear'));
 
     // Realtime/focus events are primary. These module-local timers are only safety fallbacks.
     bodies.role = bodies.role.replace('refreshTimer=setInterval(()=>{if(!document.hidden)refresh();},7000);', 'refreshTimer=setInterval(()=>{if(!document.hidden)refresh();},60000);');
     bodies.bribe = bodies.bribe.replace('timer=setInterval(()=>{if(!document.hidden)refresh();},8000);', 'timer=setInterval(()=>{if(!document.hidden)refresh();},60000);');
+
+    // Practice is local-first in presentation: never leave the mobile resource bar on a dash while sync warms up.
+    bodies.interaction = bodies.interaction.replaceAll('renderResources({ coins:50, influence:10, authoritative:false, fallback:true })', 'renderResources({ coins:50, influence:15, authoritative:false, fallback:true })');
 
     // Legacy seal confirmation copy must not contradict the server action manifest.
     bodies.online = bodies.online.replace("caravan: 'کاروان مهر شد؛ در سپیده‌دم دارایی اقتصادی و سند ابریشم ثبت می‌شود.'", "caravan: 'کاروان مهر شد؛ اگر مسیر باز باشد، Shared Resolver در سپیده‌دم اقتصاد شهر هدف را ۱ واحد افزایش می‌دهد.'");
@@ -184,7 +189,7 @@ async function proxy(request, response) {
     response.setHeader('x-robots-tag', 'noindex');
     response.end([
       bodies.online,bodies.role,bodies.bribe,bodies.character,bodies.finalization,
-      bodies.mobile,bodies.authority,bodies.objective,bodies.diwan,bodies.interaction
+      bodies.mobile,bodies.authority,bodies.objective,bodies.diwan,bodies.interaction,bodies.mobileLinear
     ].join('\n'));
     return;
   }
