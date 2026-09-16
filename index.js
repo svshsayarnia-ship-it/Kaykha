@@ -141,57 +141,48 @@ async function proxy(request, response) {
     const localBribeNetworkClient = require('./api/kaykha-bribe-network-ui.js');
     const localIndependentCharacterCards = require('./api/kaykha-independent-character-cards.js');
     const localFinalizationClient = require('./api/kaykha-finalization-client.js');
-    const localMobileUxV2 = require('./api/kaykha-mobile-ux-v2.js');
+    const localMobileUx = require('./api/kaykha-mobile-ux-v2.js');
     const localAuthoritativeControls = require('./api/kaykha-authoritative-controls.js');
     const localObjectiveSync = require('./api/kaykha-objective-sync.js');
-    let onlineBody = '';
-    let roleBody = '';
-    let bribeBody = '';
-    let characterBody = '';
-    let finalizationBody = '';
-    let mobileUxBody = '';
-    let authoritativeBody = '';
-    let objectiveBody = '';
-    const makeCapture = sink => ({
+    const localDiwanAuthority = require('./api/kaykha-diwan-authority.js');
+
+    const bodies = { online:'', role:'', bribe:'', character:'', finalization:'', mobile:'', authority:'', objective:'', diwan:'' };
+    const makeCapture = key => ({
       statusCode: 200,
       setHeader() {},
       getHeader() { return undefined; },
-      write(chunk) { if (chunk != null) sink(Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk)); },
-      end(chunk) { if (chunk != null) sink(Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk)); },
+      write(chunk) { if (chunk != null) bodies[key] += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk); },
+      end(chunk) { if (chunk != null) bodies[key] += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk); },
       status(code) { this.statusCode = code; return this; },
       send(chunk) { this.end(chunk); return this; }
     });
-    await localOnlineClient(request, makeCapture(chunk => { onlineBody += chunk; }));
-    await localIndependentRoleClient(request, makeCapture(chunk => { roleBody += chunk; }));
-    await localBribeNetworkClient(request, makeCapture(chunk => { bribeBody += chunk; }));
-    await localIndependentCharacterCards(request, makeCapture(chunk => { characterBody += chunk; }));
-    await localFinalizationClient(request, makeCapture(chunk => { finalizationBody += chunk; }));
-    await localMobileUxV2(request, makeCapture(chunk => { mobileUxBody += chunk; }));
-    await localAuthoritativeControls(request, makeCapture(chunk => { authoritativeBody += chunk; }));
-    await localObjectiveSync(request, makeCapture(chunk => { objectiveBody += chunk; }));
+
+    await localOnlineClient(request, makeCapture('online'));
+    await localIndependentRoleClient(request, makeCapture('role'));
+    await localBribeNetworkClient(request, makeCapture('bribe'));
+    await localIndependentCharacterCards(request, makeCapture('character'));
+    await localFinalizationClient(request, makeCapture('finalization'));
+    await localMobileUx(request, makeCapture('mobile'));
+    await localAuthoritativeControls(request, makeCapture('authority'));
+    await localObjectiveSync(request, makeCapture('objective'));
+    await localDiwanAuthority(request, makeCapture('diwan'));
 
     // Realtime/focus events are primary. These module-local timers are only safety fallbacks.
-    roleBody = roleBody.replace('refreshTimer=setInterval(()=>{if(!document.hidden)refresh();},7000);', 'refreshTimer=setInterval(()=>{if(!document.hidden)refresh();},60000);');
-    bribeBody = bribeBody.replace('timer=setInterval(()=>{if(!document.hidden)refresh();},8000);', 'timer=setInterval(()=>{if(!document.hidden)refresh();},60000);');
+    bodies.role = bodies.role.replace('refreshTimer=setInterval(()=>{if(!document.hidden)refresh();},7000);', 'refreshTimer=setInterval(()=>{if(!document.hidden)refresh();},60000);');
+    bodies.bribe = bodies.bribe.replace('timer=setInterval(()=>{if(!document.hidden)refresh();},8000);', 'timer=setInterval(()=>{if(!document.hidden)refresh();},60000);');
 
-    // The mobile UX needs to re-run only for structural UI changes. Dynamic panels
-    // must still refresh their close/accordion affordances when their own content changes.
-    mobileUxBody = mobileUxBody.replace(
-      'const mo=new MutationObserver(schedule);mo.observe(document.body,{childList:true,subtree:true});',
-      `const relevant='.diwan-diorama,.independent-role-console,.bribe-network,.role-gallery-panel,.context-rail,.market-picker,[data-view-panel="diwan"],[data-view-panel="map"],.astrolabe-desk';
-      window.__KAYKHA_MOBILE_OBSERVER_FILTERED__=true;
-      const mo=new MutationObserver(records=>{for(const record of records){const target=record.target;if(target?.nodeType===1&&(target.matches?.(relevant)||target.closest?.(relevant))){schedule();return;}for(const node of record.addedNodes){if(node.nodeType!==1)continue;if(node.matches?.(relevant)||node.querySelector?.(relevant)){schedule();return;}}}});mo.observe(document.body,{childList:true,subtree:true});`
-    );
-
-    // Legacy seal confirmation must never contradict the server action manifest.
-    onlineBody = onlineBody.replace("caravan: 'کاروان مهر شد؛ در سپیده‌دم دارایی اقتصادی و سند ابریشم ثبت می‌شود.'", "caravan: 'کاروان مهر شد؛ اگر مسیر باز باشد، Shared Resolver در سپیده‌دم اقتصاد شهر هدف را ۱ واحد افزایش می‌دهد.'");
-    onlineBody = onlineBody.replace("trade: 'تجارت مهر شد؛ در سپیده‌دم اعتبار و سند مذاکره در دفتر سیاسی می‌نشیند.'", "trade: 'تجارت مهر شد؛ اگر اختلال بازار مانع نشود، Shared Resolver در سپیده‌دم اقتصاد شهر مبدأ را ۱ واحد افزایش می‌دهد.'");
+    // Legacy seal confirmation copy must not contradict the server action manifest.
+    bodies.online = bodies.online.replace("caravan: 'کاروان مهر شد؛ در سپیده‌دم دارایی اقتصادی و سند ابریشم ثبت می‌شود.'", "caravan: 'کاروان مهر شد؛ اگر مسیر باز باشد، Shared Resolver در سپیده‌دم اقتصاد شهر هدف را ۱ واحد افزایش می‌دهد.'");
+    bodies.online = bodies.online.replace("trade: 'تجارت مهر شد؛ در سپیده‌دم اعتبار و سند مذاکره در دفتر سیاسی می‌نشیند.'", "trade: 'تجارت مهر شد؛ اگر اختلال بازار مانع نشود، Shared Resolver در سپیده‌دم اقتصاد شهر مبدأ را ۱ واحد افزایش می‌دهد.'");
 
     response.statusCode = 200;
     response.setHeader('content-type', 'application/javascript; charset=utf-8');
     response.setHeader('cache-control', 'no-store, max-age=0');
     response.setHeader('x-robots-tag', 'noindex');
-    response.end(onlineBody + '\n' + roleBody + '\n' + bribeBody + '\n' + characterBody + '\n' + finalizationBody + '\n' + mobileUxBody + '\n' + authoritativeBody + '\n' + objectiveBody);
+    response.end([
+      bodies.online,bodies.role,bodies.bribe,bodies.character,bodies.finalization,
+      bodies.mobile,bodies.authority,bodies.objective,bodies.diwan
+    ].join('\n'));
     return;
   }
 
