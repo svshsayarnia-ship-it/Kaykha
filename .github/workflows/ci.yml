@@ -14,4 +14,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm test
+      - name: Presentation boundary
+        run: node scripts/static-audit.mjs presentation
+      - name: Mobile controller
+        run: node scripts/static-audit.mjs mobile
+      - name: Rule authority
+        run: node scripts/static-audit.mjs authority
+      - name: Effect bus
+        run: node scripts/static-audit.mjs effects
+      - name: Generated online client
+        run: node scripts/static-audit.mjs generated
+      - name: Security invariants
+        run: node scripts/static-audit.mjs security
+      - name: Assembled bundle
+        run: node scripts/static-audit.mjs bundle
