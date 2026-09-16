@@ -26,5 +26,7 @@ jobs:
         run: node scripts/static-audit.mjs generated
       - name: Security invariants
         run: node scripts/static-audit.mjs security
+      - name: Architecture integrity
+        run: node scripts/architecture-integrity.mjs
       - name: Assembled bundle
         run: node scripts/static-audit.mjs bundle
