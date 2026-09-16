@@ -223,6 +223,7 @@ async function proxy(request, response) {
     const localFinalizationClient = require('./api/kaykha-finalization-client.js');
     const localMobileUxV2 = require('./api/kaykha-mobile-ux-v2.js');
     const localAuthoritativeControls = require('./api/kaykha-authoritative-controls.js');
+    const localObjectiveSync = require('./api/kaykha-objective-sync.js');
     let onlineBody = '';
     let roleBody = '';
     let bribeBody = '';
@@ -230,6 +231,7 @@ async function proxy(request, response) {
     let finalizationBody = '';
     let mobileUxBody = '';
     let authoritativeBody = '';
+    let objectiveBody = '';
     const makeCapture = sink => ({
       statusCode: 200,
       setHeader() {},
@@ -246,11 +248,17 @@ async function proxy(request, response) {
     await localFinalizationClient(request, makeCapture(chunk => { finalizationBody += chunk; }));
     await localMobileUxV2(request, makeCapture(chunk => { mobileUxBody += chunk; }));
     await localAuthoritativeControls(request, makeCapture(chunk => { authoritativeBody += chunk; }));
+    await localObjectiveSync(request, makeCapture(chunk => { objectiveBody += chunk; }));
+
+    // Realtime/focus events are primary. These module-local timers are only safety fallbacks.
+    roleBody = roleBody.replace('refreshTimer=setInterval(()=>{if(!document.hidden)refresh();},7000);', 'refreshTimer=setInterval(()=>{if(!document.hidden)refresh();},60000);');
+    bribeBody = bribeBody.replace('timer=setInterval(()=>{if(!document.hidden)refresh();},8000);', 'timer=setInterval(()=>{if(!document.hidden)refresh();},60000);');
+
     response.statusCode = 200;
     response.setHeader('content-type', 'application/javascript; charset=utf-8');
     response.setHeader('cache-control', 'no-store, max-age=0');
     response.setHeader('x-robots-tag', 'noindex');
-    response.end(onlineBody + '\n' + roleBody + '\n' + bribeBody + '\n' + characterBody + '\n' + finalizationBody + '\n' + mobileUxBody + '\n' + authoritativeBody);
+    response.end(onlineBody + '\n' + roleBody + '\n' + bribeBody + '\n' + characterBody + '\n' + finalizationBody + '\n' + mobileUxBody + '\n' + authoritativeBody + '\n' + objectiveBody);
     return;
   }
 
