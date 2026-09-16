@@ -2,7 +2,8 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "node scripts/static-audit.mjs"
   },
   "version": "1.0.0",
   "description": "Kaykha game bridge and multiplayer world"
