@@ -28,17 +28,31 @@ module.exports = function asset(_request, response) {
 
     function token() { return tokenFrom(stored(GUEST_KEY)); }
 
+    function headers() {
+      const access = token();
+      return { apikey: KEY, Authorization: 'Bearer ' + access, 'Content-Type': 'application/json' };
+    }
+
     async function rpc(name, payload = {}) {
       const access = token();
       if (!access) throw new Error('هویت تالار هنوز آماده نیست.');
       const result = await fetch(URL + '/rest/v1/rpc/' + name, {
         method: 'POST',
-        headers: { apikey: KEY, Authorization: 'Bearer ' + access, 'Content-Type': 'application/json' },
+        headers: headers(),
         body: JSON.stringify(payload)
       });
       const body = await result.json().catch(() => ({}));
       if (!result.ok) throw new Error(body.message || body.hint || body.error || 'هدف بازی خوانده نشد.');
       return body;
+    }
+
+    async function table(path) {
+      const access = token();
+      if (!access) return [];
+      const result = await fetch(URL + '/rest/v1/' + path, { headers: headers() });
+      const body = await result.json().catch(() => []);
+      if (!result.ok) return [];
+      return Array.isArray(body) ? body : [];
     }
 
     function ensureHud() {
@@ -89,20 +103,44 @@ module.exports = function asset(_request, response) {
       if (threat) threat.textContent = state?.threat?.message || 'تهدید فوری عمومی دیده نمی‌شود.';
     }
 
+    function publishResources(state, gameId) {
+      const resources = state?.resources;
+      if (!resources) return;
+      window.dispatchEvent(new CustomEvent('kaykha:resource-state', {
+        detail: {
+          coins: Number(resources.coins || 0),
+          influence: Number(resources.influence || 0),
+          reputation: Number(resources.reputation || 0),
+          bribe: Number(resources.bribe_tokens || 0),
+          search: Number(resources.search_tokens || 0),
+          authoritative: true,
+          source: 'objective-state',
+          gameId
+        }
+      }));
+    }
+
     async function refresh() {
       if (pending) return pending;
       const gameId = localStorage.getItem(GAME_KEY);
       if (!gameId || !token()) return null;
       pending = (async () => {
         try {
-          const state = await rpc('get_kaykha_objective_state', { p_game_id: gameId });
+          const [state, metaRows] = await Promise.all([
+            rpc('get_kaykha_objective_state', { p_game_id: gameId }),
+            table('kaykha_games?id=eq.' + encodeURIComponent(gameId) + '&select=phase_ends_at,phase,round_no&limit=1')
+          ]);
+          const meta = metaRows[0] || null;
           render(state);
+          publishResources(state, gameId);
           window.dispatchEvent(new CustomEvent('kaykha:game-meta', {
             detail: {
               gameId,
               mode: state?.mode || null,
-              roundNo: Number(state?.round || 0),
-              phase: state?.phase || null,
+              roundNo: Number(state?.round || meta?.round_no || 0),
+              phase: state?.phase || meta?.phase || null,
+              phaseEndsAt: meta?.phase_ends_at || null,
+              nextDawnAt: meta?.phase_ends_at || null,
               objective: state || null
             }
           }));
@@ -123,8 +161,8 @@ module.exports = function asset(_request, response) {
       window.addEventListener('kaykha:effect-event', () => refresh().catch(() => {}));
       window.addEventListener('storage', event => { if (event.key === GAME_KEY) refresh().catch(() => {}); });
       document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh().catch(() => {}); });
-      document.documentElement.dataset.kaykhaObjective = 'server-score-v2';
-      window.__KAYKHA_OBJECTIVE_SOURCE__ = 'server-score-v2';
+      document.documentElement.dataset.kaykhaObjective = 'server-score-v3';
+      window.__KAYKHA_OBJECTIVE_SOURCE__ = 'server-score-v3';
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
