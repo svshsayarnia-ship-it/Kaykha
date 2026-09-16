@@ -5,6 +5,7 @@
  const closeCity=()=>q('[data-close-city]')?.click();
  const openView=name=>q('[data-game-view="'+name+'"]')?.click();
  const pulse=(mode)=>{const portal=q('.city-entry-portal');if(!portal)return;portal.dataset.cityMode=mode;portal.classList.remove('city-impact');requestAnimationFrame(()=>portal.classList.add('city-impact'))};
+ const manifestRule=order=>window.KAYKHA_ACTION_MANIFEST?.[order]||null;
 
  function routeMarket(city,zone='market'){
   closeCity();openView('market');
@@ -76,12 +77,14 @@
  }
  window.addEventListener('kaykha:city-command-ready',event=>{
   const detail=event.detail||{},panel=q('.city-decision-panel'),board=panel&&resultBoard(panel);if(!board)return;
+  const serverRule=detail.accepted?manifestRule(detail.order):null;
+  const explanation=serverRule?.effect?serverRule.effect+(serverRule.counterplay?' · ضدبازی: '+serverRule.counterplay:''):(detail.explanation||'');
   board.classList.toggle('rejected',!detail.accepted);board.classList.toggle('accepted',Boolean(detail.accepted));
   q('.city-result-seal',board).textContent=detail.accepted?(detail.icon||'✓'):'×';
   q('small',board).textContent=detail.accepted?'فرمان آماده شد؛ هنوز اجرا نشده':'این اقدام مجاز نیست';
-  q('b',board).textContent=detail.title||'اقدام انجام نشد';q('p',board).textContent=detail.explanation||'';
+  q('b',board).textContent=detail.title||'اقدام انجام نشد';q('p',board).textContent=explanation;
   q('[data-go-command]',board).hidden=!detail.accepted;
-  const hud=q('.city-state-hud',panel);if(hud){q('[data-state-order]',hud).textContent=detail.accepted?(detail.title||'آماده'):'رد شد';q('[data-state-note]',hud).textContent=detail.explanation||'';hud.dataset.state=detail.accepted?'prepared':'blocked'}
+  const hud=q('.city-state-hud',panel);if(hud){q('[data-state-order]',hud).textContent=detail.accepted?(detail.title||'آماده'):'رد شد';q('[data-state-note]',hud).textContent=explanation;hud.dataset.state=detail.accepted?'prepared':'blocked'}
   pulse(detail.accepted?'ready':'blocked');window.kaykhaSound?.play?.(detail.accepted?'seal':'glitch');
  });
  window.addEventListener('kaykha:dawn-result',event=>{const d=event.detail||{},panel=q('.city-decision-panel');if(!panel)return;const hud=cityState(panel,d.city||cityName());q('[data-state-city]',hud).textContent=d.city||cityName();q('[data-state-order]',hud).textContent='اجرا شد';q('[data-state-note]',hud).textContent=d.message||'نتیجه در دفتر وقایع ثبت شد.';hud.dataset.state='resolved';const board=resultBoard(panel);board.classList.remove('rejected');board.classList.add('accepted');q('.city-result-seal',board).textContent='✓';q('small',board).textContent='نتیجهٔ قطعی سپیده‌دم';q('b',board).textContent=d.title||'فرمان اجرا شد';q('p',board).textContent=d.message||'';pulse('resolved')});
