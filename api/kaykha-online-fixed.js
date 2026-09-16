@@ -2,6 +2,51 @@ const baseOnline = require('./kaykha-online.js');
 const voiceSession = require('./kaykha-voice-session.js');
 const sharedEngineClient = require('./kaykha-shared-engine-client.js');
 
+function normalizeGeneratedClients(baseBody, sharedBody) {
+  let base = String(baseBody || '');
+  let shared = String(sharedBody || '');
+
+  // The selected house is authoritative. Do not silently retry another house when
+  // the selected one is already occupied; that changes player intent.
+  const joinStart = base.indexOf("    const houseOptions = [...($('#faction')?.options || [])]");
+  const joinEnd = joinStart >= 0
+    ? base.indexOf('    if (state.gameId && state.gameId !== rows[0].game_id)', joinStart)
+    : -1;
+  if (joinStart >= 0 && joinEnd > joinStart) {
+    const strictJoin = [
+      "    const preferredHouse = faction();",
+      "    const rows = await rpc('join_kaykha_game', { p_code: code, p_display_name: userName(), p_house_id: preferredHouse });",
+      "    if (!rows?.[0]) throw new Error('ورود به تالار انجام نشد.');",
+      ''
+    ].join('\n');
+    base = base.slice(0, joinStart) + strictJoin + base.slice(joinEnd);
+  }
+
+  // Realtime is primary. Keep one explicit 60s safety refresh instead of globally
+  // monkey-patching window.setInterval in the shared client.
+  base = base.replace(
+    "    setInterval(() => { if (!document.hidden) safeReadGame(); }, 7000);",
+    "    setInterval(() => { if (!document.hidden) safeReadGame(); }, 60000);"
+  );
+
+  const intervalStart = shared.indexOf('    // Realtime is the primary update path.');
+  const intervalEnd = intervalStart >= 0 ? shared.indexOf('    function ensureSyncPill(){', intervalStart) : -1;
+  if (intervalStart >= 0 && intervalEnd > intervalStart) {
+    shared = shared.slice(0, intervalStart) +
+      '    // Realtime is the primary path; the base client owns the 60s fallback refresh.\n' +
+      shared.slice(intervalEnd);
+  }
+
+  const guardStart = shared.indexOf('    // The legacy join handler used to try every house');
+  const guardEnd = guardStart >= 0 ? shared.indexOf("    document.addEventListener('click',event=>{", guardStart) : -1;
+  if (guardStart >= 0 && guardEnd > guardStart) {
+    shared = shared.slice(0, guardStart) + shared.slice(guardEnd);
+  }
+  shared = shared.replace("      if(event.target.closest('#join-lobby'))guardExplicitHouseChoice();\n", '');
+
+  return { base, shared };
+}
+
 module.exports = function asset(request, response) {
   let baseBody = '';
   let voiceBody = '';
@@ -38,6 +83,7 @@ module.exports = function asset(request, response) {
   baseOnline(request || {}, capture);
   voiceSession(request || {}, voiceCapture);
   sharedEngineClient(request || {}, sharedCapture);
+  ({ base: baseBody, shared: sharedBody } = normalizeGeneratedClients(baseBody, sharedBody));
 
   const bootstrap = String.raw`
 ;(()=>{
