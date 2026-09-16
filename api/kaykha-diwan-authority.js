@@ -29,17 +29,22 @@ module.exports = function asset(_request,response){
     const me=members.find(member=>member.user_id===userId)||null;
     const names=new Map(members.map(member=>[member.id,member.display_name||'فرمانده']));
     const eligibleLeverage=(Array.isArray(loans)?loans:[]).filter(loan=>loan.status==='defaulted'&&loan.current_holder_member_id===me?.id&&Number(loan.leverage_points||0)>0).map(loan=>({...loan,borrower_name:names.get(loan.borrower_member_id)||'بدهکار'}));
-    window.dispatchEvent(new CustomEvent('kaykha:loans-updated',{detail:{loans,eligibleLeverage,memberId:me?.id||null}}));
+    window.dispatchEvent(new CustomEvent('kaykha:loans-updated',{detail:{loans,eligibleLeverage,memberId:me?.id||null,availableLeverage:['tax_income','damage_credibility'],voteLeverageAvailable:false}}));
   }
   function scheduleRefresh(){if(refreshQueued)return;refreshQueued=true;setTimeout(()=>{refreshQueued=false;refreshLoans().catch(()=>{});},120);}
 
   window.addEventListener('kaykha:exercise-leverage',event=>{
-    const detail=event.detail||{};const allowed=['bind_vote','tax_income','damage_credibility'];
+    const detail=event.detail||{};
+    if(detail.leverageType==='bind_vote'){
+      window.dispatchEvent(new CustomEvent('kaykha:leverage-result',{detail:{ok:false,message:'تعهد رأی هنوز فعال نیست؛ تا اضافه‌شدن رأی‌گیری سرورمحور هیچ امتیاز اهرمی مصرف نمی‌شود.'}}));
+      return;
+    }
+    const allowed=['tax_income','damage_credibility'];
     if(!detail.loanId||!allowed.includes(detail.leverageType)){window.dispatchEvent(new CustomEvent('kaykha:leverage-result',{detail:{ok:false,message:'درخواست اهرم معتبر نیست.'}}));return;}
     (async()=>{
       try{
         await rpc('exercise_kaykha_leverage',{p_loan_id:detail.loanId,p_leverage_type:detail.leverageType});
-        const messages={bind_vote:'تعهد رأی بدهکار تا راند بعد در سرور ثبت شد.',tax_income:'۵٪ سهم درآمد به حق طلبکار افزوده شد؛ سقف کل ۲۵٪ است.',damage_credibility:'اعتبار مالی بدهکار ۶ واحد کاهش یافت.'};
+        const messages={tax_income:'۵٪ سهم درآمد به حق طلبکار افزوده شد؛ سقف کل ۲۵٪ است.',damage_credibility:'اعتبار مالی بدهکار ۶ واحد کاهش یافت.'};
         window.dispatchEvent(new CustomEvent('kaykha:leverage-result',{detail:{ok:true,message:messages[detail.leverageType]||'اهرم در سرور ثبت شد.'}}));
         await refreshLoans();
       }catch(error){window.dispatchEvent(new CustomEvent('kaykha:leverage-result',{detail:{ok:false,message:error?.message||'اجرای اهرم ممکن نشد.'}}));}
