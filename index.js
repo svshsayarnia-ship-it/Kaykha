@@ -176,6 +176,7 @@ async function proxy(request, response) {
     // Legacy seal confirmation copy must not contradict the server action manifest.
     bodies.online = bodies.online.replace("caravan: 'کاروان مهر شد؛ در سپیده‌دم دارایی اقتصادی و سند ابریشم ثبت می‌شود.'", "caravan: 'کاروان مهر شد؛ اگر مسیر باز باشد، Shared Resolver در سپیده‌دم اقتصاد شهر هدف را ۱ واحد افزایش می‌دهد.'");
     bodies.online = bodies.online.replace("trade: 'تجارت مهر شد؛ در سپیده‌دم اعتبار و سند مذاکره در دفتر سیاسی می‌نشیند.'", "trade: 'تجارت مهر شد؛ اگر اختلال بازار مانع نشود، Shared Resolver در سپیده‌دم اقتصاد شهر مبدأ را ۱ واحد افزایش می‌دهد.'");
+    bodies.online = bodies.online.replace("status(tacticalMessage(order));", "status(tacticalMessage(route.order));");
 
     response.statusCode = 200;
     response.setHeader('content-type', 'application/javascript; charset=utf-8');
