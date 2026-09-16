@@ -50,8 +50,10 @@ function minimalPage() {
         const token = b64({alg:'none',typ:'JWT'})+'.'+b64({sub:'${USER_ID}',exp:Math.floor(Date.now()/1000)+3600})+'.sig';
         const json = (value,status=200)=>Promise.resolve(new Response(JSON.stringify(value),{status,headers:{'content-type':'application/json'}}));
         const nativeFetch = window.fetch.bind(window);
+        window.__e2eRequests=[];
         window.fetch = (input,init={})=>{
           const url = new URL(typeof input==='string'?input:input.url, location.href);
+          window.__e2eRequests.push(url.pathname);
           if(url.hostname==='uwhfxmiguugujcomwmds.supabase.co'){
             if(url.pathname.endsWith('/functions/v1/kaykha-guest-auth')) return json({session:{access_token:token,refresh_token:'refresh-test'}});
             if(url.pathname.includes('/rest/v1/rpc/create_kaykha_game')) return json([{game_id:'${GAME_ID}',game_code:'${GAME_CODE}'}]);
@@ -95,6 +97,7 @@ function minimalPage() {
   </body></html>`;
 }
 
+const serverErrors=[];
 const server = http.createServer(async (request, response) => {
   try {
     const url = new URL(request.url || '/', 'http://127.0.0.1');
@@ -106,6 +109,7 @@ const server = http.createServer(async (request, response) => {
     response.setHeader('content-type', 'text/html; charset=utf-8');
     response.end(minimalPage());
   } catch (error) {
+    serverErrors.push(String(error?.stack || error));
     response.statusCode = 500;
     response.end(String(error?.stack || error));
   }
@@ -117,18 +121,30 @@ const browser = await chromium.launch({headless:true});
 try {
   const page = await browser.newPage();
   const pageErrors=[];
+  const consoleErrors=[];
   page.on('pageerror', error=>pageErrors.push(String(error?.stack||error)));
+  page.on('console', message=>{if(message.type()==='error')consoleErrors.push(message.text())});
   await page.goto(`http://127.0.0.1:${address.port}/?mode=online`, {waitUntil:'load'});
   await page.waitForFunction(()=>document.querySelector('#online-status')?.textContent?.length>0);
   await page.click('#create-lobby');
-  await page.waitForFunction(code=>document.querySelector('#online-status')?.textContent?.includes(code), GAME_CODE);
-  await page.waitForFunction(()=>document.querySelector('#voice-status')?.textContent?.includes('اتصال صوتی برقرار شد'));
-  await page.waitForFunction(()=>document.querySelector('#voice-participants')?.textContent?.includes('یار دوم'));
-  assert.equal(await page.evaluate(()=>localStorage.getItem('kaykha.active-game-id')), GAME_ID);
+  await page.waitForTimeout(1800);
+  const snapshot=await page.evaluate(()=>({
+    online:document.querySelector('#online-status')?.textContent||'',
+    voice:document.querySelector('#voice-status')?.textContent||'',
+    participants:document.querySelector('#voice-participants')?.textContent||'',
+    gameId:localStorage.getItem('kaykha.active-game-id'),
+    guest:Boolean(localStorage.getItem('kaykha.guest-session')),
+    requests:window.__e2eRequests||[]
+  }));
+  assert.match(snapshot.online, new RegExp(GAME_CODE), `Lobby did not create. snapshot=${JSON.stringify(snapshot)} pageErrors=${JSON.stringify(pageErrors)} consoleErrors=${JSON.stringify(consoleErrors)} serverErrors=${JSON.stringify(serverErrors)}`);
+  await page.waitForFunction(()=>document.querySelector('#voice-status')?.textContent?.includes('اتصال صوتی برقرار شد'), null, {timeout:5000});
+  await page.waitForFunction(()=>document.querySelector('#voice-participants')?.textContent?.includes('یار دوم'), null, {timeout:5000});
+  assert.equal(snapshot.gameId, GAME_ID);
   assert.equal(await page.isDisabled('#create-lobby'), false);
   assert.match(await page.textContent('#voice-participants'), /یار دوم/);
   assert.doesNotMatch(await page.textContent('#voice-participants'), /بازیکن ·/);
   assert.deepEqual(pageErrors, []);
+  assert.deepEqual(serverErrors, []);
   console.log('Kaykha browser lobby/voice E2E passed');
 } finally {
   await browser.close();
