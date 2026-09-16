@@ -186,7 +186,7 @@ async function proxy(request, response) {
     bodies.online = bodies.online.replace("caravan: 'کاروان مهر شد؛ در سپیده‌دم دارایی اقتصادی و سند ابریشم ثبت می‌شود.'", "caravan: 'کاروان مهر شد؛ اگر مسیر باز باشد، Shared Resolver در سپیده‌دم اقتصاد شهر هدف را ۱ واحد افزایش می‌دهد.'");
     bodies.online = bodies.online.replace("trade: 'تجارت مهر شد؛ در سپیده‌دم اعتبار و سند مذاکره در دفتر سیاسی می‌نشیند.'", "trade: 'تجارت مهر شد؛ اگر اختلال بازار مانع نشود، Shared Resolver در سپیده‌دم اقتصاد شهر مبدأ را ۱ واحد افزایش می‌دهد.'");
 
-    // Mobile may only enter the sealed state after the authoritative submit RPC succeeds.
+    // Mobile may only enter the sealed/resolved state after authoritative RPC success.
     bodies.online = replaceBundleContract(
       bodies.online,
       "status(tacticalMessage(order));",
@@ -203,12 +203,24 @@ async function proxy(request, response) {
       bodies.mobileLinear,
       "seal.click(); sealedThisRound=true; flow.classList.add('kx-after-seal'); syncCommandFlow();",
       "seal.click(); syncCommandFlow();",
-      'remove optimistic mobile seal state'
+      'remove optimistic mobile seal wrapper state'
+    );
+    bodies.mobileLinear = replaceBundleContract(
+      bodies.mobileLinear,
+      "        if(event.target.closest('#seal')){sealedThisRound=true;saveTutorialStep(1);setTimeout(syncCommandFlow,0);}",
+      "        if(event.target.closest('#seal')){setTimeout(syncCommandFlow,0);}",
+      'remove optimistic capture seal state'
+    );
+    bodies.mobileLinear = replaceBundleContract(
+      bodies.mobileLinear,
+      "        if(event.target.closest('#resolve'))setTimeout(()=>{sealedThisRound=false;syncCommandFlow();},1200);",
+      "        if(event.target.closest('#resolve'))setTimeout(syncCommandFlow,0);",
+      'remove optimistic dawn reset'
     );
     bodies.mobileLinear = replaceBundleContract(
       bodies.mobileLinear,
       "      window.addEventListener('kaykha:server-sync-request', ()=>{renderResourceBar(lastResourceState);syncCommandFlow();applyProgressiveDisclosure();schedulePhaseReminder();});",
-      "      window.addEventListener('kaykha:order-state', event=>{const state=event.detail?.state;if(state==='sealed'){sealedThisRound=true;syncCommandFlow();}else if(state==='resolved'){sealedThisRound=false;syncCommandFlow();}});\n      window.addEventListener('kaykha:server-sync-request', ()=>{renderResourceBar(lastResourceState);syncCommandFlow();applyProgressiveDisclosure();schedulePhaseReminder();});",
+      "      window.addEventListener('kaykha:order-state', event=>{const state=event.detail?.state;if(state==='sealed'){sealedThisRound=true;saveTutorialStep(1);syncCommandFlow();}else if(state==='resolved'){sealedThisRound=false;syncCommandFlow();}});\n      window.addEventListener('kaykha:server-sync-request', ()=>{renderResourceBar(lastResourceState);syncCommandFlow();applyProgressiveDisclosure();schedulePhaseReminder();});",
       'mobile authoritative order-state listener'
     );
 
