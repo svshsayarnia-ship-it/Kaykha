@@ -90,6 +90,11 @@ if(section==='all'||section==='bundle'){
   has(bundle,'20260916-mobile-v3','mobile v3 missing from assembled bundle');
   has(bundle,'20260916-mobile-linear-v4','linear mobile v4 missing from assembled bundle');
   has(bundle,'nextDawnAt','authoritative dawn deadline missing from assembled bundle');
+  has(bundle,'window.kaykhaEnsureGuest=ensureGuest','lobby guest-auth helper is not exported to the authoritative RPC path');
+  has(bundle,"typeof window.kaykhaEnsureGuest === 'function'",'RPC does not self-heal a missing guest session');
+  has(bundle,"status('در حال ساخت تالار…')",'create-lobby progress feedback missing');
+  has(bundle,'ساخت تالار از سرور تأیید نشد.','create-lobby server acknowledgment guard missing');
+  lacks(bundle,'event.stopImmediatePropagation();prepareAndReplay(button);','lobby click must not be cancelled and replayed asynchronously');
   has(bundle,"state: 'sealed', order: route.order",'authoritative seal success acknowledgment missing');
   has(bundle,"state: 'resolved', outcomes:",'authoritative dawn completion acknowledgment missing');
   has(bundle,"state==='sealed'){sealedThisRound=true;saveTutorialStep(1);syncCommandFlow();}",'mobile must advance seal UI/tutorial only after server acknowledgment');
