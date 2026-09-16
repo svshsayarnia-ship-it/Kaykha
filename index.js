@@ -174,6 +174,15 @@ async function proxy(request, response) {
     roleBody = roleBody.replace('refreshTimer=setInterval(()=>{if(!document.hidden)refresh();},7000);', 'refreshTimer=setInterval(()=>{if(!document.hidden)refresh();},60000);');
     bribeBody = bribeBody.replace('timer=setInterval(()=>{if(!document.hidden)refresh();},8000);', 'timer=setInterval(()=>{if(!document.hidden)refresh();},60000);');
 
+    // The mobile UX needs to re-run only when structural UI modules are inserted.
+    // Ordinary logs, counters and realtime text changes must not trigger a full layout pass.
+    mobileUxBody = mobileUxBody.replace(
+      'const mo=new MutationObserver(schedule);mo.observe(document.body,{childList:true,subtree:true});',
+      `const relevant='.diwan-diorama,.independent-role-console,.bribe-network,.role-gallery-panel,.context-rail,.market-picker,[data-view-panel="diwan"],[data-view-panel="map"],.astrolabe-desk';
+      window.__KAYKHA_MOBILE_OBSERVER_FILTERED__=true;
+      const mo=new MutationObserver(records=>{for(const record of records){for(const node of record.addedNodes){if(node.nodeType!==1)continue;if(node.matches?.(relevant)||node.querySelector?.(relevant)){schedule();return;}}}});mo.observe(document.body,{childList:true,subtree:true});`
+    );
+
     // Legacy seal confirmation must never contradict the server action manifest.
     onlineBody = onlineBody.replace("caravan: 'کاروان مهر شد؛ در سپیده‌دم دارایی اقتصادی و سند ابریشم ثبت می‌شود.'", "caravan: 'کاروان مهر شد؛ اگر مسیر باز باشد، Shared Resolver در سپیده‌دم اقتصاد شهر هدف را ۱ واحد افزایش می‌دهد.'");
     onlineBody = onlineBody.replace("trade: 'تجارت مهر شد؛ در سپیده‌دم اعتبار و سند مذاکره در دفتر سیاسی می‌نشیند.'", "trade: 'تجارت مهر شد؛ اگر اختلال بازار مانع نشود، Shared Resolver در سپیده‌دم اقتصاد شهر مبدأ را ۱ واحد افزایش می‌دهد.'");
