@@ -5,6 +5,11 @@ function replaceRequired(source, needle, replacement, label) {
   return source.replace(needle, replacement);
 }
 
+function replaceAllRequired(source, needle, replacement, label) {
+  if (!source.includes(needle)) throw new Error(`Kaykha hardened bundle contract changed: ${label}`);
+  return source.replaceAll(needle, replacement);
+}
+
 module.exports = async function hardenedOnline(request, response) {
   let body = '';
   const headers = {};
@@ -56,6 +61,29 @@ module.exports = async function hardenedOnline(request, response) {
     "    const isPractice = () => new URLSearchParams(location.search).get('mode') === 'practice';",
     'interaction layer explicit practice mode only'
   );
+
+  // Practice presentation must mirror create_kaykha_practice_game exactly.
+  // Never advertise resources or city stats that the authoritative resolver does
+  // not actually own.
+  body = replaceAllRequired(
+    body,
+    'renderResources({ coins:50, influence:15, authoritative:false, fallback:true })',
+    'renderResources({ coins:44, influence:7, authoritative:false, fallback:true })',
+    'practice resource fallback parity'
+  );
+  const practiceSeedPatches = [
+    ["isfahan:{label:'اصفهان',strength:4,economy:4}", "isfahan:{label:'اصفهان',strength:5,economy:4}"],
+    ["nishapur:{label:'نیشابور',strength:3,economy:5}", "nishapur:{label:'نیشابور',strength:3,economy:3}"],
+    ["ctesiphon:{label:'تیسفون',strength:5,economy:5}", "ctesiphon:{label:'تیسفون',strength:4,economy:5}"],
+    ["alamut:{label:'الموت',strength:4,economy:2}", "alamut:{label:'الموت',strength:4,economy:3}"],
+    ["shiraz:{label:'شیراز',strength:4,economy:5}", "shiraz:{label:'شیراز',strength:4,economy:4}"],
+    ["zaranj:{label:'زرنج',strength:3,economy:3}", "zaranj:{label:'زرنج',strength:3,economy:4}"],
+    ["yazd:{label:'یزد',strength:2,economy:3}", "yazd:{label:'یزد',strength:3,economy:4}"],
+    ["bam:{label:'بم',strength:2,economy:3}", "bam:{label:'بم',strength:3,economy:3}"]
+  ];
+  for (const [needle, replacement] of practiceSeedPatches) {
+    body = replaceRequired(body, needle, replacement, `practice city seed parity: ${needle}`);
+  }
 
   // sharedEngineClient defines a local string named URL, so using `new URL(...)`
   // in that same scope calls the string instead of the browser URL constructor.
