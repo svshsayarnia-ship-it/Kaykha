@@ -1,0 +1,34 @@
+name: Kaykha QA Mobile Mode Fix
+
+on:
+  push:
+    branches: [qa/priority-fixes-20260917]
+    paths:
+      - scripts/source-fix-mobile-mode.mjs
+      - .github/workflows/qa-mobile-mode-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: qa/priority-fixes-20260917
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Canonicalize mobile runtime mode
+        run: node scripts/source-fix-mobile-mode.mjs
+      - name: Verify patch
+        run: git diff --check
+      - name: Commit canonical source fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add api/kaykha-mobile-linear-v4.js
+          git commit -m "fix: make mobile Practice mode explicit"
+          git push origin HEAD:qa/priority-fixes-20260917
