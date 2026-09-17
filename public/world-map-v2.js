@@ -49,7 +49,7 @@
   style.textContent=`
 html,body{height:100%;max-height:100%;overflow:hidden}
 body.kaykha-unified .shell{height:100dvh!important;max-height:100dvh!important;min-height:0!important}
-body.kaykha-unified .shell-main{min-height:0!important;height:100%!important;grid-template-rows:auto minmax(0,1fr)!important;overflow:hidden!important}
+body.kaykha-unified .shell-main{min-height:0!important;height:auto!important;max-height:100%!important;grid-template-rows:auto minmax(0,1fr)!important;overflow:hidden!important}
 body.kaykha-unified .shell-scroll{min-height:0!important;max-height:100%!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;overscroll-behavior-y:contain!important;scrollbar-gutter:stable}
 body.kaykha-unified .shell-nav{pointer-events:auto!important;touch-action:manipulation!important}
 body.kaykha-unified .shell-nav button{pointer-events:auto!important;touch-action:manipulation!important}
@@ -57,7 +57,7 @@ body.kaykha-unified .shell-nav button{pointer-events:auto!important;touch-action
 #city-entry-curtain.show[aria-hidden="false"]{visibility:visible!important}
 @media(max-width:720px){
  body.kaykha-unified .shell{grid-template-rows:minmax(0,1fr) auto!important}
- body.kaykha-unified .shell-main{grid-template-rows:auto minmax(0,1fr)!important}
+ body.kaykha-unified .shell-main{height:auto!important;min-height:0!important;grid-template-rows:auto minmax(0,1fr)!important}
  body.kaykha-unified .shell-scroll{padding-bottom:max(18px,env(safe-area-inset-bottom))!important}
  body.kaykha-unified .shell-nav{position:relative!important;z-index:120!important;flex:0 0 auto!important}
 }
