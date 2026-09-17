@@ -1,0 +1,34 @@
+name: Kaykha QA Source Normalize P2
+
+on:
+  push:
+    branches: [qa/priority-fixes-20260917]
+    paths:
+      - scripts/source-normalize-p2.mjs
+      - .github/workflows/qa-source-normalize-p2.yml
+
+permissions:
+  contents: write
+
+jobs:
+  normalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: qa/priority-fixes-20260917
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Normalize P2 canonical source
+        run: node scripts/source-normalize-p2.mjs
+      - name: Verify patch
+        run: git diff --check
+      - name: Commit normalized source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add api/kaykha-online-fixed.js api/kaykha-shared-engine-client.js public/city-interactions-v2.js
+          git commit -m "fix: bind city HUD to server state and speed fallback sync"
+          git push origin HEAD:qa/priority-fixes-20260917
