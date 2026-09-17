@@ -22,6 +22,8 @@ module.exports = function asset(_request, response) {
     let lastResourceState = null;
     let currentRound = 1;
     let observer = null;
+    let observerFrame = 0;
+    let resizeFrame = 0;
     let sealedThisRound = false;
     let tutorialStep = 0;
     let reminderTimer = null;
@@ -374,7 +376,7 @@ module.exports = function asset(_request, response) {
       window.addEventListener('kaykha:loans-updated', event=>{updateLoanReminders(event.detail||{});if((event.detail?.loans||[]).length)saveTutorialStep(4);});
       window.addEventListener('kaykha:game-meta', event=>{updateDawnReminder(event.detail||{});applyProgressiveDisclosure();renderResourceBar(lastResourceState);});
       window.addEventListener('kaykha:server-sync-request', ()=>{renderResourceBar(lastResourceState);syncCommandFlow();applyProgressiveDisclosure();schedulePhaseReminder();});
-      window.addEventListener('resize', ()=>{if(isMobile()){ensureMapExtras();updateMapFlow();} });
+      window.addEventListener('resize', ()=>{if(!isMobile()||resizeFrame)return;resizeFrame=requestAnimationFrame(()=>{resizeFrame=0;ensureMapExtras();updateMapFlow();});},{passive:true});
       const phase=$('#phase'); if(phase)new MutationObserver(()=>{const before=currentRound;roundFromUi();if(currentRound!==before){sealedThisRound=false;applyProgressiveDisclosure();}renderResourceBar(lastResourceState);schedulePhaseReminder();}).observe(phase,{childList:true,subtree:true,characterData:true});
     }
 
@@ -384,7 +386,22 @@ module.exports = function asset(_request, response) {
       installStyles(); ensureResourceBar(); normalizeNav(); ensureMoreSheet(); loadTutorialStep(); ensureCommandFlow(); ensureMapExtras(); ensureMarketExplainer(); ensureCausalSheet(); renderResourceBar(lastResourceState); syncCommandFlow(); applyProgressiveDisclosure(); bind(); schedulePhaseReminder();
       if (isPractice()) { lastResourceState=practiceResources(); renderResourceBar(lastResourceState); }
       document.documentElement.dataset.kaykhaMobileLinear = VERSION;
-      if (!observer) { observer=new MutationObserver(mutations=>{if(mutations.some(m=>m.addedNodes?.length)){normalizeNav();ensureCommandFlow();ensureMapExtras();ensureMarketExplainer();syncCommandFlow();applyProgressiveDisclosure();}});observer.observe(document.body,{childList:true,subtree:true}); }
+      if (!observer) {
+        const scheduleObserverRefresh=()=>{
+          if(observerFrame||document.hidden||!isMobile())return;
+          observerFrame=requestAnimationFrame(()=>{
+            observerFrame=0;
+            ensureMapExtras();
+            ensureMarketExplainer();
+            syncCommandFlow();
+            applyProgressiveDisclosure();
+          });
+        };
+        observer=new MutationObserver(mutations=>{
+          if(mutations.some(m=>m.addedNodes?.length))scheduleObserverRefresh();
+        });
+        ['#territories','#orders','#market'].map($).filter(Boolean).forEach(root=>observer.observe(root,{childList:true,subtree:true}));
+      }
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, {once:true});
