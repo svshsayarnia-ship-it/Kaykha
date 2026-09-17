@@ -217,7 +217,8 @@ begin
     -- deterministic noise so equally-good boards do not always look scripted.
     update kaykha_ai_candidates c
     set final_score=c.base_score-c.counter_risk+c.strategic_bonus
-      + mod(abs(hashtext(p_game_id::text||':'||p_round::text||':'||c.action||':'||c.origin_id||':'||c.target_id)::bigint),7)-3;
+      + mod(abs(hashtext(p_game_id::text||':'||p_round::text||':'||c.action||':'||c.origin_id||':'||c.target_id)::bigint),7)-3
+    where c.action is not null;
     select action,origin_id,target_id,final_score
       into v_action,v_origin,v_target,v_score
     from kaykha_ai_candidates
@@ -243,12 +244,14 @@ begin
           when c.action='sabotage' then 6
           else 0
         end
-      + mod(abs(hashtext('mastermind:'||p_game_id::text||':'||p_round::text||':'||c.action||':'||c.target_id)::bigint),5)-2;
+      + mod(abs(hashtext('mastermind:'||p_game_id::text||':'||p_round::text||':'||c.action||':'||c.target_id)::bigint),5)-2
+    where c.action is not null;
 
     -- Avoid a dominant repeated family when another candidate is close enough.
     update kaykha_ai_candidates c
     set final_score=final_score-
-      least(20,5*app_private.kaykha_strategy_repetition(p_game_id,v_ai.id,p_round,app_private.kaykha_action_family(c.action)));
+      least(20,5*app_private.kaykha_strategy_repetition(p_game_id,v_ai.id,p_round,app_private.kaykha_action_family(c.action)))
+    where c.action is not null;
 
     select action,origin_id,target_id,final_score
       into v_action,v_origin,v_target,v_score
