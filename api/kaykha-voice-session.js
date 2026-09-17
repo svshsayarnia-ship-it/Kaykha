@@ -37,7 +37,7 @@ module.exports = function asset(_request,response){
   // token request; no LiveKit object or global timer behavior is modified.
   window.fetch=async function(input,init){
     let pathname='';
-    try{const value=typeof input==='string'?input:input?.url||'';pathname=new URL(value,location.href).pathname;}catch(_){pathname='';}
+    try{const value=typeof input==='string'?input:input?.url||'';pathname=new globalThis.URL(value,location.href).pathname;}catch(_){pathname='';}
     if(pathname!=='/api/livekit-token')return originalFetch(input,init);
     const gameId=localStorage.getItem(GAME_KEY)||'';
     const token=await accessToken();
