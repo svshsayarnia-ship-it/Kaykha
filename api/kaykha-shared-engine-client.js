@@ -201,7 +201,7 @@ module.exports = function asset(_request, response) {
         ['kaykha_games','kaykha_members','kaykha_territories','kaykha_events','kaykha_contracts','kaykha_loans'].forEach(tableName=>{
           realtimeChannel.on('postgres_changes',{event:'*',schema:'public',table:tableName,filter:'game_id=eq.'+gameId},payload=>{if(tableName==='kaykha_games'&&payload.new){phaseCache=payload.new.phase||phaseCache;practiceCache=Boolean(payload.new.is_practice??practiceCache);syncAiPanel();refreshMeta().catch(()=>{})}scheduleRefresh();if(tableName==='kaykha_territories')schedulePreview()});
         });
-        realtimeChannel.on('postgres_changes',{event:'INSERT',schema:'public',table:'kaykha_effect_events',filter:'game_id=eq.'+gameId},payload=>{visualEffect(payload.new);scheduleRefresh();schedulePreview()});
+        realtimeChannel.on('postgres_changes',{event:'INSERT',schema:'public',table:'kaykha_effect_events',filter:'game_id=eq.'+gameId},payload=>{visualEffect(payload.new);scheduleRefresh()});
         realtimeChannel.subscribe(status=>{if(status==='SUBSCRIBED'){stopFallbackPolling();syncState('Realtime متصل','live')}else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){startFallbackPolling();syncState('Fallback Sync','bad')}else syncState('در حال اتصال…','sync');});
       }catch(error){console.warn('Kaykha realtime fallback',error);startFallbackPolling();syncState('Fallback Sync','bad')}
     }
@@ -235,6 +235,7 @@ module.exports = function asset(_request, response) {
     window.addEventListener('kaykha:identity',()=>{setTimeout(()=>{refreshMeta();syncAiPanel();loadRules();schedulePreview()},0)});
     window.addEventListener('kaykha:command-state',schedulePreview);
     window.addEventListener('kaykha:territories-state',schedulePreview);
+    window.addEventListener('kaykha:effect-event',schedulePreview);
     window.addEventListener('kaykha:order-state',event=>{if(event.detail?.state==='resolved'){loadRules();schedulePreview()}});
 
     async function boot(){
