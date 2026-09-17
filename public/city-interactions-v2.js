@@ -6,6 +6,11 @@
  const openView=name=>q('[data-game-view="'+name+'"]')?.click();
  const pulse=(mode)=>{const portal=q('.city-entry-portal');if(!portal)return;portal.dataset.cityMode=mode;portal.classList.remove('city-impact');requestAnimationFrame(()=>portal.classList.add('city-impact'))};
  const manifestRule=order=>window.KAYKHA_ACTION_MANIFEST?.[order]||null;
+ const CITY_ID={'ری':'ray','تیسفون':'ctesiphon','اصفهان':'isfahan','هگمتانه':'hegmataneh','نیشابور':'nishapur','مرو':'merv','بلخ':'balkh','یزد':'yazd','الموت':'alamut','گرگان':'gorgan','تبریز':'tabriz','شوش':'susa','هرمز':'hormuz','شیراز':'shiraz','بم':'bam','زرنج':'zaranj'};
+ const liveTerritories=new Map(),liveMembers=new Map();let liveMe=null;
+ function ingestTerritoryState(detail={}){liveTerritories.clear();liveMembers.clear();for(const t of detail.territories||[])liveTerritories.set(t.territory_id,t);for(const m of detail.members||[])liveMembers.set(m.id,m);liveMe=detail.me||null;const panel=q('.city-decision-panel');if(panel){const hud=q('.city-state-hud',panel);if(hud)refreshCityHud(hud,cityName());}}
+ function refreshCityHud(hud,city){const territory=liveTerritories.get(CITY_ID[city]);if(!territory)return false;const owner=territory.owner_member_id?(territory.owner_member_id===liveMe?.id?'تو':(liveMembers.get(territory.owner_member_id)?.display_name||'رقیب')):'بی‌طرف';q('[data-state-city]',hud).textContent=city;q('[data-state-owner]',hud).textContent=owner;q('[data-state-army]',hud).textContent=String(Number(territory.strength||0))+' سپاه';return true;}
+ window.addEventListener('kaykha:territories-state',event=>ingestTerritoryState(event.detail||{}));
 
  function routeMarket(city,zone='market'){
   closeCity();openView('market');
@@ -45,8 +50,9 @@
  }
  function showGateConsole(container,city){
   if(!container)return;
-  const hud=cityState(container,city),mapButton=all('#territories button').find(x=>q('b',x)?.textContent?.trim()===city),summary=q('small',mapButton)?.textContent||'وضعیت نامشخص';
-  q('[data-state-city]',hud).textContent=city;q('[data-state-owner]',hud).textContent=summary.split('·')[0]?.trim()||'—';q('[data-state-army]',hud).textContent=summary.split('·')[1]?.trim()||'—';q('[data-state-order]',hud).textContent='ندارد';
+  const hud=cityState(container,city);
+  if(!refreshCityHud(hud,city)){const mapButton=all('#territories button').find(x=>q('b',x)?.textContent?.trim()===city),summary=q('small',mapButton)?.textContent||'وضعیت نامشخص';q('[data-state-city]',hud).textContent=city;q('[data-state-owner]',hud).textContent=summary.split('·')[0]?.trim()||'—';q('[data-state-army]',hud).textContent=summary.split('·')[1]?.trim()||'—';}
+  q('[data-state-order]',hud).textContent='ندارد';
   all('[data-city-destination]',container).forEach(button=>button.classList.toggle('active',button.dataset.cityDestination==='gates'));
   let console=q('.city-command-console',container);
   if(!console){

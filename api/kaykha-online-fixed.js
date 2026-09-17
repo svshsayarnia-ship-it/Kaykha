@@ -140,7 +140,7 @@ function normalizeGeneratedClients(baseBody, sharedBody) {
   base = replaceRequired(
     base,
     "    const self = members.find(member => member.user_id === me); state.me = self || null; state.members = members;\n",
-    "    const self = members.find(member => member.user_id === me); state.me = self || null; state.members = members; state.territories = Array.isArray(territories) ? territories : []; syncCommandSelectors();\n",
+    "    const self = members.find(member => member.user_id === me); state.me = self || null; state.members = members; state.territories = Array.isArray(territories) ? territories : []; syncCommandSelectors(); window.dispatchEvent(new CustomEvent('kaykha:territories-state', { detail: { territories: state.territories, members: state.members, me: state.me } }));\n",
     'hydrate authoritative territories'
   );
 

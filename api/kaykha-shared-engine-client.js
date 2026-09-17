@@ -7,7 +7,7 @@ module.exports = function asset(_request, response) {
     const GUEST_KEY='kaykha.guest-session';
     const AI_KEY='kaykha.ai-difficulty-v2';
     const CITY={ray:'ری',ctesiphon:'تیسفون',isfahan:'اصفهان',hegmataneh:'هگمتانه',nishapur:'نیشابور',merv:'مرو',balkh:'بلخ',yazd:'یزد',alamut:'الموت',gorgan:'گرگان',tabriz:'تبریز',susa:'شوش',hormuz:'هرمز',shiraz:'شیراز',bam:'بم',zaranj:'زرنج'};
-    let realtimeClient=null,realtimeChannel=null,realtimeTimer=null,manifest=null,phaseCache=null,practiceCache=false;
+    let realtimeClient=null,realtimeChannel=null,realtimeTimer=null,fallbackTimer=null,manifest=null,phaseCache=null,practiceCache=false;
 
     const $=s=>document.querySelector(s);
     const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -127,6 +127,8 @@ module.exports = function asset(_request, response) {
       });
     }
     function scheduleRefresh(){clearTimeout(realtimeTimer);realtimeTimer=setTimeout(()=>{syncState('در حال Sync…','sync');window.dispatchEvent(new Event('focus'));setTimeout(()=>syncState('Realtime متصل','live'),450)},120);}
+    function stopFallbackPolling(){if(fallbackTimer){clearInterval(fallbackTimer);fallbackTimer=null;}}
+    function startFallbackPolling(){if(fallbackTimer)return;fallbackTimer=setInterval(()=>{if(document.hidden)return;syncState('Fallback Sync','bad');window.dispatchEvent(new Event('focus'));refreshMeta().catch(()=>{});},15000);}
     async function bindRealtime(gameId){
       if(!gameId||!token())return;
       try{
@@ -138,8 +140,8 @@ module.exports = function asset(_request, response) {
           realtimeChannel.on('postgres_changes',{event:'*',schema:'public',table:tableName,filter:'game_id=eq.'+gameId},payload=>{if(tableName==='kaykha_games'&&payload.new){phaseCache=payload.new.phase||phaseCache;practiceCache=Boolean(payload.new.is_practice??practiceCache);syncAiPanel()}scheduleRefresh();});
         });
         realtimeChannel.on('postgres_changes',{event:'INSERT',schema:'public',table:'kaykha_effect_events',filter:'game_id=eq.'+gameId},payload=>{visualEffect(payload.new);scheduleRefresh()});
-        realtimeChannel.subscribe(status=>{if(status==='SUBSCRIBED')syncState('Realtime متصل','live');else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')syncState('Fallback Sync','bad');else syncState('در حال اتصال…','sync');});
-      }catch(error){console.warn('Kaykha realtime fallback',error);syncState('Fallback Sync','bad')}
+        realtimeChannel.subscribe(status=>{if(status==='SUBSCRIBED'){stopFallbackPolling();syncState('Realtime متصل','live')}else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){startFallbackPolling();syncState('Fallback Sync','bad')}else syncState('در حال اتصال…','sync');});
+      }catch(error){console.warn('Kaykha realtime fallback',error);startFallbackPolling();syncState('Fallback Sync','bad')}
     }
     async function refreshMeta(){const gameId=localStorage.getItem(GAME_KEY);if(!gameId||!token())return;try{const meta=await readGameMeta(gameId);if(meta){phaseCache=meta.phase;practiceCache=Boolean(meta.is_practice);syncAiPanel()}}catch(_){}}
 
