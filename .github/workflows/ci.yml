@@ -40,6 +40,8 @@ jobs:
         run: node scripts/ai-planner-audit.mjs
       - name: State sync contract
         run: node scripts/state-sync-audit.mjs
+      - name: Performance contract
+        run: node scripts/performance-contract-audit.mjs
       - name: Install browser test runtime
         run: |
           npm install --no-save playwright@1.55.0

@@ -187,12 +187,11 @@ module.exports = function asset(_request, response) {
       window.addEventListener('resize', schedule, { passive: true });
       document.addEventListener('keydown', closeTransientUi);
       document.addEventListener('pointerdown', closeTransientUi, true);
-      if (!observer) {
-        observer = new MutationObserver(mutations => {
-          if (mutations.some(item => item.addedNodes && item.addedNodes.length)) schedule();
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
-      }
+      window.addEventListener('kaykha:server-sync-request', schedule);
+      window.addEventListener('kaykha:identity', schedule);
+      document.addEventListener('click', event => {
+        if (event.target.closest('.shell-nav [data-game-view]')) schedule();
+      }, { passive: true });
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });

@@ -391,6 +391,34 @@ module.exports = function asset(_request, response) {
       if (reason) setVoiceStatus('اتصال صوتی قطع شد؛ دوباره تلاش کن.', true);
     });
   }
+  let livekitLoadPromise = null;
+  function ensureLiveKit() {
+    if (window.LivekitClient?.Room) return Promise.resolve(window.LivekitClient);
+    if (livekitLoadPromise) return livekitLoadPromise;
+    livekitLoadPromise = new Promise((resolve, reject) => {
+      const finish = () => {
+        if (window.LivekitClient?.Room) resolve(window.LivekitClient);
+        else reject(new Error('کتابخانهٔ صوتی بارگذاری نشد؛ اتصال اینترنت را بررسی کن.'));
+      };
+      const existing = document.querySelector('script[data-kaykha-livekit]');
+      if (existing) {
+        existing.addEventListener('load', finish, { once: true });
+        existing.addEventListener('error', () => reject(new Error('کتابخانهٔ صوتی بارگذاری نشد؛ اتصال اینترنت را بررسی کن.')), { once: true });
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/livekit-client@2.22.3/dist/livekit-client.umd.min.js';
+      script.async = true;
+      script.dataset.kaykhaLivekit = '1';
+      script.addEventListener('load', finish, { once: true });
+      script.addEventListener('error', () => reject(new Error('کتابخانهٔ صوتی بارگذاری نشد؛ اتصال اینترنت را بررسی کن.')), { once: true });
+      document.head.appendChild(script);
+    }).catch(error => {
+      livekitLoadPromise = null;
+      throw error;
+    });
+    return livekitLoadPromise;
+  }
   async function connectVoice() {
     if (state.voiceRoom) {
       setVoiceStatus('اتصال صوتی از قبل برقرار است.');
@@ -398,8 +426,7 @@ module.exports = function asset(_request, response) {
     }
     if (state.voiceConnecting) return;
     if (!state.gameId) throw new Error('ابتدا وارد یک تالار بازی شو.');
-    const kit = window.LivekitClient;
-    if (!kit?.Room) throw new Error('کتابخانهٔ صوتی بارگذاری نشد؛ اتصال اینترنت را بررسی کن.');
+    const kit = await ensureLiveKit();
     const auth = accessToken();
     if (!auth) throw new Error('برای تالار صوتی ابتدا از ورود اصلی بازی وارد شو.');
     state.voiceConnecting = true;
