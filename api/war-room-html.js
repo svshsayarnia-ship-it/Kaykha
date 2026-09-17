@@ -1,6 +1,6 @@
 module.exports = function asset(_request, response) {
   response.setHeader('content-type', 'text/html; charset=utf-8');
-  response.setHeader('cache-control', 'private, no-store');
+  response.setHeader('cache-control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400');
   response.status(200).send(String.raw`<!doctype html>
 <html lang="fa" dir="rtl">
 <head>
