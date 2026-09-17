@@ -63,6 +63,29 @@ for (const difficulty of ['easy', 'hard', 'mastermind']) {
   assert.equal(Number(human.coins), 44, `${difficulty} human starting coins must be 44`);
   assert.equal(Number(human.influence_tokens), 7, `${difficulty} human starting influence must be 7`);
 
+  const rules = await rpc(token, 'get_kaykha_public_rules', { p_game_id: gameId });
+  assert.equal(rules?.rules_version, '2026.09.17-r1', `${difficulty} rules version is stale: ${JSON.stringify(rules)}`);
+  assert.equal(rules?.round?.timing_mode, 'event_driven', `${difficulty} dawn timing must stay event-driven`);
+  assert.equal(rules?.combat?.normal_success, 'attack_power > defense_power', `${difficulty} public combat success rule drifted`);
+  assert.equal(rules?.combat?.equal_is_success, false, `${difficulty} equal combat power must not count as conquest`);
+  assert.ok(rules?.hegemony?.total, `${difficulty} public hegemony formula is missing`);
+
+  const preview = await rpc(token, 'get_kaykha_command_preview', {
+    p_game_id: gameId,
+    p_order_type: 'attack',
+    p_origin_territory_id: 'ray',
+    p_target_territory_id: 'isfahan',
+    p_payload: {}
+  });
+  const combatPreview = preview?.combat || {};
+  assert.equal(combatPreview.model, 'deterministic_visible_snapshot', `${difficulty} combat preview is not server-visible snapshot`);
+  assert.ok(Number.isFinite(Number(combatPreview.visible_attack_power)), `${difficulty} preview attack power is missing`);
+  assert.ok(Number.isFinite(Number(combatPreview.visible_defense_power)), `${difficulty} preview defense power is missing`);
+  assert.ok([0, 100].includes(Number(combatPreview.visible_conquest_estimate_pct)), `${difficulty} preview conquest estimate must be deterministic 0/100`);
+  assert.ok(combatPreview.hidden_modifiers_notice, `${difficulty} preview must warn about hidden modifiers`);
+  assert.equal(Object.hasOwn(combatPreview, 'illusion_strength'), false, `${difficulty} preview leaked hidden illusion strength`);
+  assert.equal(Object.hasOwn(combatPreview, 'murshid_bonus'), false, `${difficulty} preview leaked hidden defender bonus`);
+
   await rpc(token, 'submit_kaykha_order', {
     p_game_id: gameId,
     p_order_type: 'attack',
@@ -81,7 +104,7 @@ for (const difficulty of ['easy', 'hard', 'mastermind']) {
   const postMembers = await request(`/rest/v1/kaykha_members?game_id=eq.${encodeURIComponent(gameId)}&select=id,is_ai,coins,reputation_score`, { token });
   assert.ok(postMembers.some(member => member.is_ai), `${difficulty} AI member disappeared after resolution`);
 
-  console.log(`PASS live Practice ${difficulty}: ${effects.length} order effects`);
+  console.log(`PASS live Practice ${difficulty}: rules + combat preview + ${effects.length} order effects`);
 }
 
 console.log('PASS live authoritative rule smoke');
