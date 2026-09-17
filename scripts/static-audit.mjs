@@ -19,7 +19,14 @@ run('presentation',()=>{
   lacks(war,'const land=','war-room must not own a mock territory map');
   lacks(war,'function resolve()','war-room must not resolve gameplay locally');
   lacks(war,'S.sealed','war-room must not keep local sealed-order state');
-  has(war,'presentation-only-v3','war-room presentation-only marker missing');
+  has(war,'presentation-only-v4','war-room presentation-only marker missing');
+  has(war,'شروع تمرین آزاد','phase-one Practice CTA missing');
+  has(war,'ورود به تالار آنلاین','phase-one online CTA missing');
+  has(war,'data-p1-dawn','phase-one dawn status missing');
+  has(war,'data-p1-order','phase-one authoritative order status missing');
+  has(war,'سه قدم اول','phase-one onboarding missing');
+  has(war,"get('mode')==='practice'",'Practice must be explicit in presentation');
+  lacks(war,"get('mode')!=='online'",'legacy implicit Practice detection returned in presentation');
   const diwan=parseBrowser('public/diwan-diorama.js');
   lacks(diwan,'dragstart','Diwan must not register fake drag voting');
   lacks(diwan,'wireVoting','legacy local voting returned');
