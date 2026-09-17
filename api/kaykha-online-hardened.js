@@ -48,6 +48,15 @@ module.exports = async function hardenedOnline(request, response) {
     'explicit practice mode only'
   );
 
+  // sharedEngineClient defines a local string named URL, so using `new URL(...)`
+  // in that same scope calls the string instead of the browser URL constructor.
+  body = replaceRequired(
+    body,
+    "const url=new URL(location.href);",
+    "const url=new globalThis.URL(location.href);",
+    'shared engine URL constructor shadowing'
+  );
+
   response.statusCode = 200;
   response.setHeader('content-type', 'application/javascript; charset=utf-8');
   response.setHeader('cache-control', 'no-store, max-age=0');
