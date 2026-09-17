@@ -36,6 +36,8 @@ jobs:
         run: node scripts/practice-parity-audit.mjs
       - name: AI planner fairness and depth
         run: node scripts/ai-planner-audit.mjs
+      - name: State sync contract
+        run: node scripts/state-sync-audit.mjs
       - name: Install browser test runtime
         run: |
           npm install --no-save playwright@1.55.0
