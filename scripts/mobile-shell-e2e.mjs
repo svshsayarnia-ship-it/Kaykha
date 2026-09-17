@@ -72,6 +72,8 @@ try {
     const scroller = document.querySelector('.shell-scroll');
     const curtain = document.getElementById('city-entry-curtain');
     const style = getComputedStyle(scroller);
+    const nav = document.querySelector('.shell-nav');
+    const navRect = nav?.getBoundingClientRect();
     return {
       clientHeight: scroller?.clientHeight || 0,
       scrollHeight: scroller?.scrollHeight || 0,
@@ -79,7 +81,10 @@ try {
       touchAction: style.touchAction,
       bodyEntering: document.body.classList.contains('city-entering'),
       curtainShow: curtain?.classList.contains('show') || false,
-      curtainHidden: curtain?.getAttribute('aria-hidden')
+      curtainHidden: curtain?.getAttribute('aria-hidden'),
+      navTop: navRect?.top ?? -1,
+      navBottom: navRect?.bottom ?? -1,
+      viewportHeight: innerHeight
     };
   });
 
@@ -89,6 +94,7 @@ try {
   assert.equal(initial.bodyEntering, false, `Stale city-entering class blocked the UI: ${JSON.stringify(initial)}`);
   assert.equal(initial.curtainShow, false, `City curtain started open and intercepted touches: ${JSON.stringify(initial)}`);
   assert.equal(initial.curtainHidden, 'true');
+  assert.ok(initial.navTop >= 0 && initial.navBottom <= initial.viewportHeight + 1, `Bottom navigation is outside the viewport: ${JSON.stringify(initial)}`);
 
   const moved = await page.evaluate(() => {
     const scroller = document.querySelector('.shell-scroll');
@@ -98,8 +104,33 @@ try {
   assert.ok(moved > 0, `Mobile shell refused to scroll. scrollTop=${moved}`);
 
   for (const name of ['market', 'diwan', 'command', 'map']) {
-    await page.tap(`[data-game-view="${name}"]`);
-    await page.waitForFunction(view => document.querySelector(`[data-view-panel="${view}"]`)?.classList.contains('active'), name);
+    const hit = await page.evaluate(view => {
+      const button = document.querySelector(`[data-game-view="${view}"]`);
+      if (!button) return { exists: false };
+      const rect = button.getBoundingClientRect();
+      const x = Math.max(0, Math.min(innerWidth - 1, rect.left + rect.width / 2));
+      const y = Math.max(0, Math.min(innerHeight - 1, rect.top + rect.height / 2));
+      const top = document.elementFromPoint(x, y);
+      const style = getComputedStyle(button);
+      return {
+        exists: true,
+        rect: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height },
+        viewport: { width: innerWidth, height: innerHeight },
+        hittable: top === button || button.contains(top),
+        hitTag: top?.tagName || '',
+        hitClass: top?.className || '',
+        pointerEvents: style.pointerEvents,
+        visibility: style.visibility,
+        display: style.display
+      };
+    }, name);
+    assert.equal(hit.exists, true, `Missing mobile nav button ${name}: ${JSON.stringify(hit)}`);
+    assert.ok(hit.rect.top >= 0 && hit.rect.bottom <= hit.viewport.height + 1, `Nav button ${name} is outside viewport: ${JSON.stringify(hit)}`);
+    assert.equal(hit.pointerEvents, 'auto', `Nav button ${name} blocks pointer input: ${JSON.stringify(hit)}`);
+    assert.equal(hit.hittable, true, `Nav button ${name} is covered by another layer: ${JSON.stringify(hit)}`);
+
+    await page.evaluate(view => document.querySelector(`[data-game-view="${view}"]`)?.click(), name);
+    await page.waitForFunction(view => document.querySelector(`[data-view-panel="${view}"]`)?.classList.contains('active'), name, { timeout: 3000 });
     const active = await page.evaluate(() => ({
       button: document.querySelector('[data-game-view].active')?.getAttribute('data-game-view') || '',
       panel: document.querySelector('[data-view-panel].active')?.getAttribute('data-view-panel') || '',
