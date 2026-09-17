@@ -2,6 +2,7 @@
 -- Easy remains readable/random. Hard uses one-ply expected utility.
 -- Mastermind adds counter-risk and strategic two-ply scoring.
 -- Fairness invariant: the AI never reads the human order from the current round.
+-- Legality invariant: AI candidates obey the same progressive round unlocks as humans.
 
 create or replace function app_private.plan_kaykha_practice_ai(p_game_id uuid,p_round integer)
 returns jsonb
@@ -22,8 +23,6 @@ declare
   v_target text;
   v_score numeric;
   v_candidates integer:=0;
-  v_seed integer;
-  v_noise numeric;
 begin
   select * into v_game
   from public.kaykha_games
@@ -147,7 +146,7 @@ begin
   from public.kaykha_territories t
   where t.game_id=p_game_id and t.owner_member_id=v_ai.id;
 
-  -- CARAVAN: boost the AI's lower-economy city.
+  -- CARAVAN unlocks at round 2, matching the authoritative progressive guard.
   insert into kaykha_ai_candidates(action,origin_id,target_id,base_score,counter_risk,strategic_bonus,rationale)
   select 'caravan',o.territory_id,t.territory_id,
          16 + greatest(0,5-t.economy)*4,
@@ -156,9 +155,10 @@ begin
          'repair_economy'
   from public.kaykha_territories o
   join public.kaykha_territories t on t.game_id=o.game_id and t.owner_member_id=v_ai.id
-  where o.game_id=p_game_id and o.owner_member_id=v_ai.id;
+  where p_round>=2 and o.game_id=p_game_id and o.owner_member_id=v_ai.id;
 
   -- Covert actions target only live human territory; never neutral/self.
+  -- SPY unlocks at round 2.
   insert into kaykha_ai_candidates(action,origin_id,target_id,base_score,counter_risk,strategic_bonus,rationale)
   select 'spy',o.territory_id,t.territory_id,
          18 + t.strength*2 + t.economy*2 + t.influence,
@@ -167,8 +167,9 @@ begin
          'collect_intelligence'
   from public.kaykha_territories o
   join public.kaykha_territories t on t.game_id=o.game_id and t.owner_member_id=v_human
-  where o.game_id=p_game_id and o.owner_member_id=v_ai.id;
+  where p_round>=2 and o.game_id=p_game_id and o.owner_member_id=v_ai.id;
 
+  -- REVOLT, RAID and SABOTAGE unlock at round 4.
   insert into kaykha_ai_candidates(action,origin_id,target_id,base_score,counter_risk,strategic_bonus,rationale)
   select 'revolt',o.territory_id,t.territory_id,
          20 + greatest(0,60-t.legitimacy)*1.2 + t.economy,
@@ -177,7 +178,7 @@ begin
          'attack_legitimacy'
   from public.kaykha_territories o
   join public.kaykha_territories t on t.game_id=o.game_id and t.owner_member_id=v_human
-  where o.game_id=p_game_id and o.owner_member_id=v_ai.id;
+  where p_round>=4 and o.game_id=p_game_id and o.owner_member_id=v_ai.id;
 
   insert into kaykha_ai_candidates(action,origin_id,target_id,base_score,counter_risk,strategic_bonus,rationale)
   select 'raid',o.territory_id,t.territory_id,
@@ -187,7 +188,7 @@ begin
          'hit_visible_wealth'
   from public.kaykha_territories o
   join public.kaykha_territories t on t.game_id=o.game_id and t.owner_member_id=v_human
-  where o.game_id=p_game_id and o.owner_member_id=v_ai.id;
+  where p_round>=4 and o.game_id=p_game_id and o.owner_member_id=v_ai.id;
 
   insert into kaykha_ai_candidates(action,origin_id,target_id,base_score,counter_risk,strategic_bonus,rationale)
   select 'sabotage',o.territory_id,t.territory_id,
@@ -197,7 +198,7 @@ begin
          'deny_infrastructure'
   from public.kaykha_territories o
   join public.kaykha_territories t on t.game_id=o.game_id and t.owner_member_id=v_human
-  where o.game_id=p_game_id and o.owner_member_id=v_ai.id;
+  where p_round>=4 and o.game_id=p_game_id and o.owner_member_id=v_ai.id;
 
   select count(*) into v_candidates from kaykha_ai_candidates;
   if v_candidates=0 then return jsonb_build_object('skipped',true,'reason','no_legal_candidates'); end if;
@@ -216,7 +217,7 @@ begin
     -- deterministic noise so equally-good boards do not always look scripted.
     update kaykha_ai_candidates c
     set final_score=c.base_score-c.counter_risk+c.strategic_bonus
-      + mod(abs(hashtext(p_game_id::text||':'||p_round::text||':'||c.action||':'||c.origin_id||':'||c.target_id)),7)-3;
+      + mod(abs(hashtext(p_game_id::text||':'||p_round::text||':'||c.action||':'||c.origin_id||':'||c.target_id)::bigint),7)-3;
     select action,origin_id,target_id,final_score
       into v_action,v_origin,v_target,v_score
     from kaykha_ai_candidates
@@ -242,7 +243,7 @@ begin
           when c.action='sabotage' then 6
           else 0
         end
-      + mod(abs(hashtext('mastermind:'||p_game_id::text||':'||p_round::text||':'||c.action||':'||c.target_id)),5)-2;
+      + mod(abs(hashtext('mastermind:'||p_game_id::text||':'||p_round::text||':'||c.action||':'||c.target_id)::bigint),5)-2;
 
     -- Avoid a dominant repeated family when another candidate is close enough.
     update kaykha_ai_candidates c
