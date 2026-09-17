@@ -41,11 +41,20 @@ module.exports = async function hardenedOnline(request, response) {
     'host automatic voice connection'
   );
 
+  // Runtime mode is explicit everywhere: only ?mode=practice enables Practice.
+  // A bare URL is Online, so no presentation layer may infer Practice from the
+  // absence of ?mode=online.
   body = replaceRequired(
     body,
     "    function isPracticeUrl(){return new URLSearchParams(location.search).get('mode')!=='online'}",
     "    function isPracticeUrl(){return new URLSearchParams(location.search).get('mode')==='practice'}",
-    'explicit practice mode only'
+    'shared engine explicit practice mode only'
+  );
+  body = replaceRequired(
+    body,
+    "    const isPractice = () => new URLSearchParams(location.search).get('mode') !== 'online';",
+    "    const isPractice = () => new URLSearchParams(location.search).get('mode') === 'practice';",
+    'interaction layer explicit practice mode only'
   );
 
   // sharedEngineClient defines a local string named URL, so using `new URL(...)`
