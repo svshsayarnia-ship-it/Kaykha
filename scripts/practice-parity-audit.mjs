@@ -9,10 +9,10 @@ const root = process.cwd();
 const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20260916070127_kaykha_p0_order_practice_suren_integrity.sql'), 'utf8');
 
 assert.match(migration, /set coins=44,influence_tokens=7,bribe_tokens=2,search_tokens=2/, 'authoritative Practice resources changed; update parity contract');
-assert.match(migration, /\('isfahan',v_ai,5,4,3\)/, 'authoritative Isfahan Practice seed changed');
-assert.match(migration, /\('nishapur',v_ai,3,3,4\)/, 'authoritative Nishapur Practice seed changed');
-assert.match(migration, /\('ctesiphon',null,4,5,3\)/, 'authoritative Ctesiphon Practice seed changed');
-assert.match(migration, /\('zaranj',null,3,4,3\)/, 'authoritative Zaranj Practice seed changed');
+assert.match(migration, /\(v_game_id,'isfahan',v_ai,5,4,3\)/, 'authoritative Isfahan Practice seed changed');
+assert.match(migration, /\(v_game_id,'nishapur',v_ai,3,3,4\)/, 'authoritative Nishapur Practice seed changed');
+assert.match(migration, /\(v_game_id,'ctesiphon',null,4,5,3\)/, 'authoritative Ctesiphon Practice seed changed');
+assert.match(migration, /\(v_game_id,'zaranj',null,3,4,3\)/, 'authoritative Zaranj Practice seed changed');
 
 let body = '';
 const response = {
