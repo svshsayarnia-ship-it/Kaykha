@@ -9,11 +9,21 @@ const warRoomHtml = require('../api/war-room-html.js');
 const worldMapSource = await readFile(new URL('../public/world-map-v2.js', import.meta.url), 'utf8');
 
 const serverErrors = [];
+function vercelResponse(response) {
+  const adapter = {
+    setHeader(name, value) { response.setHeader(name, value); return adapter; },
+    status(code) { response.statusCode = code; return adapter; },
+    send(body) { response.end(body); return adapter; },
+    end(body) { response.end(body); return adapter; }
+  };
+  return adapter;
+}
+
 const server = http.createServer(async (request, response) => {
   try {
     const url = new URL(request.url || '/', 'http://127.0.0.1');
     if (url.pathname === '/' || url.pathname === '/game' || url.pathname === '/war-room.html') {
-      warRoomHtml(request, response);
+      warRoomHtml(request, vercelResponse(response));
       return;
     }
     if (url.pathname === '/world-map-v2.js') {
@@ -65,7 +75,7 @@ try {
   await page.route('https://cdn.jsdelivr.net/**', route => route.fulfill({ status: 200, contentType: 'application/javascript', body: '' }));
 
   await page.goto(`http://127.0.0.1:${address.port}/game?mode=practice`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('.shell-scroll');
+  await page.waitForSelector('.shell-scroll', { timeout: 5000 });
   await page.waitForTimeout(150);
 
   const initial = await page.evaluate(() => {
