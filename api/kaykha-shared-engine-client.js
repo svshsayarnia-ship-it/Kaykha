@@ -22,7 +22,7 @@ module.exports = function asset(_request, response) {
     }
     function token(){return tokenFrom(stored(GUEST_KEY));}
     function difficulty(){try{const d=localStorage.getItem(AI_KEY);return ['easy','hard','mastermind'].includes(d)?d:'easy'}catch(_){return 'easy'}}
-    function isPracticeUrl(){return new URLSearchParams(location.search).get('mode')!=='online'}
+    function isPracticeUrl(){return new URLSearchParams(location.search).get('mode')==='practice'}
     function textOf(selector,fallback=''){return $(selector)?.selectedOptions?.[0]?.textContent?.trim()||fallback}
     function headers(){return {apikey:KEY,Authorization:'Bearer '+token(),'Content-Type':'application/json'}}
     async function rpc(name,payload={}){
@@ -166,7 +166,7 @@ module.exports = function asset(_request, response) {
       if(event.target.closest('#resolve'))syncState('Shared Resolver…','sync');
     },true);
 
-    window.addEventListener('kaykha:lobby-success',event=>{const d=event.detail||{};if(!d.gameId)return;const url=new URL(location.href);url.searchParams.set('mode','online');history.replaceState({},'',url);practiceCache=false;localStorage.setItem(GAME_KEY,d.gameId);bindRealtime(d.gameId);});
+    window.addEventListener('kaykha:lobby-success',event=>{const d=event.detail||{};if(!d.gameId)return;const url=new globalThis.URL(location.href);url.searchParams.set('mode','online');history.replaceState({},'',url);practiceCache=false;localStorage.setItem(GAME_KEY,d.gameId);bindRealtime(d.gameId);});
     window.addEventListener('kaykha:identity',()=>{setTimeout(()=>{refreshMeta();syncAiPanel()},0)});
 
     async function boot(){
