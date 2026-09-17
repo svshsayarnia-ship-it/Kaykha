@@ -128,7 +128,7 @@ module.exports = function asset(_request, response) {
     }
     function scheduleRefresh(){clearTimeout(realtimeTimer);realtimeTimer=setTimeout(()=>{syncState('در حال Sync…','sync');window.dispatchEvent(new Event('focus'));setTimeout(()=>syncState('Realtime متصل','live'),450)},120);}
     function stopFallbackPolling(){if(fallbackTimer){clearInterval(fallbackTimer);fallbackTimer=null;}}
-    function startFallbackPolling(){if(fallbackTimer)return;fallbackTimer=setInterval(()=>{if(document.hidden)return;syncState('Fallback Sync','bad');window.dispatchEvent(new Event('focus'));refreshMeta().catch(()=>{});},15000);}
+    function startFallbackPolling(){if(fallbackTimer)return;fallbackTimer=setInterval(()=>{if(document.hidden)return;syncState('Fallback Sync','bad');window.dispatchEvent(new CustomEvent('kaykha:server-sync-request'));refreshMeta().catch(()=>{});},15000);}
     async function bindRealtime(gameId){
       if(!gameId||!token())return;
       try{
