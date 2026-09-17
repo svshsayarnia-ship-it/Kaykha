@@ -255,7 +255,7 @@ async function proxy(request, response) {
 
     response.statusCode = 200;
     response.setHeader('content-type', 'application/javascript; charset=utf-8');
-    response.setHeader('cache-control', 'no-store, max-age=0');
+    response.setHeader('cache-control', 'public, max-age=3600, s-maxage=31536000, stale-while-revalidate=86400');
     response.setHeader('x-robots-tag', 'noindex');
     response.end([
       bodies.online,bodies.role,bodies.bribe,bodies.character,bodies.finalization,
