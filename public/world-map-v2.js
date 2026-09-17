@@ -37,3 +37,65 @@
  document.addEventListener('keydown',event=>{if(event.key==='Escape')closePreview()});
  if(matchMedia('(pointer:fine)').matches){document.querySelectorAll('.city-visual,.city-entry-portal').forEach(visual=>{visual.addEventListener('pointermove',event=>{const rect=visual.getBoundingClientRect(),x=(event.clientX-rect.left)/rect.width-.5,y=(event.clientY-rect.top)/rect.height-.5,depth=visual.classList.contains('city-entry-portal')?24:14;visual.style.setProperty('--parallax-x',(x*-depth)+'px');visual.style.setProperty('--parallax-y',(y*-depth*.66)+'px')});visual.addEventListener('pointerleave',()=>{visual.style.setProperty('--parallax-x','0px');visual.style.setProperty('--parallax-y','0px')})})}
 })();
+
+/* Mobile interaction stability guard. Keeps the game shell scrollable and navigation usable
+   even when a mobile browser mishandles nested 100dvh/grid overflow or a stale city curtain. */
+(()=>{
+ const STYLE_ID='kaykha-mobile-stability-v1';
+ function installStyle(){
+  if(document.getElementById(STYLE_ID))return;
+  const style=document.createElement('style');
+  style.id=STYLE_ID;
+  style.textContent=`
+html,body{height:100%;max-height:100%;overflow:hidden}
+body.kaykha-unified .shell{height:100dvh!important;max-height:100dvh!important;min-height:0!important}
+body.kaykha-unified .shell-main{min-height:0!important;height:auto!important;max-height:100%!important;grid-template-rows:auto minmax(0,1fr)!important;overflow:hidden!important}
+body.kaykha-unified .shell-scroll{min-height:0!important;max-height:100%!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;overscroll-behavior-y:contain!important;scrollbar-gutter:stable}
+body.kaykha-unified .shell-nav{pointer-events:auto!important;touch-action:manipulation!important}
+body.kaykha-unified .shell-nav button{pointer-events:auto!important;touch-action:manipulation!important}
+#city-entry-curtain:not(.show),#city-entry-curtain[aria-hidden="true"]{pointer-events:none!important;visibility:hidden!important}
+#city-entry-curtain.show[aria-hidden="false"]{visibility:visible!important}
+@media(max-width:720px){
+ body.kaykha-unified .shell{grid-template-rows:minmax(0,1fr) auto!important}
+ body.kaykha-unified .shell-main{height:auto!important;min-height:0!important;grid-template-rows:auto minmax(0,1fr)!important}
+ body.kaykha-unified .shell-scroll{padding-bottom:max(18px,env(safe-area-inset-bottom))!important}
+ body.kaykha-unified .shell-nav{position:relative!important;z-index:120!important;flex:0 0 auto!important}
+}
+@supports not (height:100dvh){body.kaykha-unified .shell{height:100vh!important;max-height:100vh!important}}
+`;
+  document.head.appendChild(style);
+ }
+ function normalizeShell(){
+  installStyle();
+  const scroller=document.querySelector('.shell-scroll');
+  if(scroller){scroller.style.webkitOverflowScrolling='touch';scroller.style.touchAction='pan-y'}
+  const curtain=document.getElementById('city-entry-curtain');
+  if(curtain&&curtain.getAttribute('aria-hidden')==='true'){
+   curtain.classList.remove('show');
+   document.body.classList.remove('city-entering');
+  }
+  const panels=[...document.querySelectorAll('[data-view-panel]')];
+  if(panels.length&&!panels.some(panel=>panel.classList.contains('active'))){
+   panels.find(panel=>panel.dataset.viewPanel==='map')?.classList.add('active');
+   document.querySelector('[data-game-view="map"]')?.classList.add('active');
+  }
+ }
+ function openView(name){
+  if(!['command','map','market','diwan'].includes(name))return;
+  const buttons=[...document.querySelectorAll('[data-game-view]')];
+  const panels=[...document.querySelectorAll('[data-view-panel]')];
+  buttons.forEach(button=>button.classList.toggle('active',button.dataset.gameView===name));
+  panels.forEach(panel=>panel.classList.toggle('active',panel.dataset.viewPanel===name));
+  const scroller=document.querySelector('.shell-scroll');
+  if(scroller){try{scroller.scrollTo({top:0,left:0,behavior:'auto'})}catch{scroller.scrollTop=0}}
+ }
+ document.addEventListener('click',event=>{
+  const button=event.target.closest?.('[data-game-view]');
+  if(!button)return;
+  event.preventDefault();
+  openView(button.dataset.gameView);
+ },true);
+ window.addEventListener('pageshow',normalizeShell);
+ window.addEventListener('resize',normalizeShell,{passive:true});
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',normalizeShell,{once:true});else normalizeShell();
+})();

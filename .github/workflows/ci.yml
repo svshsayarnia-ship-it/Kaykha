@@ -42,6 +42,8 @@ jobs:
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
+      - name: Mobile shell scroll and navigation smoke
+        run: node scripts/mobile-shell-e2e.mjs
       - name: Browser lobby and voice smoke
         run: node scripts/lobby-browser-e2e.mjs
       - name: Dual-browser join and voice flow
