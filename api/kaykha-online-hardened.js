@@ -1,8 +1,7 @@
 const indexHandler = require('../index.js');
 
-function replaceRequired(source, needle, replacement, label) {
-  if (!source.includes(needle)) throw new Error(`Kaykha hardened bundle contract changed: ${label}`);
-  return source.replace(needle, replacement);
+function invariant(condition, label) {
+  if (!condition) throw new Error(`Kaykha hardened bundle invariant failed: ${label}`);
 }
 
 module.exports = async function hardenedOnline(request, response) {
@@ -27,35 +26,17 @@ module.exports = async function hardenedOnline(request, response) {
     return;
   }
 
-  body = replaceRequired(
-    body,
-    "    const member = state.members.find(item => identity.includes(String(item.user_id || '')));",
-    "    const memberId = identity.startsWith('member-') ? identity.slice('member-'.length) : '';\n    const member = state.members.find(item => String(item.id || '') === memberId || identity.includes(String(item.user_id || '')));",
-    'voice participant membership mapping'
-  );
-
-  body = replaceRequired(
-    body,
-    "    window.dispatchEvent(new CustomEvent('kaykha:lobby-success', { detail: { kind: 'create', gameId: rows[0].game_id, code: rows[0].game_code } }));\n  }",
-    "    window.dispatchEvent(new CustomEvent('kaykha:lobby-success', { detail: { kind: 'create', gameId: rows[0].game_id, code: rows[0].game_code } }));\n    await connectVoice();\n  }",
-    'host automatic voice connection'
-  );
-
-  body = replaceRequired(
-    body,
-    "    function isPracticeUrl(){return new URLSearchParams(location.search).get('mode')!=='online'}",
-    "    function isPracticeUrl(){return new URLSearchParams(location.search).get('mode')==='practice'}",
-    'explicit practice mode only'
-  );
-
-  // sharedEngineClient defines a local string named URL, so using `new URL(...)`
-  // in that same scope calls the string instead of the browser URL constructor.
-  body = replaceRequired(
-    body,
-    "const url=new URL(location.href);",
-    "const url=new globalThis.URL(location.href);",
-    'shared engine URL constructor shadowing'
-  );
+  // Hardening is intentionally validation-only. Canonical source modules own
+  // behavior; this endpoint must never mutate the assembled runtime with string
+  // replacement patches again.
+  invariant(!/get\(['"]mode['"]\)\s*!==\s*['"]online['"]/.test(body), 'legacy implicit Practice detection returned');
+  const practiceChecks = body.match(/get\(['"]mode['"]\)\s*===\s*['"]practice['"]/g) || [];
+  invariant(practiceChecks.length >= 2, 'shared engine and interaction runtime mode diverged');
+  invariant(body.includes('const url=new globalThis.URL(location.href);'), 'shared-engine URL constructor safety missing');
+  invariant(body.includes("const memberId = identity.startsWith('member-') ? identity.slice('member-'.length) : '';"), 'voice participant member-id mapping missing');
+  invariant(body.includes("await connectVoice();\n  }"), 'host automatic voice connection missing');
+  invariant(body.includes('renderResources({ coins:44, influence:7, authoritative:false, fallback:true })'), 'Practice resource parity missing');
+  invariant(!body.includes('renderResources({ coins:50, influence:15, authoritative:false, fallback:true })'), 'legacy Practice resource fallback returned');
 
   response.statusCode = 200;
   response.setHeader('content-type', 'application/javascript; charset=utf-8');

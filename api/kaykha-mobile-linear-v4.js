@@ -29,7 +29,7 @@ module.exports = function asset(_request, response) {
     function isMobile() {
       return window.innerWidth <= 1024 || (window.matchMedia && matchMedia('(pointer: coarse)').matches && Math.min(screen.width || 9999, screen.height || 9999) <= 1024);
     }
-    function isPractice() { return new URLSearchParams(location.search).get('mode') !== 'online'; }
+    function isPractice() { return new URLSearchParams(location.search).get('mode') === 'practice'; }
     function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])); }
     function roundFromUi() {
       const text = ($('#phase')?.textContent || '') + ' ' + ($('[data-objective-progress]')?.textContent || '');

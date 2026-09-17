@@ -289,7 +289,8 @@ module.exports = function asset(_request, response) {
   function voiceParticipantLabel(participant) {
     const identity = String(participant?.identity || '');
     if (participant?.isLocal && state.me?.display_name) return state.me.display_name + ' · تو';
-    const member = state.members.find(item => identity.includes(String(item.user_id || '')));
+    const memberId = identity.startsWith('member-') ? identity.slice('member-'.length) : '';
+    const member = state.members.find(item => String(item.id || '') === memberId || identity.includes(String(item.user_id || '')));
     return member?.display_name || ('بازیکن · ' + identity.slice(-6));
   }
   function renderVoiceParticipants() {
@@ -502,6 +503,7 @@ module.exports = function asset(_request, response) {
     await savePersona();
     status('تالار ' + rows[0].game_code + ' ساخته شد. کدش را برای یاران بفرست.');
     window.dispatchEvent(new CustomEvent('kaykha:lobby-success', { detail: { kind: 'create', gameId: rows[0].game_id, code: rows[0].game_code } }));
+    await connectVoice();
   }
   function normalizeLobbyCode(value) {
     const digits = {'۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9','٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9'};

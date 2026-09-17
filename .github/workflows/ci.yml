@@ -30,9 +30,22 @@ jobs:
         run: node scripts/architecture-integrity.mjs
       - name: Assembled bundle
         run: node scripts/static-audit.mjs bundle
+      - name: Runtime mode contract
+        run: node scripts/runtime-mode-audit.mjs
+      - name: Practice parity contract
+        run: node scripts/practice-parity-audit.mjs
+      - name: AI planner fairness and depth
+        run: node scripts/ai-planner-audit.mjs
+      - name: State sync contract
+        run: node scripts/state-sync-audit.mjs
       - name: Install browser test runtime
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
       - name: Browser lobby and voice smoke
         run: node scripts/lobby-browser-e2e.mjs
+      - name: Dual-browser join and voice flow
+        run: node scripts/lobby-dual-browser-e2e.mjs
+      - name: Live authoritative rule smoke
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: node scripts/live-rule-smoke.mjs

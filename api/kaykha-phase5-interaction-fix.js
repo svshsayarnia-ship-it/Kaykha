@@ -15,16 +15,16 @@ module.exports = function asset(_request, response) {
     };
     const PRACTICE_SEED = {
       ray:{label:'ری',strength:5,economy:4,mine:true},gorgan:{label:'گرگان',strength:3,economy:3,mine:true},
-      isfahan:{label:'اصفهان',strength:4,economy:4},nishapur:{label:'نیشابور',strength:3,economy:5},hegmataneh:{label:'هگمتانه',strength:4,economy:3},
-      merv:{label:'مرو',strength:2,economy:5},ctesiphon:{label:'تیسفون',strength:5,economy:5},alamut:{label:'الموت',strength:4,economy:2},
-      susa:{label:'شوش',strength:3,economy:4},shiraz:{label:'شیراز',strength:4,economy:5},zaranj:{label:'زرنج',strength:3,economy:3},
-      balkh:{label:'بلخ',strength:3,economy:4},yazd:{label:'یزد',strength:2,economy:3},tabriz:{label:'تبریز',strength:3,economy:4},
-      hormuz:{label:'هرمز',strength:2,economy:5},bam:{label:'بم',strength:2,economy:3}
+      isfahan:{label:'اصفهان',strength:5,economy:4},nishapur:{label:'نیشابور',strength:3,economy:3},hegmataneh:{label:'هگمتانه',strength:4,economy:3},
+      merv:{label:'مرو',strength:2,economy:5},ctesiphon:{label:'تیسفون',strength:4,economy:5},alamut:{label:'الموت',strength:4,economy:3},
+      susa:{label:'شوش',strength:3,economy:4},shiraz:{label:'شیراز',strength:4,economy:4},zaranj:{label:'زرنج',strength:3,economy:4},
+      balkh:{label:'بلخ',strength:3,economy:4},yazd:{label:'یزد',strength:3,economy:4},tabriz:{label:'تبریز',strength:3,economy:4},
+      hormuz:{label:'هرمز',strength:2,economy:5},bam:{label:'بم',strength:3,economy:3}
     };
     const LABEL_BY_ID = Object.fromEntries(Object.entries(CITY).map(([label,id]) => [id,label]));
     const $ = selector => document.querySelector(selector);
     const $$ = selector => Array.from(document.querySelectorAll(selector));
-    const isPractice = () => new URLSearchParams(location.search).get('mode') !== 'online';
+    const isPractice = () => new URLSearchParams(location.search).get('mode') === 'practice';
     let pickStage = 'origin';
     let resources = null;
     let resourceRequest = null;
@@ -355,7 +355,7 @@ module.exports = function asset(_request, response) {
         if (!token || !gameId || !uid) {
           const cache = cachedResources();
           if (cache) renderResources({ ...cache, authoritative:false, cached:true });
-          else if (isPractice()) renderResources({ coins:50, influence:10, authoritative:false, fallback:true });
+          else if (isPractice()) renderResources({ coins:44, influence:7, authoritative:false, fallback:true });
           else renderResources(null);
           return;
         }
@@ -370,7 +370,7 @@ module.exports = function asset(_request, response) {
         } catch (_) {
           const cache = cachedResources();
           if (cache) renderResources({ ...cache, authoritative:false, cached:true });
-          else if (isPractice()) renderResources({ coins:50, influence:10, authoritative:false, fallback:true });
+          else if (isPractice()) renderResources({ coins:44, influence:7, authoritative:false, fallback:true });
           else renderResources(null);
         }
       })().finally(() => { resourceRequest = null; });

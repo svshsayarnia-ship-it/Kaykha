@@ -179,9 +179,6 @@ async function proxy(request, response) {
     bodies.role = bodies.role.replace('refreshTimer=setInterval(()=>{if(!document.hidden)refresh();},7000);', 'refreshTimer=setInterval(()=>{if(!document.hidden)refresh();},60000);');
     bodies.bribe = bodies.bribe.replace('timer=setInterval(()=>{if(!document.hidden)refresh();},8000);', 'timer=setInterval(()=>{if(!document.hidden)refresh();},60000);');
 
-    // Practice is local-first in presentation: never leave the mobile resource bar on a dash while sync warms up.
-    bodies.interaction = bodies.interaction.replaceAll('renderResources({ coins:50, influence:10, authoritative:false, fallback:true })', 'renderResources({ coins:50, influence:15, authoritative:false, fallback:true })');
-
     // Lobby auth is a dependency of the RPC itself. Do not cancel the player's click and replay it later.
     bodies.online = replaceBundleContract(
       bodies.online,
