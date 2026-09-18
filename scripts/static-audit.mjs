@@ -114,3 +114,18 @@ if(section==='all'||section==='bundle'){
 }
 
 console.log('Kaykha audit complete: '+section);
+
+// KAYKHA_UIUX_AUDIT_V1
+run('uiux',()=>{
+  const css=read('public/diwan-diorama.css');
+  const js=parseBrowser('public/diwan-diorama.js');
+  has(css,'KAYKHA_UIUX_FINAL_V1','final UI/UX consolidation layer missing');
+  has(css,'--kx-ui-hit:44px','desktop touch target contract missing');
+  has(css,'--kx-ui-hit:48px','mobile touch target contract missing');
+  has(css,'button:focus-visible','keyboard focus contract missing');
+  has(css,'prefers-reduced-motion:reduce','reduced-motion contract missing');
+  has(js,'KAYKHA_UIUX_FINAL_V1','UI/UX behavior guard missing');
+  has(js,"setAttribute('aria-current','page')",'navigation current-state accessibility missing');
+  has(js,"setAttribute('aria-modal','true')",'city dialog accessibility missing');
+  has(js,"event.key==='Escape'",'city dialog Escape close missing');
+});
