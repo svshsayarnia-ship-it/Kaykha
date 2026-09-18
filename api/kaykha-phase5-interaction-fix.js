@@ -642,7 +642,6 @@ module.exports = function asset(_request, response) {
     else if(!origins.length)setHint('حالا یک یا چند شهر خودت را لمس کن؛ هر لمس یک مبدأ را به حمله اضافه می‌کند.',true);
     else setHint(fmt.format(origins.length)+' شهر به '+labelFor(targetId)+' متصل‌اند. لمس دوبارهٔ یک شهر خودی، آن را از موج حمله حذف می‌کند.');
     paintMap();drawRoutes();
-    if(dispatchPreview&&originSelect())originSelect().dispatchEvent(new Event('change',{bubbles:true}));
     document.documentElement.dataset.kaykhaMultiAttack=VERSION;
   }
   function toggleOrigin(id){
