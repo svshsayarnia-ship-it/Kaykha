@@ -481,7 +481,7 @@ module.exports = function asset(_request, response) {
   const VERSION='20260918-subterfuge-multi-attack-v1';
   const MAX_ORIGINS=16;
   const $=(s,r=document)=>r.querySelector(s);
-  const $=(s,r=document)=>Array.from(r.querySelectorAll(s));
+  const all=(s,r=document)=>Array.from(r.querySelectorAll(s));
   const fmt=new Intl.NumberFormat('fa-IR');
   let origins=[];
   let targetId='';
