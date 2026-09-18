@@ -27,6 +27,13 @@ run('presentation',()=>{
   has(war,'سه قدم اول','phase-one onboarding missing');
   has(war,"get('mode')==='practice'",'Practice must be explicit in presentation');
   lacks(war,"get('mode')!=='online'",'legacy implicit Practice detection returned in presentation');
+  const html=read('api/war-room-html.js');
+  has(html,'data-order-group="military"','military order grouping missing');
+  has(html,'data-order-group="economy"','economy order grouping missing');
+  has(html,'data-order-group="shadow"','shadow order grouping missing');
+  has(html,'data-order="spell"','spell order must be visible in command UI');
+  has(html,'id="kx-audio-topbar"','persistent audio control missing');
+  has(html,'id="kx-identity-open"','identity card entry point missing');
   const diwan=parseBrowser('public/diwan-diorama.js');
   lacks(diwan,'dragstart','Diwan must not register fake drag voting');
   lacks(diwan,'wireVoting','legacy local voting returned');
@@ -46,6 +53,9 @@ run('mobile',()=>{
   has(linearBody,'kx-mobile-resource-bar','mobile resource bar missing');
   has(linearBody,'data-mobile-seal','linear command seal control missing');
   has(linearBody,'kx-causal-sheet','causal result sheet missing');
+  has(linearBody,"spell:{icon:'☼'",'spell missing from mobile order flow');
+  has(linearBody,'data-more-action="identity"','mobile identity entry missing');
+  has(linearBody,'data-more-action="audio"','mobile audio entry missing');
 });
 
 run('authority',()=>{
@@ -73,6 +83,8 @@ run('generated',()=>{
   has(body,'kaykha:effect-event','effect event bus missing');
   lacks(body,"window.dispatchEvent(new Event('focus'))",'fake focus synchronization returned');
   lacks(body,"const cities = Object.keys(CITY).filter(city => choice.includes(city));",'territory routing still parses display text');
+  has(body,'host_user_id','host metadata missing from generated client');
+  has(body,'kaykha:game-role','authoritative host-role event missing');
 });
 
 run('security',()=>{
@@ -97,6 +109,9 @@ if(section==='all'||section==='bundle'){
   has(bundle,'20260916-mobile-v3','mobile v3 missing from assembled bundle');
   has(bundle,'20260916-mobile-linear-v4','linear mobile v4 missing from assembled bundle');
   has(bundle,'20260918-subterfuge-multi-attack-v1','coordinated attack planner missing from assembled bundle');
+  has(bundle,'20260918-progressive-clarity-v1','progressive clarity controller missing from assembled bundle');
+  has(bundle,'kx-dawn-role-status','host-aware dawn feedback missing from assembled bundle');
+  has(bundle,'KAYKHA_SELECTED_CITY','shared selected-city state missing from assembled bundle');
   has(bundle,'nextDawnAt','authoritative dawn deadline missing from assembled bundle');
   has(bundle,'window.kaykhaEnsureGuest=ensureGuest','lobby guest-auth helper is not exported to the authoritative RPC path');
   has(bundle,"typeof window.kaykhaEnsureGuest === 'function'",'RPC does not self-heal a missing guest session');

@@ -189,6 +189,27 @@ function normalizeGeneratedClients(baseBody, sharedBody) {
     'route bindings'
   );
 
+
+  // Expose the authoritative host role so dawn controls can match backend permissions.
+  base = replaceRequired(
+    base,
+    "apiPath('kaykha_games?id=eq.' + id + '&select=code,status,phase,round_no,mode,total_seats', token),",
+    "apiPath('kaykha_games?id=eq.' + id + '&select=code,status,phase,round_no,mode,total_seats,host_user_id', token),",
+    'host metadata select'
+  );
+  base = replaceRequired(
+    base,
+    "    const game = games[0];\n    state.roundNo = Number(game.round_no || 1);",
+    "    const game = games[0];\n    const currentUserId = authUserId(token);\n    const isHost = Boolean(currentUserId && game.host_user_id && currentUserId === game.host_user_id);\n    window.KAYKHA_GAME_ROLE = { isHost, hostUserId: game.host_user_id || null, currentUserId, online: true, gameId: state.gameId };\n    window.dispatchEvent(new CustomEvent('kaykha:game-role', { detail: window.KAYKHA_GAME_ROLE }));\n    state.roundNo = Number(game.round_no || 1);",
+    'host role event'
+  );
+  base = replaceRequired(
+    base,
+    "    if (!state.gameId) return;\n    const token = accessToken();\n    if (!token) { status('نسخهٔ آفلاین آماده است؛ برای اتصال به تالار، از ورود اصلی بازی وارد شو.'); return; }",
+    "    if (!state.gameId) { window.KAYKHA_GAME_ROLE = { isHost: true, online: false, gameId: null }; window.dispatchEvent(new CustomEvent('kaykha:game-role', { detail: window.KAYKHA_GAME_ROLE })); return; }\n    const token = accessToken();\n    if (!token) { status('برای اتصال آنلاین، تالار بساز یا با کد وارد شو.'); return; }",
+    'offline role status'
+  );
+
   // Voice room connects muted. The mic UI reflects the actual LiveKit participant state;
   // a trusted tap on the mic button is the only path that enables capture.
   base = replaceRequired(

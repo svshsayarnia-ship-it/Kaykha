@@ -16,7 +16,8 @@ module.exports = function asset(_request, response) {
       spy:{icon:'◉',label:'جاسوسی',copy:'پرونده خصوصی از قدرت و وضعیت هدف می‌سازد.',unlock:2},
       revolt:{icon:'☁',label:'شورش',copy:'مشروعیت و ثبات شهر هدف را تحت فشار می‌گذارد.',unlock:4},
       raid:{icon:'⌁',label:'غارت',copy:'اقتصاد هدف را می‌زند و غنیمت ایجاد می‌کند.',unlock:4},
-      sabotage:{icon:'✹',label:'خرابکاری',copy:'زیرساخت و توان عملیاتی هدف را مختل می‌کند.',unlock:4}
+      sabotage:{icon:'✹',label:'خرابکاری',copy:'زیرساخت و توان عملیاتی هدف را مختل می‌کند.',unlock:4},
+      spell:{icon:'☼',label:'طلسم',copy:'وهم پنهان روی شهر رقیب می‌گذارد؛ ضدعملیات می‌تواند آن را خنثی کند.',unlock:4}
     };
     let desiredSlot = null;
     let lastResourceState = null;
@@ -128,13 +129,15 @@ module.exports = function asset(_request, response) {
       sheet = document.createElement('section');
       sheet.id = 'kx-mobile-more-sheet';
       sheet.setAttribute('aria-hidden','true');
-      sheet.innerHTML = '<div class="kx-sheet-handle"></div><div class="kx-more-grid"><a href="/game-guide.html">☾ راهنمای بازی</a><button type="button" data-more-action="events">✦ رخدادها</button><button type="button" data-more-action="university">⌘ دانشگاه</button><button type="button" data-more-action="voice">◉ تالار صوتی</button></div><div class="kx-reminders"><b>یادآوری‌های زنده</b><div data-reminder-list><p class="kx-reminder">یادآوری حیاتی فعالی نیست.</p></div></div>';
+      sheet.innerHTML = '<div class="kx-sheet-handle"></div><div class="kx-more-grid"><a href="/game-guide.html">☾ راهنمای بازی</a><button type="button" data-more-action="events">✦ رخدادها</button><button type="button" data-more-action="identity">◈ هویت</button><button type="button" data-more-action="audio">♩ صدا</button><button type="button" data-more-action="university">⌘ دانشگاه</button><button type="button" data-more-action="voice">◉ تالار صوتی</button></div><div class="kx-reminders"><b>یادآوری‌های زنده</b><div data-reminder-list><p class="kx-reminder">یادآوری حیاتی فعالی نیست.</p></div></div>';
       document.body.appendChild(sheet);
       sheet.addEventListener('click', event => {
         const action = event.target.closest('[data-more-action]')?.dataset.moreAction;
         if (!action) return;
         toggleMore(false);
         if (action === 'events') { switchView('command'); setTimeout(() => ($('#log') || $('.event-card'))?.scrollIntoView({behavior:'smooth',block:'center'}), 100); }
+        if (action === 'identity') { $('#kx-identity-open')?.click(); }
+        if (action === 'audio') { $('#kx-audio-topbar')?.click(); }
         if (action === 'university') { const btn = $('.shell-nav [data-game-view="university"]'); if (btn) btn.click(); else location.href='/game-guide.html#university'; }
         if (action === 'voice') { switchView('diwan'); setTimeout(() => $('#voice-panel')?.scrollIntoView({behavior:'smooth',block:'center'}), 100); }
       });
