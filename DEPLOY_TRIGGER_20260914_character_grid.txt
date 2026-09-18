@@ -1,3 +1,4 @@
 Deploy latest main including independent character card bundle and bribe-network bindings.
 Retry production sync: 2026-09-14 19:56 Asia/Baku.
 Retry UI/UX production deploy: 2026-09-18 15:25 Asia/Tehran (+03:30).
+Retry mobile single-surface production deploy: 2026-09-18 16:39 Asia/Tehran (+03:30).
