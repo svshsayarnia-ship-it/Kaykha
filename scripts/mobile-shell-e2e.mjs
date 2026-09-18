@@ -94,7 +94,16 @@ try {
   await page.goto(`http://127.0.0.1:${address.port}/game?mode=practice`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.shell-scroll', { timeout: 5000 });
   await page.addScriptTag({ url: `http://127.0.0.1:${address.port}/kaykha-mobile-linear-v4.js` });
-  await page.waitForFunction(() => document.documentElement.dataset.kaykhaMobileSurface === '20260918-mobile-single-surface-v5', null, { timeout: 5000 });
+  await page.waitForTimeout(350);
+  const controllerBoot = await page.evaluate(() => ({
+    surface: document.documentElement.dataset.kaykhaMobileSurface || '',
+    linear: document.documentElement.dataset.kaykhaMobileLinear || '',
+    mobileClass: document.documentElement.classList.contains('kx-linear-mobile'),
+    scriptSrcs: Array.from(document.scripts).map(node => node.src).filter(Boolean)
+  }));
+  if (controllerBoot.surface !== '20260918-mobile-single-surface-v5') {
+    throw new Error('Mobile controller failed to boot: '+JSON.stringify({controllerBoot,pageErrors,sourceHasMarker:mobileLinearSource.includes('20260918-mobile-single-surface-v5')}));
+  }
   await page.waitForTimeout(150);
 
   const initial = await page.evaluate(() => {
