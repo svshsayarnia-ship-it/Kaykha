@@ -380,7 +380,14 @@ module.exports = function asset(_request, response) {
     function bind() {
       document.addEventListener('click', event => {
         const city = event.target.closest('#territories button[data-city]');
-        if (city) pickCity(city.dataset.city || city.querySelector('b')?.textContent?.trim());
+        if (city) {
+          if (window.KAYKHA_MULTI_ATTACK?.handleMapCity?.(city,event)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return;
+          }
+          pickCity(city.dataset.city || city.querySelector('b')?.textContent?.trim());
+        }
 
         const order = event.target.closest('#orders [data-order]');
         if (order) {
@@ -469,8 +476,215 @@ module.exports = function asset(_request, response) {
     else boot();
   }
 
+  function plannerFunction(){
+  'use strict';
+  const VERSION='20260918-subterfuge-multi-attack-v1';
+  const MAX_ORIGINS=16;
+  const $=(s,r=document)=>r.querySelector(s);
+  const all=(s,r=document)=>Array.from(r.querySelectorAll(s));
+  const fmt=new Intl.NumberFormat('fa-IR');
+  let origins=[];
+  let targetId='';
+  let internal=false;
+  let routeFrame=0;
+
+  function activeOrder(){return $('#orders [data-order].active')?.dataset.order||$('#orders [data-order]')?.dataset.order||''}
+  function active(){return activeOrder()==='attack'}
+  function originSelect(){return $('#command-origin')}
+  function targetSelect(){return $('#command-target')}
+  function ownedIds(){return Array.from(originSelect()?.options||[]).map(o=>o.value).filter(Boolean)}
+  function isOwned(id){return ownedIds().includes(id)}
+  function targetOptions(){return Array.from(targetSelect()?.options||[])}
+  function optionFor(id){return targetOptions().find(o=>o.value===id)||Array.from(originSelect()?.options||[]).find(o=>o.value===id)||null}
+  function labelFor(id){const o=optionFor(id);return o?.dataset.cityLabel||o?.textContent?.split('·')[0]?.trim()||id||'—'}
+  function strengthFor(id){const n=Number(optionFor(id)?.dataset.strength);return Number.isFinite(n)?n:0}
+  function idForButton(button){
+    const explicit=button.dataset.cityId||button.dataset.territoryId;
+    if(explicit)return explicit;
+    const label=(button.dataset.city||button.querySelector('b')?.textContent||'').trim();
+    const all=[...targetOptions(),...Array.from(originSelect()?.options||[])];
+    return all.find(o=>(o.dataset.cityLabel||o.textContent?.split('·')[0]?.trim())===label)?.value||'';
+  }
+  function buttonFor(id){
+    const label=labelFor(id);
+    return all('#territories button[data-city]').find(b=>(b.dataset.city||b.querySelector('b')?.textContent||'').trim()===label)||null;
+  }
+  function combinedPower(){return origins.reduce((sum,id)=>sum+strengthFor(id),0)}
+  function defensePower(){return targetId?strengthFor(targetId):0}
+
+  function installStyles(){
+    if($('#kx-multi-attack-style'))return;
+    const style=document.createElement('style');
+    style.id='kx-multi-attack-style';
+    style.textContent=`
+      #kx-multi-attack{display:none;margin:10px 0 12px;padding:12px;border:1px solid rgba(226,189,114,.48);border-radius:14px;background:linear-gradient(145deg,rgba(36,23,15,.96),rgba(10,9,8,.96));box-shadow:0 14px 34px #0005}
+      html.kx-multi-attack-active #kx-multi-attack{display:block}
+      .kx-multi-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.kx-multi-head b{color:#f4d58d;font-size:14px}.kx-multi-head span{border:1px solid rgba(226,189,114,.38);border-radius:999px;padding:5px 9px;color:#d8c49a;font-size:10px}
+      .kx-multi-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:9px;margin-top:10px}.kx-multi-box{padding:10px;border:1px solid #ffffff12;border-radius:11px;background:#0003;min-width:0}.kx-multi-box small{display:block;color:#bcae91;font-size:10px}.kx-multi-box strong{display:block;margin-top:5px;color:#f5e7c1;font-size:15px;line-height:1.7}.kx-multi-box.target strong{color:#f0a198}
+      #kx-multi-origin-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.kx-origin-chip{display:inline-flex;align-items:center;gap:6px;min-height:34px;border:1px solid rgba(114,201,191,.42);border-radius:999px;background:rgba(27,74,71,.3);color:#dff9f3;padding:4px 8px;font:inherit;font-size:10px}.kx-origin-chip button{width:24px;height:24px;min-height:24px!important;border:0;border-radius:50%;background:#0004;color:#f6e7c2;font:inherit;cursor:pointer}
+      .kx-multi-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px}.kx-multi-stat{padding:8px;border:1px solid #ffffff12;border-radius:9px;background:#0002;text-align:center}.kx-multi-stat small{display:block;color:#a99c84;font-size:9px}.kx-multi-stat b{display:block;margin-top:3px;color:#f4d58d;font-size:16px}.kx-multi-stat.danger b{color:#ef9f95}
+      #kx-multi-hint{margin:9px 0 0;padding:8px 9px;border-right:3px solid #72c9bf;background:rgba(24,73,68,.22);color:#d0e8e3;font-size:11px;line-height:1.8}#kx-multi-hint.bad{border-right-color:#df6b62;background:rgba(91,32,29,.22);color:#f0bbb5}
+      #kx-multi-clear{margin-top:9px;min-height:42px;border:1px solid #ffffff1d;border-radius:9px;background:#17110d;color:#d9ccb0;padding:7px 10px;font:inherit;font-size:10px}
+      #territories button[data-multi-origin-index]{outline:3px solid #72c9bf!important;box-shadow:0 0 0 5px rgba(114,201,191,.14),0 0 30px rgba(114,201,191,.22)!important}
+      #territories button[data-multi-origin-index]::after{content:'مبدأ ' attr(data-multi-origin-index)!important;background:#174a47!important;color:#e3fff9!important;border:1px solid #72c9bf!important}
+      #territories button[data-multi-attack-target]{outline:3px solid #df6b62!important;box-shadow:0 0 0 5px rgba(223,107,98,.13),0 0 32px rgba(223,107,98,.24)!important}
+      #territories button[data-multi-attack-target]::after{content:'هدف'!important;background:#632a26!important;color:#ffe4df!important;border:1px solid #df6b62!important}
+      #kx-multi-route-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:18;overflow:visible}#kx-multi-route-svg line{stroke:#e2bd72;stroke-width:3;stroke-dasharray:9 7;stroke-linecap:round;filter:drop-shadow(0 0 5px rgba(226,189,114,.55));animation:kxMultiMarch 1.1s linear infinite}#kx-multi-route-svg circle{fill:#e2bd72;filter:drop-shadow(0 0 5px rgba(226,189,114,.7))}
+      @keyframes kxMultiMarch{to{stroke-dashoffset:-32}}
+      html.kx-multi-attack-active #kx-route-line{display:none!important}
+      @media(max-width:720px){#kx-multi-attack{padding:10px;margin:8px 0}.kx-multi-grid{grid-template-columns:1fr}.kx-multi-stats{grid-template-columns:repeat(3,1fr)}.kx-multi-stat b{font-size:14px}.kx-origin-chip{min-height:38px;font-size:11px}#kx-multi-hint{font-size:12px}.kx-multi-head b{font-size:15px}}
+      @media(prefers-reduced-motion:reduce){#kx-multi-route-svg line{animation:none}}
+    `;
+    document.head.append(style);
+  }
+
+  function ensurePanel(){
+    let panel=$('#kx-multi-attack');
+    if(panel)return panel;
+    panel=document.createElement('section');
+    panel.id='kx-multi-attack';
+    panel.setAttribute('aria-label','برنامه‌ریز حمله هماهنگ');
+    panel.innerHTML=`
+      <div class="kx-multi-head"><b>حملهٔ هماهنگ</b><span data-multi-count>۰ مبدأ</span></div>
+      <div class="kx-multi-grid">
+        <div class="kx-multi-box target"><small>هدف حمله</small><strong data-multi-target>هدف را روی نقشه لمس کن</strong></div>
+        <div class="kx-multi-box"><small>شهرهای شرکت‌کننده</small><div id="kx-multi-origin-chips"></div></div>
+      </div>
+      <div class="kx-multi-stats">
+        <div class="kx-multi-stat"><small>قدرت ترکیبی آشکار</small><b data-multi-power>۰</b></div>
+        <div class="kx-multi-stat danger"><small>دفاع آشکار هدف</small><b data-multi-defense>—</b></div>
+        <div class="kx-multi-stat"><small>مسیرها</small><b data-multi-routes>۰</b></div>
+      </div>
+      <p id="kx-multi-hint">یک شهر رقیب را به‌عنوان هدف و سپس شهرهای خودت را برای حمله انتخاب کن.</p>
+      <button type="button" id="kx-multi-clear">پاک کردن مبدأها</button>`;
+    const anchor=$('#kx-route-feedback')||$('#choice')||$('#orders');
+    anchor?.insertAdjacentElement('afterend',panel);
+    panel.addEventListener('click',event=>{
+      const remove=event.target.closest('[data-remove-origin]');
+      if(remove){event.preventDefault();toggleOrigin(remove.dataset.removeOrigin);return}
+      if(event.target.closest('#kx-multi-clear')){event.preventDefault();origins=[];syncPrimary();render(true)}
+    });
+    return panel;
+  }
+
+  function ensureRouteSvg(){
+    const board=$('.map-board');
+    if(!board)return null;
+    let svg=$('#kx-multi-route-svg',board);
+    if(!svg){
+      svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.id='kx-multi-route-svg';svg.setAttribute('aria-hidden','true');board.append(svg);
+    }
+    return svg;
+  }
+  function syncPrimary(){
+    const select=originSelect();if(!select)return;
+    internal=true;if(origins.length)select.value=origins[0];else select.value='';
+    select.dispatchEvent(new Event('change',{bubbles:true}));internal=false;
+  }
+  function syncTarget(){
+    const select=targetSelect();if(!select)return;
+    internal=true;select.value=targetId||'';select.dispatchEvent(new Event('change',{bubbles:true}));internal=false;
+  }
+  function prune(){
+    const owned=new Set(ownedIds());
+    origins=origins.filter(id=>owned.has(id)).slice(0,MAX_ORIGINS);
+    if(targetId&&owned.has(targetId))targetId='';
+  }
+  function syncFromSelectors(seedOrigin=true){
+    prune();
+    const o=originSelect()?.value||'';
+    if(seedOrigin&&active()&&!origins.length&&o&&isOwned(o))origins=[o];
+    const t=targetSelect()?.value||'';
+    if(active()&&!targetId&&t&&!isOwned(t))targetId=t;
+  }
+  function setHint(text,bad=false){const n=$('#kx-multi-hint');if(n){n.textContent=text;n.classList.toggle('bad',bad)}}
+  function chip(id,index){
+    const wrap=document.createElement('span');wrap.className='kx-origin-chip';
+    const txt=document.createElement('span');txt.textContent=fmt.format(index+1)+' · '+labelFor(id)+' · '+fmt.format(strengthFor(id));
+    const remove=document.createElement('button');remove.type='button';remove.dataset.removeOrigin=id;remove.setAttribute('aria-label','حذف '+labelFor(id));remove.textContent='×';
+    wrap.append(txt,remove);return wrap;
+  }
+  function paintMap(){
+    all('#territories button[data-city]').forEach(b=>{delete b.dataset.multiOriginIndex;delete b.dataset.multiAttackTarget});
+    origins.forEach((id,i)=>{const b=buttonFor(id);if(b)b.dataset.multiOriginIndex=String(i+1)});
+    const target=buttonFor(targetId);if(target)target.dataset.multiAttackTarget='true';
+  }
+  function drawRoutes(){
+    cancelAnimationFrame(routeFrame);
+    routeFrame=requestAnimationFrame(()=>{
+      const svg=ensureRouteSvg(),board=$('.map-board');if(!svg||!board)return;
+      svg.replaceChildren();if(!active()||!targetId||!origins.length)return;
+      const br=board.getBoundingClientRect(),target=buttonFor(targetId);if(!target)return;
+      const tr=target.getBoundingClientRect(),tx=tr.left-br.left+tr.width/2,ty=tr.top-br.top+tr.height/2;
+      svg.setAttribute('viewBox','0 0 '+Math.max(1,br.width)+' '+Math.max(1,br.height));
+      origins.forEach(id=>{
+        const source=buttonFor(id);if(!source)return;
+        const sr=source.getBoundingClientRect(),x=sr.left-br.left+sr.width/2,y=sr.top-br.top+sr.height/2;
+        const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+        line.setAttribute('x1',String(x));line.setAttribute('y1',String(y));line.setAttribute('x2',String(tx));line.setAttribute('y2',String(ty));svg.append(line);
+      });
+      const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');dot.setAttribute('cx',String(tx));dot.setAttribute('cy',String(ty));dot.setAttribute('r','5');svg.append(dot);
+    });
+  }
+  function render(dispatchPreview=false){
+    installStyles();const panel=ensurePanel();syncFromSelectors(false);
+    document.documentElement.classList.toggle('kx-multi-attack-active',active());
+    if(!panel)return;panel.hidden=!active();
+    if(!active()){paintMap();drawRoutes();return}
+    const chips=$('#kx-multi-origin-chips');if(chips)chips.replaceChildren(...origins.map(chip));
+    $('[data-multi-count]',panel).textContent=fmt.format(origins.length)+' مبدأ';
+    $('[data-multi-target]',panel).textContent=targetId?labelFor(targetId):'هدف را روی نقشه لمس کن';
+    $('[data-multi-power]',panel).textContent=fmt.format(combinedPower());
+    $('[data-multi-defense]',panel).textContent=targetId?fmt.format(defensePower()):'—';
+    $('[data-multi-routes]',panel).textContent=fmt.format(origins.length);
+    if(!targetId)setHint('اول یک شهر رقیب یا بی‌طرف را لمس کن تا هدف قفل شود.');
+    else if(!origins.length)setHint('حالا یک یا چند شهر خودت را لمس کن؛ هر لمس یک مبدأ را به حمله اضافه می‌کند.',true);
+    else setHint(fmt.format(origins.length)+' شهر به '+labelFor(targetId)+' متصل‌اند. لمس دوبارهٔ یک شهر خودی، آن را از موج حمله حذف می‌کند.');
+    paintMap();drawRoutes();
+    document.documentElement.dataset.kaykhaMultiAttack=VERSION;
+  }
+  function toggleOrigin(id){
+    if(!id||!isOwned(id))return;
+    if(origins.includes(id))origins=origins.filter(x=>x!==id);
+    else if(origins.length<MAX_ORIGINS)origins=[...origins,id];
+    else{setHint('حداکثر '+fmt.format(MAX_ORIGINS)+' شهر را می‌توان در یک موج حمله هماهنگ کرد.',true);return}
+    syncPrimary();render(true);
+  }
+  function chooseTarget(id){
+    if(!id)return;
+    if(isOwned(id)){setHint('شهر خودی نمی‌تواند هدف حمله باشد؛ آن را به‌عنوان مبدأ انتخاب کن.',true);return}
+    targetId=id;syncTarget();render(true);
+  }
+  function handleMapCity(button){
+    if(!active())return false;
+    const id=idForButton(button);if(!id)return false;
+    if(isOwned(id))toggleOrigin(id);else chooseTarget(id);
+    return true;
+  }
+  function reset(){origins=[];targetId='';syncFromSelectors(true);render(true)}
+  window.KAYKHA_MULTI_ATTACK={originIds:()=>origins.slice(),targetId:()=>targetId,handleMapCity,reset,sync:()=>render(false),version:VERSION};
+
+  function boot(){
+    installStyles();ensurePanel();syncFromSelectors(true);render(false);
+    document.addEventListener('click',event=>{if(event.target.closest('#orders [data-order]'))setTimeout(()=>{syncFromSelectors(true);render(true)},0)});
+    document.addEventListener('change',event=>{
+      if(internal)return;
+      if(event.target===originSelect()&&active()){const id=originSelect()?.value||'';origins=id&&isOwned(id)?[id]:[];render(true)}
+      if(event.target===targetSelect()&&active()){const id=targetSelect()?.value||'';targetId=id&&!isOwned(id)?id:'';render(true)}
+    });
+    window.addEventListener('kaykha:server-sync-request',()=>setTimeout(()=>{prune();syncFromSelectors(true);render(false)},0));
+    window.addEventListener('kaykha:command-state',()=>setTimeout(()=>render(false),0));
+    window.addEventListener('kaykha:order-state',event=>{if(event.detail?.state==='resolved'){origins=[];targetId='';setTimeout(()=>{syncFromSelectors(true);render(false)},0)}});
+    window.addEventListener('resize',drawRoutes,{passive:true});
+    document.addEventListener('scroll',drawRoutes,{passive:true,capture:true});
+    const territories=$('#territories');if(territories)new MutationObserver(()=>setTimeout(()=>{paintMap();drawRoutes()},0)).observe(territories,{childList:true,subtree:true});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+}
+
   response.setHeader('content-type', 'application/javascript; charset=utf-8');
   response.setHeader('cache-control', 'no-store, max-age=0');
   response.statusCode = 200;
-  response.end(';(' + phase5InteractionFix.toString() + ')();');
+  response.end(';(' + phase5InteractionFix.toString() + ')();;(' + plannerFunction.toString() + ')();');
 };

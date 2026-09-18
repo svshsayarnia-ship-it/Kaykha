@@ -85,10 +85,13 @@ module.exports = function asset(_request, response) {
 
     function commandRoute(){
       const order=$('#orders [data-order].active')?.dataset.order||$('#orders [data-order]')?.dataset.order||'attack';
-      const origin=$('#command-origin')?.value||'';
+      const selectedOrigin=$('#command-origin')?.value||'';
+      const plannedOrigins=order==='attack'&&window.KAYKHA_MULTI_ATTACK?.originIds?window.KAYKHA_MULTI_ATTACK.originIds():[];
+      const origins=plannedOrigins.length?plannedOrigins:(selectedOrigin?[selectedOrigin]:[]);
+      const origin=origins[0]||selectedOrigin;
       let target=$('#command-target')?.value||origin;
       if(order==='defend'||order==='trade')target=origin;
-      return {order,origin,target};
+      return {order,origin,origins,target};
     }
     function ensureRulesUi(){
       let preview=$('#kaykha-command-preview');
@@ -132,13 +135,13 @@ module.exports = function asset(_request, response) {
       node.dataset.state='ready';node.replaceChildren();
       const cost=preview?.cost||{};const head=document.createElement('div');const b=document.createElement('b');b.textContent='پیش‌نمایش سرور';head.append(b);head.append(document.createTextNode(' · هزینه '+Number(cost.gold||0).toLocaleString('fa-IR')+' سکه'+(cost.credibility?' · '+cost.credibility+' اعتبار':'')+(preview.can_afford===false?' · منابع کافی نیست':'')));node.append(head);
       const effect=document.createElement('div');effect.textContent=preview?.effect||'اثر دقیق در سپیده‌دم توسط Shared Resolver حل می‌شود.';node.append(effect);
-      if(preview?.combat){const c=preview.combat;const combat=document.createElement('div');const n=document.createElement('span');n.className='kx-preview-number';n.textContent=Number(c.visible_conquest_estimate_pct||0).toLocaleString('fa-IR')+'٪';combat.append(document.createTextNode('برآورد آشکار فتح: '));combat.append(n);combat.append(document.createTextNode(` · قدرت ${c.visible_attack_power??'—'} در برابر دفاع آشکار ${c.visible_defense_power??'—'} · فرسایش شکست: ${c.normal_failure_attrition??1}`));node.append(combat);const notice=document.createElement('div');notice.textContent=c.hidden_modifiers_notice||'';node.append(notice)}
+      if(preview?.combat){const c=preview.combat;const combat=document.createElement('div');const n=document.createElement('span');n.className='kx-preview-number';n.textContent=Number(c.visible_conquest_estimate_pct||0).toLocaleString('fa-IR')+'٪';combat.append(document.createTextNode('برآورد آشکار فتح: '));combat.append(n);combat.append(document.createTextNode(` · ${Number(c.origin_count||1).toLocaleString('fa-IR')} مبدأ · قدرت ترکیبی ${c.visible_attack_power??'—'} در برابر دفاع آشکار ${c.visible_defense_power??'—'} · فرسایش شکست: ${c.normal_failure_attrition??1}`));node.append(combat);const notice=document.createElement('div');notice.textContent=c.hidden_modifiers_notice||'';node.append(notice)}
       const counter=document.createElement('div');counter.textContent='ضدبازی: '+(preview?.counterplay||'وابسته به وضعیت سرور');node.append(counter);
     }
     async function loadPreview(){
       const gameId=localStorage.getItem(GAME_KEY),route=commandRoute();const node=ensureRulesUi().preview;
       if(!gameId||!token()||!route.origin||!route.target){if(node){node.dataset.state='idle';node.textContent='مبدأ و هدف را انتخاب کن تا پیش‌نمایش سرور نمایش داده شود.'}return}
-      try{node.dataset.state='loading';node.textContent='در حال خواندن پیش‌نمایش از Rule Engine…';const preview=await rpc('get_kaykha_command_preview',{p_game_id:gameId,p_order_type:route.order,p_origin_territory_id:route.origin,p_target_territory_id:route.target,p_payload:{}});renderPreview(preview)}catch(error){node.dataset.state='error';node.textContent=error?.message||'پیش‌نمایش فرمان در دسترس نیست.'}
+      try{node.dataset.state='loading';node.textContent='در حال خواندن پیش‌نمایش از Rule Engine…';const payload=route.order==='attack'?{attack_origin_ids:route.origins||[route.origin],attack_plan_version:1}:{};const preview=await rpc('get_kaykha_command_preview',{p_game_id:gameId,p_order_type:route.order,p_origin_territory_id:route.origin,p_target_territory_id:route.target,p_payload:payload});renderPreview(preview)}catch(error){node.dataset.state='error';node.textContent=error?.message||'پیش‌نمایش فرمان در دسترس نیست.'}
     }
     function schedulePreview(){clearTimeout(previewTimer);previewTimer=setTimeout(()=>loadPreview(),120)}
 
