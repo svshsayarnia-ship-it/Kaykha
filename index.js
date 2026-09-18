@@ -295,3 +295,5 @@ module.exports = async function handler(request, response) {
     response.end('بارگذاری بازی موقتاً ممکن نیست. دوباره تلاش کن.');
   }
 };
+
+// deploy retry marker: 2026-09-18
