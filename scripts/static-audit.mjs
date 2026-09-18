@@ -56,6 +56,12 @@ run('mobile',()=>{
   has(linearBody,"spell:{icon:'☼'",'spell missing from mobile order flow');
   has(linearBody,'data-more-action="identity"','mobile identity entry missing');
   has(linearBody,'data-more-action="audio"','mobile audio entry missing');
+  has(linearBody,'20260918-mobile-single-surface-v5','single-surface mobile controller missing');
+  has(linearBody,'function closeTransientSurfaces','central mobile surface closer missing');
+  has(linearBody,'#kx-map-confirm[hidden]{display:none!important}','map confirmation can leak into other views');
+  has(linearBody,'kx-mobile-scrim','mobile sheet backdrop missing');
+  has(linearBody,'html.kx-mobile-v3.kx-linear-mobile body.kaykha-unified','legacy body scroll override not neutralized');
+  has(linearBody,'.kx-order-grid{display:flex!important','mobile orders must stay vertically compact');
 });
 
 run('authority',()=>{
@@ -110,6 +116,7 @@ if(section==='all'||section==='bundle'){
   has(bundle,'20260916-mobile-linear-v4','linear mobile v4 missing from assembled bundle');
   has(bundle,'20260918-subterfuge-multi-attack-v1','coordinated attack planner missing from assembled bundle');
   has(bundle,'20260918-progressive-clarity-v1','progressive clarity controller missing from assembled bundle');
+  has(bundle,'20260918-mobile-single-surface-v5','single-surface mobile controller missing from assembled bundle');
   has(bundle,'kx-dawn-role-status','host-aware dawn feedback missing from assembled bundle');
   has(bundle,'KAYKHA_SELECTED_CITY','shared selected-city state missing from assembled bundle');
   has(bundle,'nextDawnAt','authoritative dawn deadline missing from assembled bundle');
