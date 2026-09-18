@@ -507,7 +507,7 @@ module.exports = function asset(_request, response) {
   }
   function buttonFor(id){
     const label=labelFor(id);
-    return $('#territories button[data-city]').find(b=>(b.dataset.city||b.querySelector('b')?.textContent||'').trim()===label)||null;
+    return all('#territories button[data-city]').find(b=>(b.dataset.city||b.querySelector('b')?.textContent||'').trim()===label)||null;
   }
   function combinedPower(){return origins.reduce((sum,id)=>sum+strengthFor(id),0)}
   function defensePower(){return targetId?strengthFor(targetId):0}
@@ -606,7 +606,7 @@ module.exports = function asset(_request, response) {
     wrap.append(txt,remove);return wrap;
   }
   function paintMap(){
-    $('#territories button[data-city]').forEach(b=>{delete b.dataset.multiOriginIndex;delete b.dataset.multiAttackTarget});
+    all('#territories button[data-city]').forEach(b=>{delete b.dataset.multiOriginIndex;delete b.dataset.multiAttackTarget});
     origins.forEach((id,i)=>{const b=buttonFor(id);if(b)b.dataset.multiOriginIndex=String(i+1)});
     const target=buttonFor(targetId);if(target)target.dataset.multiAttackTarget='true';
   }
