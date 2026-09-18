@@ -1,6 +1,17 @@
 const fs = require('fs');
 const path = require('path');
 
+let cachedOnlineBundle = null;
+
+function sendOnlineBundle(response, bundle) {
+  response.statusCode = 200;
+  response.setHeader('content-type', 'application/javascript; charset=utf-8');
+  response.setHeader('cache-control', 'public, max-age=3600, s-maxage=31536000, stale-while-revalidate=86400');
+  response.setHeader('Vercel-CDN-Cache-Control', 'max-age=3600, stale-while-revalidate=86400');
+  response.setHeader('x-robots-tag', 'noindex');
+  response.end(bundle);
+}
+
 function serveLocalModuleAsset(response, modulePath) {
   try {
     require(modulePath)({}, response);
@@ -136,6 +147,10 @@ async function proxy(request, response) {
   }
 
   if (requestUrl.pathname === '/kaykha-online.js') {
+    if (cachedOnlineBundle) {
+      sendOnlineBundle(response, cachedOnlineBundle);
+      return;
+    }
     const localOnlineClient = require('./api/kaykha-online-fixed.js');
     const localIndependentRoleClient = require('./api/kaykha-independent-role-ui.js');
     const localBribeNetworkClient = require('./api/kaykha-bribe-network-ui.js');
@@ -253,14 +268,11 @@ async function proxy(request, response) {
       'mobile authoritative order-state listener'
     );
 
-    response.statusCode = 200;
-    response.setHeader('content-type', 'application/javascript; charset=utf-8');
-    response.setHeader('cache-control', 'public, max-age=3600, s-maxage=31536000, stale-while-revalidate=86400');
-    response.setHeader('x-robots-tag', 'noindex');
-    response.end([
+    cachedOnlineBundle = [
       bodies.online,bodies.role,bodies.bribe,bodies.character,bodies.finalization,
       bodies.mobile,bodies.authority,bodies.objective,bodies.diwan,bodies.interaction,bodies.mobileLinear
-    ].join('\n'));
+    ].join('\n');
+    sendOnlineBundle(response, cachedOnlineBundle);
     return;
   }
 
@@ -283,3 +295,5 @@ module.exports = async function handler(request, response) {
     response.end('بارگذاری بازی موقتاً ممکن نیست. دوباره تلاش کن.');
   }
 };
+
+// deploy retry marker: 2026-09-18
