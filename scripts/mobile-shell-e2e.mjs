@@ -43,6 +43,12 @@ const server = http.createServer(async (request, response) => {
       response.end(worldMapSource);
       return;
     }
+    if (url.pathname === '/kaykha-mobile-linear-v4.js') {
+      response.statusCode = 200;
+      response.setHeader('content-type', 'application/javascript; charset=utf-8');
+      response.end(mobileLinearSource);
+      return;
+    }
     if (url.pathname.endsWith('.css')) {
       response.statusCode = 200;
       response.setHeader('content-type', 'text/css; charset=utf-8');
@@ -87,7 +93,7 @@ try {
 
   await page.goto(`http://127.0.0.1:${address.port}/game?mode=practice`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.shell-scroll', { timeout: 5000 });
-  await page.addScriptTag({ content: mobileLinearSource });
+  await page.addScriptTag({ url: `http://127.0.0.1:${address.port}/kaykha-mobile-linear-v4.js` });
   await page.waitForFunction(() => document.documentElement.dataset.kaykhaMobileSurface === '20260918-mobile-single-surface-v5', null, { timeout: 5000 });
   await page.waitForTimeout(150);
 
