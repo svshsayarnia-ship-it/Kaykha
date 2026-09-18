@@ -6,7 +6,9 @@
       "src": "index.js",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["api/*.js"]
+        "includeFiles": [
+          "api/*.js"
+        ]
       }
     },
     {
@@ -23,18 +25,76 @@
     }
   ],
   "routes": [
-    { "src": "/api/livekit-token", "dest": "/api/livekit-token.js" },
-    { "src": "/kaykha-online.js", "dest": "/api/kaykha-online-hardened.js" },
+    {
+      "src": "/api/livekit-token",
+      "dest": "/api/livekit-token.js"
+    },
+    {
+      "src": "/kaykha-online.js",
+      "dest": "/api/kaykha-online-hardened.js",
+      "headers": {
+        "Vercel-CDN-Cache-Control": "max-age=3600, stale-while-revalidate=86400"
+      }
+    },
     {
       "src": "/assets/(.*)",
       "dest": "/public/assets/$1",
-      "headers": { "cache-control": "public, max-age=31536000, immutable" }
+      "headers": {
+        "cache-control": "public, max-age=31536000, immutable"
+      }
     },
     {
       "src": "/(command-reference\\.css|command-reference\\.js|command-visual-v2\\.css|market-reference\\.css|market-reference\\.js|market-all-cities\\.js|market-typography-v2\\.css|economy-city-v3\\.css|astrolabe-dashboard\\.css|astrolabe-dashboard\\.js|cinematic-controls\\.css|cinematic-controls\\.js|university-dashboard\\.css|university-dashboard\\.js|world-map-v2\\.css|world-map-v2\\.js|city-interactions-v2\\.css|city-interactions-v2\\.js|diwan-diorama\\.css|diwan-diorama\\.js|war-room\\.js|command-map\\.webp|market-goods\\.webp|astrolabe-core\\.webp|astrolabe-sun-moon-v2\\.webp|armillary-sphere\\.webp|academy-four-faculties-v2\\.webp|cinematic-icon-sprite\\.webp|iran-greater-map\\.webp)",
       "dest": "/public/$1",
-      "headers": { "cache-control": "public, max-age=86400, stale-while-revalidate=604800" }
+      "headers": {
+        "cache-control": "public, max-age=86400, stale-while-revalidate=604800"
+      }
     },
-    { "src": "/(.*)", "dest": "/index.js" }
+    {
+      "src": "/reference-skin\\.css",
+      "dest": "/index.js",
+      "headers": {
+        "Vercel-CDN-Cache-Control": "max-age=300, stale-while-revalidate=86400"
+      }
+    },
+    {
+      "src": "/war-room\\.css",
+      "dest": "/index.js",
+      "headers": {
+        "Vercel-CDN-Cache-Control": "max-age=300, stale-while-revalidate=86400"
+      }
+    },
+    {
+      "src": "/game",
+      "dest": "/index.js",
+      "headers": {
+        "Vercel-CDN-Cache-Control": "max-age=300, stale-while-revalidate=86400"
+      }
+    },
+    {
+      "src": "/war-room\\.html",
+      "dest": "/index.js",
+      "headers": {
+        "Vercel-CDN-Cache-Control": "max-age=300, stale-while-revalidate=86400"
+      }
+    },
+    {
+      "src": "/index\\.html",
+      "dest": "/index.js",
+      "headers": {
+        "Vercel-CDN-Cache-Control": "max-age=300, stale-while-revalidate=86400"
+      }
+    },
+    {
+      "src": "/",
+      "dest": "/index.js",
+      "headers": {
+        "Vercel-CDN-Cache-Control": "max-age=300, stale-while-revalidate=86400"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.js"
+    }
   ]
 }
