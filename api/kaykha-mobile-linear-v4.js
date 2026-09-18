@@ -68,7 +68,7 @@ module.exports = function asset(_request, response) {
     function transientNodes() {
       return [
         $('#kx-mobile-more-sheet'), $('#kx-city-sheet'), $('#kx-causal-sheet'),
-        $('.context-rail'), ...$('.market-picker'),
+        $('.context-rail'), ...all('.market-picker'),
         $('#kx-identity-modal'), $('#city-entry-curtain')
       ].filter(Boolean);
     }
