@@ -683,8 +683,262 @@ module.exports = function asset(_request, response) {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 }
 
+  function progressiveClarityUx(){
+  'use strict';
+  const VERSION='20260918-progressive-clarity-v1';
+  const q=(s,r=document)=>r.querySelector(s);
+  const qa=(s,r=document)=>Array.from(r.querySelectorAll(s));
+  const params=new URLSearchParams(location.search);
+  const isPractice=()=>params.get('mode')==='practice';
+  const ORDER_UNLOCK={attack:1,defend:1,support:1,trade:1,caravan:2,spy:2,revolt:4,raid:4,sabotage:4,spell:4};
+  const ROLE_ICON={'اسپهبد':'⚔','بزرگ‌فرمادار':'✦','چشم شاه':'◉','رئیس‌التجار':'◈','دهقان':'⌁','مغ اعظم':'☼','عیار':'☽','عطّار':'⚗','خواب‌گزار':'◒','پیر کوهستان':'♜','پرده‌خوان':'✧','قلندر':'☾'};
+  let identityLocked=false;
+  let currentRole=window.KAYKHA_GAME_ROLE||null;
+  let selectedCity='';
+  let audioEnabled=false;
+  let rebuildingIdentity=false;
+
+  function installStyles(){
+    if(q('#kx-progressive-clarity-style'))return;
+    const style=document.createElement('style');
+    style.id='kx-progressive-clarity-style';
+    style.textContent=`
+      #orders{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px!important;align-items:start}
+      .order-group{min-width:0;border:1px solid rgba(226,189,114,.18);border-radius:12px;padding:9px;background:rgba(0,0,0,.18)}
+      .order-group-title{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid rgba(255,255,255,.07)}
+      .order-group-title b{font-size:11px;color:#f3dfaa}.order-group-title small{font-size:8px;color:#9f927d;line-height:1.6;text-align:left}
+      .order-group-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.order-group-buttons button{min-height:44px!important;margin:0!important;border-radius:9px!important;position:relative}
+      .order-group-military{border-color:rgba(201,164,93,.34);background:linear-gradient(145deg,rgba(86,54,27,.22),rgba(0,0,0,.17))}
+      .order-group-economy{border-color:rgba(95,153,119,.34);background:linear-gradient(145deg,rgba(29,79,51,.2),rgba(0,0,0,.17))}
+      .order-group-economy .order-group-title b{color:#b8d7b7}
+      .order-group-shadow{border-color:rgba(122,96,147,.4);background:linear-gradient(145deg,rgba(55,35,73,.28),rgba(0,0,0,.24));box-shadow:inset 0 0 22px rgba(75,46,94,.12)}
+      .order-group-shadow .order-group-title b{color:#d8bce8}.order-group-shadow button{border-color:rgba(157,119,180,.32)!important}
+      #orders button.kx-order-locked{opacity:.42!important;filter:saturate(.35)!important;cursor:not-allowed!important}
+      #orders button.kx-order-locked:after{content:attr(data-kx-unlock);position:absolute;left:4px;top:3px;font-size:7px;border:1px solid #ffffff1c;border-radius:999px;padding:2px 4px;background:#090706cc;color:#c9bca7}
+      .top-state{flex-wrap:wrap}.top-state button.top-guide{font:inherit;cursor:pointer}
+      html.kx-progressive-clarity #audio-toggle,html.kx-progressive-clarity .audio-note{display:none!important}
+      #kx-dawn-role-status{margin:9px 0 0;padding:9px 10px;border:1px solid rgba(226,189,114,.25);border-radius:9px;background:#0002;color:#cbbd9f;font-size:10px;line-height:1.8}
+      #kx-dawn-role-status[data-state="waiting"]{border-color:rgba(114,201,191,.28);color:#c8e6df}
+      #resolve[hidden],[data-mobile-dawn][hidden]{display:none!important}
+      #kx-identity-modal[hidden]{display:none!important}#kx-identity-modal{position:fixed;z-index:980;inset:0;display:grid;place-items:center;padding:18px;background:#050302d9;backdrop-filter:blur(8px)}
+      #kx-identity-card{width:min(920px,96vw);max-height:88vh;overflow:auto;border:1px solid rgba(226,189,114,.52);border-radius:18px;background:linear-gradient(145deg,#26170f,#0c0806 72%);box-shadow:0 30px 100px #000d;padding:16px}
+      .kx-identity-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.kx-identity-head h3{margin:2px 0;color:#f4dfaa;font-size:20px}.kx-identity-head p{margin:4px 0 0;color:#b9aa8e;font-size:10px;line-height:1.8}.kx-identity-close{min-height:42px;border:1px solid #ffffff20;border-radius:9px;background:#140e0a;color:#e5d8bd;padding:7px 11px;font:inherit}
+      .kx-picker-title{display:flex;justify-content:space-between;gap:8px;align-items:end;margin:16px 0 8px}.kx-picker-title b{color:#e8cc84}.kx-picker-title small{color:#978a77;font-size:9px}
+      .kx-picker-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.kx-picker-card{min-height:82px;border:1px solid #ffffff12;border-radius:12px;background:#130e0a;color:#d8cbb4;padding:10px;text-align:right;font:inherit;cursor:pointer;display:grid;grid-template-columns:38px 1fr;gap:9px;align-items:center}.kx-picker-card .sigil{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(226,189,114,.45);background:linear-gradient(145deg,#5a3b1f,#17100b);color:#f2d98c;font-size:18px}.kx-picker-card b{display:block;font-size:11px}.kx-picker-card small{display:block;margin-top:3px;color:#958a7a;font-size:8px;line-height:1.5}.kx-picker-card.active{border-color:#e2bd72;background:linear-gradient(145deg,rgba(108,72,34,.42),#16100b);box-shadow:0 0 0 1px rgba(226,189,114,.18),0 0 20px rgba(226,189,114,.08)}.kx-picker-card:disabled{opacity:.48;cursor:not-allowed}
+      #kx-identity-lock-note{margin:14px 0 0;padding:9px;border-right:3px solid #e2bd72;background:#0002;color:#bfae90;font-size:10px;line-height:1.8}
+      html.kx-enhanced-identity .identity-panel>#faction,html.kx-enhanced-identity .identity-panel>#persona{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
+      #kx-identity-panel-open{width:100%;min-height:44px;margin:8px 0 12px;border:1px solid rgba(226,189,114,.4);border-radius:9px;background:#17100a;color:#edd79b;font:inherit;font-size:11px}
+      #territories button.kx-shared-city{box-shadow:inset 0 -92px 60px #02070de6,0 0 0 3px rgba(114,201,191,.28),0 12px 28px #0008!important}
+      #territories button.kx-shared-city:after{content:"شهر انتخابی";position:absolute;right:8px;top:8px;padding:3px 6px;border:1px solid rgba(114,201,191,.62);border-radius:999px;background:#0b2c2aee;color:#d9f5ef;font-size:8px;z-index:5}
+      @media(max-width:920px){#orders{grid-template-columns:1fr!important}.order-group-buttons{grid-template-columns:repeat(3,minmax(0,1fr))}.kx-picker-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+      @media(max-width:520px){.kx-picker-grid{grid-template-columns:1fr}.kx-picker-card{min-height:72px}.top-state #kx-identity-open,.top-state #kx-audio-topbar{min-height:38px}}
+    `;
+    document.head.append(style);
+  }
+
+  function roundNo(){
+    const text=q('#phase')?.textContent||'';
+    const digits={'۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9'};
+    const normalized=text.replace(/[۰-۹]/g,d=>digits[d]);
+    return Math.max(1,Number(normalized.match(/(\d+)/)?.[1]||1));
+  }
+
+  function syncOrderLocks(){
+    const practice=isPractice();
+    const round=roundNo();
+    qa('#orders [data-order]').forEach(button=>{
+      const unlock=ORDER_UNLOCK[button.dataset.order]||1;
+      const locked=!practice&&round<unlock;
+      button.disabled=locked;
+      button.classList.toggle('kx-order-locked',locked);
+      if(locked)button.dataset.kxUnlock='راند '+new Intl.NumberFormat('fa-IR').format(unlock);
+      else delete button.dataset.kxUnlock;
+      button.setAttribute('aria-disabled',String(locked));
+    });
+  }
+
+  function ensureDawnStatus(){
+    const resolve=q('#resolve');
+    if(!resolve)return null;
+    let status=q('#kx-dawn-role-status');
+    if(!status){
+      status=document.createElement('p');
+      status.id='kx-dawn-role-status';
+      resolve.insertAdjacentElement('afterend',status);
+    }
+    return status;
+  }
+
+  function syncDawnRole(){
+    const resolve=q('#resolve');
+    if(!resolve)return;
+    const status=ensureDawnStatus();
+    const mobile=q('[data-mobile-dawn]');
+    if(isPractice()){
+      resolve.hidden=false;resolve.disabled=false;
+      if(mobile)mobile.hidden=false;
+      if(status){status.dataset.state='host';status.textContent='در تمرین، اجرای سپیده‌دم در اختیار خودت است.'}
+      return;
+    }
+    const role=currentRole||window.KAYKHA_GAME_ROLE;
+    if(!role){
+      resolve.hidden=true;
+      if(mobile)mobile.hidden=true;
+      if(status){status.dataset.state='waiting';status.textContent='نقش میزبان در حال همگام‌سازی است…'}
+      return;
+    }
+    if(role.isHost){
+      resolve.hidden=false;resolve.disabled=false;
+      if(mobile)mobile.hidden=false;
+      if(status){status.dataset.state='host';status.textContent='تو میزبان تالاری؛ بعد از مهر فرمان‌ها می‌توانی سپیده‌دم را اجرا کنی.'}
+    }else{
+      resolve.hidden=true;
+      if(mobile)mobile.hidden=true;
+      if(status){status.dataset.state='waiting';status.textContent='فرمانت را مهر کن؛ اجرای سپیده‌دم فقط برای میزبان نمایش داده می‌شود.'}
+    }
+  }
+
+  function marketOptionForCity(name){
+    return Array.from(q('#market-city')?.options||[]).find(o=>o.value===name||o.textContent.trim()===name)||null;
+  }
+  function cityButton(name){
+    return qa('#territories button[data-city],#territories button').find(button=>(button.dataset.city||button.querySelector('b')?.textContent||'').trim()===name)||null;
+  }
+  function paintSelectedCity(){
+    qa('#territories button').forEach(button=>button.classList.toggle('kx-shared-city',Boolean(selectedCity&&button===cityButton(selectedCity))));
+  }
+  function selectSharedCity(name,source){
+    name=String(name||'').trim();
+    if(!name)return;
+    selectedCity=name;
+    window.KAYKHA_SELECTED_CITY=name;
+    document.documentElement.dataset.kaykhaSelectedCity=name;
+    const market=q('#market-city');
+    const option=marketOptionForCity(name);
+    if(market&&option&&market.value!==option.value){
+      market.value=option.value;
+      if(source!=='market')market.dispatchEvent(new Event('change',{bubbles:true}));
+    }
+    const status=q('#market-status');
+    if(status&&!status.textContent.includes(name))status.textContent=name+' · یکی از چهار محله را انتخاب کن.';
+    paintSelectedCity();
+    window.dispatchEvent(new CustomEvent('kaykha:selected-city-change',{detail:{name,source:source||'unknown'}}));
+  }
+
+  function syncCityRoutes(event){
+    const zone=event.target.closest('[data-city-zone]');
+    if(!zone)return;
+    const name=(q('#city-name')?.textContent||selectedCity||'').trim();
+    if(name)selectSharedCity(name,'city-zone');
+    if(zone.dataset.cityZone==='market')setTimeout(()=>q('[data-game-view="market"]')?.click(),0);
+    if(zone.dataset.cityZone==='diwan')setTimeout(()=>q('[data-game-view="diwan"]')?.click(),0);
+  }
+
+  function syncAudioButton(){
+    const top=q('#kx-audio-topbar');
+    if(!top)return;
+    top.setAttribute('aria-pressed',String(audioEnabled));
+    top.textContent=audioEnabled?'♩ صدا روشن':'♩ صدا خاموش';
+    const legacy=q('#audio-toggle');
+    if(legacy){legacy.setAttribute('aria-pressed',String(audioEnabled));legacy.textContent=audioEnabled?'صدای وهم‌آلود: روشن':'صدای وهم‌آلود: خاموش'}
+  }
+  function toggleAudio(){
+    audioEnabled=!audioEnabled;
+    window.kaykhaSound?.set?.(audioEnabled);
+    syncAudioButton();
+  }
+
+  function ensureIdentityModal(){
+    let modal=q('#kx-identity-modal');
+    if(modal)return modal;
+    modal=document.createElement('div');
+    modal.id='kx-identity-modal';modal.hidden=true;modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-labelledby','kx-identity-title');
+    modal.innerHTML='<section id="kx-identity-card"><div class="kx-identity-head"><div><small>انتخاب هویت</small><h3 id="kx-identity-title">خاندان و چهرهٔ فرمانده</h3><p>این انتخاب روی قابلیت‌ها و هویت دربار اثر می‌گذارد؛ قبل از ورود به تالار آن را با کارت انتخاب کن.</p></div><button type="button" class="kx-identity-close" data-kx-identity-close>بستن</button></div><div class="kx-picker-title"><b>خاندان</b><small>قدرت خانوادگی</small></div><div id="kx-faction-picker" class="kx-picker-grid"></div><div class="kx-picker-title"><b>چهره</b><small>نقش و سبک بازی</small></div><div id="kx-persona-picker" class="kx-picker-grid"></div><p id="kx-identity-lock-note">تا قبل از ورود به تالار می‌توانی انتخاب را تغییر دهی.</p></section>';
+    document.body.append(modal);
+    modal.addEventListener('click',event=>{
+      if(event.target===modal||event.target.closest('[data-kx-identity-close]'))closeIdentity();
+      const faction=event.target.closest('[data-kx-faction]');
+      if(faction)chooseSelect('#faction',faction.dataset.kxFaction);
+      const persona=event.target.closest('[data-kx-persona]');
+      if(persona)chooseSelect('#persona',persona.dataset.kxPersona);
+    });
+    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!modal.hidden)closeIdentity()});
+    return modal;
+  }
+  function openIdentity(){const modal=ensureIdentityModal();buildIdentityPickers();modal.hidden=false;modal.querySelector('[data-kx-identity-close]')?.focus()}
+  function closeIdentity(){const modal=q('#kx-identity-modal');if(modal)modal.hidden=true;q('#kx-identity-open')?.focus()}
+  function chooseSelect(selector,value){
+    if(identityLocked)return;
+    const select=q(selector);if(!select)return;
+    const option=Array.from(select.options).find(o=>o.value===value);
+    if(!option)return;
+    select.value=value;select.dispatchEvent(new Event('change',{bubbles:true}));buildIdentityPickers();
+  }
+  function pickerCard(option,type,index){
+    const button=document.createElement('button');button.type='button';button.className='kx-picker-card';
+    const selected=option.selected;
+    button.classList.toggle('active',selected);button.disabled=identityLocked;
+    if(type==='faction')button.dataset.kxFaction=option.value;else button.dataset.kxPersona=option.value;
+    const text=option.textContent.trim();const role=text.split(' · ')[0];const icon=type==='persona'?(ROLE_ICON[role]||'✦'):(text.slice(0,1)||'ک');
+    const subtitle=type==='persona'?(text.split(' · ')[1]||'نقش دربار'):'خاندان قابل انتخاب';
+    button.innerHTML='<span class="sigil" aria-hidden="true">'+icon+'</span><span><b>'+text.replace(/[<>&]/g,'')+'</b><small>'+subtitle+'</small></span>';
+    button.setAttribute('aria-pressed',String(selected));button.style.setProperty('--kx-index',String(index));
+    return button;
+  }
+  function buildIdentityPickers(){
+    if(rebuildingIdentity)return;
+    rebuildingIdentity=true;
+    try{
+      const modal=ensureIdentityModal();
+      const faction=q('#faction'),persona=q('#persona');
+      const froot=q('#kx-faction-picker',modal),proot=q('#kx-persona-picker',modal);
+      if(froot&&faction)froot.replaceChildren(...Array.from(faction.options).map((o,i)=>pickerCard(o,'faction',i)));
+      if(proot&&persona)proot.replaceChildren(...Array.from(persona.options).map((o,i)=>pickerCard(o,'persona',i)));
+      const note=q('#kx-identity-lock-note',modal);
+      if(note)note.textContent=identityLocked?'این هویت برای تالار جاری قفل شده است؛ برای جلوگیری از تغییر ناخواسته، کارت‌ها فقط نمایشی‌اند.':'انتخاب هنوز قفل نشده؛ کارت را لمس کن تا همان گزینه در منطق اصلی بازی انتخاب شود.';
+      document.documentElement.classList.add('kx-enhanced-identity');
+    }finally{rebuildingIdentity=false}
+  }
+  function ensureIdentityPanelButton(){
+    const panel=q('.identity-panel');if(!panel||q('#kx-identity-panel-open'))return;
+    const button=document.createElement('button');button.id='kx-identity-panel-open';button.type='button';button.textContent='انتخاب هویت با کارت‌ها';
+    const portrait=q('#persona-portrait');portrait?.insertAdjacentElement('afterend',button);
+    button.addEventListener('click',openIdentity);
+  }
+
+  function bind(){
+    q('#kx-audio-topbar')?.addEventListener('click',toggleAudio);
+    q('#kx-identity-open')?.addEventListener('click',openIdentity);
+    document.addEventListener('click',event=>{
+      const city=event.target.closest('#territories button');
+      if(city){const name=(city.dataset.city||city.querySelector('b')?.textContent||'').trim();if(name)selectSharedCity(name,'map')}
+      syncCityRoutes(event);
+    });
+    q('#market-city')?.addEventListener('change',event=>selectSharedCity(event.target.value,'market'));
+    window.addEventListener('kaykha:city-selected',event=>selectSharedCity(event.detail?.name,'map-event'));
+    window.addEventListener('kaykha:game-role',event=>{currentRole=event.detail||null;syncDawnRole()});
+    window.addEventListener('kaykha:identity',event=>{identityLocked=Boolean(event.detail?.locked);buildIdentityPickers()});
+    window.addEventListener('kaykha:server-sync-request',()=>{syncOrderLocks();syncDawnRole();buildIdentityPickers()});
+    const phase=q('#phase');if(phase)new MutationObserver(()=>syncOrderLocks()).observe(phase,{childList:true,subtree:true,characterData:true});
+    const identitySelects=[q('#faction'),q('#persona')].filter(Boolean);
+    identitySelects.forEach(select=>new MutationObserver(()=>buildIdentityPickers()).observe(select,{childList:true,attributes:true,subtree:true}));
+    new MutationObserver(()=>syncDawnRole()).observe(document.body,{childList:true,subtree:true});
+  }
+
+  function boot(){
+    installStyles();
+    document.documentElement.classList.add('kx-progressive-clarity');
+    ensureIdentityModal();ensureIdentityPanelButton();buildIdentityPickers();
+    selectedCity=q('#market-city')?.value||q('#city-name')?.textContent?.trim()||'';
+    if(selectedCity)selectSharedCity(selectedCity,'boot');
+    syncAudioButton();syncOrderLocks();syncDawnRole();bind();
+    document.documentElement.dataset.kaykhaProgressiveClarity=VERSION;
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+}
+
   response.setHeader('content-type', 'application/javascript; charset=utf-8');
   response.setHeader('cache-control', 'no-store, max-age=0');
   response.statusCode = 200;
-  response.end(';(' + phase5InteractionFix.toString() + ')();;(' + plannerFunction.toString() + ')();');
+  response.end(';(' + phase5InteractionFix.toString() + ')();;(' + plannerFunction.toString() + ')();;(' + progressiveClarityUx.toString() + ')();');
 };
