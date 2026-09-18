@@ -20,3 +20,221 @@
 @media(max-width:1050px){.diwan-desk{grid-template-columns:1fr 1fr}.council-object{grid-row:1/3;grid-column:2}.leverage-object{grid-column:1}.diwan-live-data{grid-template-columns:1fr}}
 @media(max-width:720px){.diwan-diorama{min-height:0;border-radius:15px}.diwan-relief{height:55px}.diwan-desk{display:flex;flex-direction:column;padding:77px 11px 18px;gap:12px}.diwan-object,.diwan-live-data{width:100%}.council-object{order:-1}.council-well{min-height:310px}.safteh-stack{min-height:230px}.diwan-live-data{display:grid}.diwan-diorama .rp-card>div:first-of-type{grid-template-columns:1fr}.leverage-action{min-height:52px}.audit-chains b{font-size:15px}}
 @media(prefers-reduced-motion:reduce){.diwan-flame,.safteh-scroll.extorted{animation:none}.council-wheel,.diwan-toast{transition:none}}
+
+
+/* KAYKHA_UIUX_FINAL_V1 */
+/* Final global consolidation layer. Loaded last on purpose: resolves competing historical skins
+   without changing the authoritative game engine or server state. */
+:root{
+  --kx-ui-bg:#0c0907;
+  --kx-ui-surface:#17110d;
+  --kx-ui-surface-2:#24170f;
+  --kx-ui-gold:#e2bd72;
+  --kx-ui-gold-soft:#cda25d;
+  --kx-ui-text:#f6e7c2;
+  --kx-ui-muted:#d1c19f;
+  --kx-ui-teal:#72c9bf;
+  --kx-ui-danger:#df6b62;
+  --kx-ui-focus:#f4d58d;
+  --kx-ui-line:rgba(226,189,114,.48);
+  --kx-ui-hit:44px;
+}
+html[lang="fa"],html[lang="fa"] body{
+  font-family:"Vazirmatn",Tahoma,"Segoe UI",Arial,sans-serif!important;
+  font-synthesis:none;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+html[lang="fa"] h1,html[lang="fa"] h2,html[lang="fa"] h3,html[lang="fa"] h4,
+html[lang="fa"] .brand-lockup h1,html[lang="fa"] .view-head h2,
+html[lang="fa"] .command-hero h3,html[lang="fa"] .panel h2{
+  font-family:"Vazirmatn",Tahoma,"Segoe UI",Arial,sans-serif!important;
+  letter-spacing:0!important;
+  line-height:1.45!important;
+}
+body.kaykha-unified{line-height:1.65}
+button,select,input,textarea,a,[role="button"],summary{
+  -webkit-tap-highlight-color:transparent;
+}
+button,[role="button"],summary{
+  min-height:var(--kx-ui-hit);
+}
+button{
+  cursor:pointer;
+  touch-action:manipulation;
+}
+button:disabled,[aria-disabled="true"]{
+  cursor:not-allowed!important;
+  opacity:.55!important;
+  filter:saturate(.55)!important;
+}
+button:not(:disabled):active,[role="button"]:not([aria-disabled="true"]):active{
+  transform:translateY(1px) scale(.985);
+}
+button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,
+summary:focus-visible,[role="button"]:focus-visible,[tabindex]:focus-visible{
+  outline:3px solid var(--kx-ui-focus)!important;
+  outline-offset:3px!important;
+  box-shadow:0 0 0 6px rgba(244,213,141,.14)!important;
+}
+select,input,textarea{
+  min-height:44px;
+  font-size:13px!important;
+  line-height:1.55!important;
+}
+textarea{min-height:84px}
+.shell-nav button{
+  min-height:58px!important;
+  font-size:11.5px!important;
+  line-height:1.35!important;
+}
+.shell-nav button span{font-size:21px!important}
+.shell-nav button.active,.shell-nav button[aria-current="page"]{
+  color:#ffe5a6!important;
+  border-color:rgba(226,189,114,.78)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,236,184,.15),0 0 0 1px rgba(226,189,114,.12)!important;
+}
+.brand-lockup small,.view-head small,.panel>small,.mission-step small,.intel-strip small,.tile .zone{
+  font-size:11px!important;
+  line-height:1.55!important;
+}
+.brand-lockup h1{font-size:20px!important}
+.view-head h2{font-size:clamp(25px,3.2vw,38px)!important}
+.view-head p,.command-hero p,.city-copy p,.diwan-intro p{
+  font-size:13px!important;
+  line-height:1.9!important;
+}
+.mission-step b,.intel-strip b,.identity-panel article,.role-card,.tile,.compact-list p,
+#sealed,#online-status,.family-note,.city-copy small,.rp-card button{
+  font-size:12.5px!important;
+  line-height:1.75!important;
+}
+.phase-pill,.mode-pill,.top-guide{
+  min-height:40px;
+  display:inline-flex;
+  align-items:center;
+  font-size:11.5px!important;
+}
+#orders{
+  gap:9px!important;
+}
+#orders button,.reference-orders button,.ai-levels button,.online-actions button,
+.market-toolbar button,.rp-card button,.class-action,.family-action,.awaken,.leverage-action{
+  min-height:46px!important;
+  padding:10px 12px!important;
+  font-size:12.5px!important;
+  line-height:1.45!important;
+}
+#orders button.active,#orders button[aria-pressed="true"],
+.ai-levels button.active,.ai-levels button[aria-pressed="true"],
+#territories button.selected,#territories button[aria-pressed="true"]{
+  border-color:var(--kx-ui-gold)!important;
+  box-shadow:0 0 0 2px rgba(226,189,114,.18),inset 0 0 0 1px rgba(255,242,203,.12)!important;
+}
+#territories button{
+  min-height:96px!important;
+  font-size:12.5px!important;
+  line-height:1.55!important;
+}
+#territories button b{font-size:15px!important;line-height:1.45!important}
+#territories button small{font-size:11.5px!important;line-height:1.55!important}
+#online-status,#kx-route-warning,#sealed,.diwan-toast,[role="status"],[aria-live]{
+  font-size:12.5px!important;
+  line-height:1.75!important;
+}
+#online-status.bad,.bad,[aria-invalid="true"]{color:#ff9f96!important}
+.city-copy button,[data-close-city],.kx-v3-rail-close{
+  min-height:44px!important;
+  min-width:44px!important;
+  font-size:12px!important;
+}
+#city-entry-curtain[aria-hidden="false"]{outline:none}
+#city-entry-curtain [data-close-city]{
+  position:relative;
+  z-index:4;
+}
+.market #market .tile{
+  min-height:104px!important;
+}
+.market #market .tile:focus-visible{
+  outline:3px solid var(--kx-ui-focus)!important;
+  outline-offset:2px!important;
+}
+.identity-panel article,.role-card,.faction-card-visual{
+  line-height:1.65!important;
+}
+.identity-panel article b,.role-card b,.persona-portrait .portrait-copy b{
+  font-size:13.5px!important;
+  line-height:1.5!important;
+}
+.identity-panel article small,.role-card small,.persona-portrait .portrait-copy small{
+  font-size:11.5px!important;
+  line-height:1.7!important;
+}
+.kx-v3-diwan-toolbar button{min-height:46px!important}
+.council-rule-note,.leverage-action small,.diwan-object-title,.safteh-scroll small{
+  font-size:11.5px!important;
+  line-height:1.65!important;
+}
+.safteh-scroll b,.leverage-action b{font-size:12.5px!important;line-height:1.6!important}
+a{color:#f2d58f}
+a:hover{color:#ffe8aa}
+@media (hover:hover) and (pointer:fine){
+  button:not(:disabled):hover,[role="button"]:not([aria-disabled="true"]):hover{
+    filter:brightness(1.08);
+  }
+}
+@media(max-width:1024px),(pointer:coarse) and (max-device-width:1024px){
+  :root{--kx-ui-hit:48px}
+  html.kx-mobile-v3 .shell-nav button{
+    min-height:54px!important;
+    height:54px!important;
+    flex-basis:72px!important;
+    font-size:10.5px!important;
+    scroll-snap-align:center;
+  }
+  html.kx-mobile-v3 .shell-nav{scroll-snap-type:x proximity}
+  html.kx-mobile-v3 input,html.kx-mobile-v3 select,html.kx-mobile-v3 textarea{
+    min-height:48px!important;
+    font-size:16px!important;
+  }
+  html.kx-mobile-v3 button,html.kx-mobile-v3 [role="button"],html.kx-mobile-v3 summary{
+    min-height:48px!important;
+  }
+  html.kx-mobile-v3 .view-head h2{font-size:26px!important}
+  html.kx-mobile-v3 .view-head small{font-size:11px!important}
+  html.kx-mobile-v3 .command-hero p,
+  html.kx-mobile-v3 .practice-note,
+  html.kx-mobile-v3 .family-note,
+  html.kx-mobile-v3 #online-status,
+  html.kx-mobile-v3 #kx-route-warning{
+    font-size:12.5px!important;
+  }
+  html.kx-mobile-v3 .reference-orders button,
+  html.kx-mobile-v3 #orders button{
+    font-size:12.5px!important;
+    min-height:82px!important;
+  }
+  html.kx-mobile-v3 #territories button{
+    min-height:108px!important;
+  }
+  html.kx-mobile-v3 .market #market .tile{min-height:112px!important}
+}
+@media(max-width:420px){
+  html.kx-mobile-v3 .phase-pill{display:none!important}
+  html.kx-mobile-v3 .mission-progress{grid-template-columns:1fr!important}
+  html.kx-mobile-v3 .mission-step{min-height:48px!important}
+  html.kx-mobile-v3 .reference-orders,
+  html.kx-mobile-v3 .command-card>#orders{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  html.kx-mobile-v3 .shell-scroll{padding:12px!important}
+  html.kx-mobile-v3 .top-guide{font-size:10.5px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto!important}
+  *,*::before,*::after{
+    scroll-behavior:auto!important;
+    animation-duration:.001ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:.001ms!important;
+  }
+}
