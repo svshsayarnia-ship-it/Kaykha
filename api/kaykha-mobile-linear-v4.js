@@ -92,20 +92,20 @@ module.exports = function asset(_request, response) {
           node.classList.remove('show'); node.setAttribute('aria-hidden','true');
         }
       });
-      setTimeout(syncTransientState,0);
+      syncTransientState();
     }
     function openSurface(node) {
       if (!node) return;
       closeTransientSurfaces(node);
       node.classList.add('show');
       node.setAttribute('aria-hidden','false');
-      setTimeout(syncTransientState,0);
+      syncTransientState();
     }
     function closeSurface(node) {
       if (!node) return;
       node.classList.remove('show');
       node.setAttribute('aria-hidden','true');
-      setTimeout(syncTransientState,0);
+      syncTransientState();
     }
     function switchView(view) {
       closeTransientSurfaces();
