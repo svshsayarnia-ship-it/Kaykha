@@ -7,7 +7,7 @@ module.exports = function asset(_request, response) {
     const PRACTICE_RESOURCE_KEY = 'kaykha.mobile.practice.resources.v4';
     const TUTORIAL_KEY = 'kaykha.mobile.tutorial.v4';
     const $ = selector => document.querySelector(selector);
-    const $$ = selector => Array.from(document.querySelectorAll(selector));
+    const all = selector => Array.from(document.querySelectorAll(selector));
     const orderMeta = {
       attack:{icon:'⚔',label:'حمله',copy:'برای گرفتن شهر؛ نتیجه در سپیده‌دم حل می‌شود.',unlock:1},
       defend:{icon:'⛨',label:'دفاع',copy:'پادگان شهر خودی را برای سپیده‌دم تقویت می‌کند.',unlock:1},
@@ -290,7 +290,7 @@ module.exports = function asset(_request, response) {
     function buildOrderGrid() {
       const grid = $('[data-mobile-orders]');
       if (!grid) return;
-      const sourceButtons = $$('#orders [data-order]');
+      const sourceButtons = all('#orders [data-order]');
       const keys = sourceButtons.length ? sourceButtons.map(button=>button.dataset.order).filter(Boolean) : Object.keys(orderMeta);
       const active = activeOrder();
       grid.innerHTML = keys.map(order => {
@@ -356,7 +356,7 @@ module.exports = function asset(_request, response) {
     function updateRouteLine() {
       const line = $('#kx-route-line .kx-route-line-path'), svg = $('#kx-route-line'); if (!line || !svg) return;
       const origin = $('#command-origin')?.selectedOptions?.[0]?.dataset.cityLabel, target = $('#command-target')?.selectedOptions?.[0]?.dataset.cityLabel;
-      const buttons = $$('#territories button'); const a = buttons.find(btn=>cityFromButton(btn)===origin), b=buttons.find(btn=>cityFromButton(btn)===target);
+      const buttons = all('#territories button'); const a = buttons.find(btn=>cityFromButton(btn)===origin), b=buttons.find(btn=>cityFromButton(btn)===target);
       if (!a || !b) { line.setAttribute('x1','0');line.setAttribute('y1','0');line.setAttribute('x2','0');line.setAttribute('y2','0');return; }
       const root=svg.getBoundingClientRect(), ar=a.getBoundingClientRect(), br=b.getBoundingClientRect();
       line.setAttribute('x1',String(ar.left-root.left+ar.width/2)); line.setAttribute('y1',String(ar.top-root.top+ar.height/2)); line.setAttribute('x2',String(br.left-root.left+br.width/2)); line.setAttribute('y2',String(br.top-root.top+br.height/2));
@@ -372,7 +372,7 @@ module.exports = function asset(_request, response) {
     function applyProgressiveDisclosure() {
       if (isPractice()) return;
       const round=roundFromUi();
-      const lock = (selector,unlock,copy) => $$(selector).forEach(node=>{const should=round<unlock;node.classList.toggle('kx-locked',should);if(should)node.dataset.kxLockCopy=copy;else delete node.dataset.kxLockCopy;});
+      const lock = (selector,unlock,copy) => all(selector).forEach(node=>{const should=round<unlock;node.classList.toggle('kx-locked',should);if(should)node.dataset.kxLockCopy=copy;else delete node.dataset.kxLockCopy;});
       lock('#shadow-role,#independent-role-console,#bribe-network,#create-loan,#loan-list,#credit-summary',3,'از راند ۳ باز می‌شود: نقش سایه و وام.');
       lock('#bounty-board,#post-bounty,[data-bounty-type]',4,'از راند ۴ باز می‌شود: دیوار خون و عملیات پیشرفته.');
       buildOrderGrid();
