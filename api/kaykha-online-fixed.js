@@ -54,10 +54,15 @@ function normalizeGeneratedClients(baseBody, sharedBody) {
   }
   function selectedRouteIds() {
     const order = activeOrderKey();
-    const origin = $('#command-origin')?.value || '';
+    const selectedOrigin = $('#command-origin')?.value || '';
+    const plannedOrigins = order === 'attack' && window.KAYKHA_MULTI_ATTACK?.originIds
+      ? window.KAYKHA_MULTI_ATTACK.originIds()
+      : [];
+    const origins = plannedOrigins.length ? plannedOrigins : (selectedOrigin ? [selectedOrigin] : []);
+    const origin = origins[0] || selectedOrigin;
     let target = $('#command-target')?.value || origin;
     if (order === 'defend' || order === 'trade') target = origin;
-    return { order, origin, target };
+    return { order, origin, origins, target };
   }
   function syncRouteLabels() {
     const route = selectedRouteIds();
@@ -172,7 +177,7 @@ function normalizeGeneratedClients(baseBody, sharedBody) {
   base = replaceRequired(
     base,
     "      const order = document.querySelector('#orders .active')?.dataset.order;\n      const choice = $('#choice')?.textContent || '';\n      const cities = Object.keys(CITY).filter(city => choice.includes(city));\n      if (!order || cities.length < 2) return;\n      run(async () => {\n        await rpc('submit_kaykha_order', {\n          p_game_id: state.gameId, p_order_type: order,\n          p_origin_territory_id: CITY[cities[0]], p_target_territory_id: CITY[cities[1]], p_payload: {}\n        });",
-    "      const route = selectedRouteIds();\n      if (!route.order || !route.origin || !route.target) { status('مبدأ و هدف معتبر از سرور انتخاب نشده‌اند.', true); return; }\n      run(async () => {\n        await rpc('submit_kaykha_order', {\n          p_game_id: state.gameId, p_order_type: route.order,\n          p_origin_territory_id: route.origin, p_target_territory_id: route.target, p_payload: {}\n        });",
+    "      const route = selectedRouteIds();\n      if (!route.order || !route.origin || !route.target) { status('مبدأ و هدف معتبر از سرور انتخاب نشده‌اند.', true); return; }\n      run(async () => {\n        await rpc('submit_kaykha_order', {\n          p_game_id: state.gameId, p_order_type: route.order,\n          p_origin_territory_id: route.origin, p_target_territory_id: route.target,\n          p_payload: route.order === 'attack'\n            ? { attack_origin_ids: route.origins || [route.origin], attack_plan_version: 1 }\n            : {}\n        });",
     'seal canonical route'
   );
 
