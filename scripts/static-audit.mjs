@@ -96,6 +96,7 @@ if(section==='all'||section==='bundle'){
   has(bundle,'kaykhaDiwanAuthority','Diwan authority missing from assembled bundle');
   has(bundle,'20260916-mobile-v3','mobile v3 missing from assembled bundle');
   has(bundle,'20260916-mobile-linear-v4','linear mobile v4 missing from assembled bundle');
+  has(bundle,'20260918-subterfuge-multi-attack-v1','coordinated attack planner missing from assembled bundle');
   has(bundle,'nextDawnAt','authoritative dawn deadline missing from assembled bundle');
   has(bundle,'window.kaykhaEnsureGuest=ensureGuest','lobby guest-auth helper is not exported to the authoritative RPC path');
   has(bundle,"typeof window.kaykhaEnsureGuest === 'function'",'RPC does not self-heal a missing guest session');
@@ -128,4 +129,30 @@ run('uiux',()=>{
   has(js,"setAttribute('aria-current','page')",'navigation current-state accessibility missing');
   has(js,"setAttribute('aria-modal','true')",'city dialog accessibility missing');
   has(js,"event.key==='Escape'",'city dialog Escape close missing');
+});
+
+
+run('multiattack',()=>{
+  const migration=read('supabase/migrations/20260918123500_kaykha_multi_origin_attack.sql');
+  has(migration,'app_private.kaykha_attack_origin_ids','multi-origin canonical helper missing');
+  has(migration,"'attack_origin_ids'","multi-origin payload key missing");
+  has(migration,'origin_ids text[] not null','resolver snapshot origin array missing');
+  has(migration,'territory_id=any(w.origin_ids)','per-origin attrition contract missing');
+  has(migration,"'origin_count',cardinality(w.origin_ids)",'combat result must expose origin count');
+  has(migration,"'combined_attack',v_origin_count>1",'authoritative combined preview missing');
+
+  const online=read('api/kaykha-online-fixed.js');
+  has(online,'window.KAYKHA_MULTI_ATTACK?.originIds','online route must read coordinated origins');
+  has(online,'attack_plan_version: 1','online seal must version the coordinated payload');
+
+  const shared=read('api/kaykha-shared-engine-client.js');
+  has(shared,'attack_origin_ids:route.origins','preview must submit the same coordinated origins');
+  has(shared,'قدرت ترکیبی','preview copy must explain combined attack power');
+
+  const interactionModule=require(path.join(root,'api/kaykha-phase5-interaction-fix.js'));
+  let interaction='';interactionModule({},capture(chunk=>interaction+=chunk));new Function(interaction);
+  has(interaction,'20260918-subterfuge-multi-attack-v1','coordinated attack planner marker missing');
+  has(interaction,'data-multi-origin-index','multi-origin map badges missing');
+  has(interaction,'kx-multi-route-svg','multi-route visualization missing');
+  has(interaction,'KAYKHA_MULTI_ATTACK','planner bridge missing');
 });
