@@ -140,3 +140,129 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
   else init();
 })();
+
+// KAYKHA_UIUX_FINAL_V1
+(()=>{
+  'use strict';
+  const q=(s,r=document)=>r.querySelector(s);
+  const all=(s,r=document)=>[...r.querySelectorAll(s)];
+  let lastFocus=null;
+  let syncQueued=false;
+
+  function visible(node){
+    if(!node)return false;
+    const style=getComputedStyle(node);
+    return style.display!=='none'&&style.visibility!=='hidden'&&node.getAttribute('aria-hidden')!=='true';
+  }
+
+  function syncPressedStates(){
+    all('.shell-nav [data-game-view]').forEach(button=>{
+      if(button.classList.contains('active'))button.setAttribute('aria-current','page');
+      else button.removeAttribute('aria-current');
+    });
+    all('#orders [data-order],.reference-orders [data-order]').forEach(button=>{
+      button.setAttribute('aria-pressed',button.classList.contains('active')?'true':'false');
+    });
+    all('[data-ai-mode]').forEach(button=>{
+      button.setAttribute('aria-pressed',button.classList.contains('active')?'true':'false');
+    });
+    all('#territories button').forEach(button=>{
+      button.setAttribute('aria-pressed',button.classList.contains('selected')?'true':'false');
+    });
+  }
+
+  function scheduleSync(){
+    if(syncQueued)return;
+    syncQueued=true;
+    requestAnimationFrame(()=>{syncQueued=false;syncPressedStates();});
+  }
+
+  function installLiveRegions(){
+    ['#online-status','#kx-route-warning','#sealed','.diwan-toast'].forEach(selector=>{
+      all(selector).forEach(node=>{
+        if(!node.hasAttribute('role'))node.setAttribute('role','status');
+        if(!node.hasAttribute('aria-live'))node.setAttribute('aria-live','polite');
+        node.setAttribute('aria-atomic','true');
+      });
+    });
+  }
+
+  function focusables(root){
+    return all('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])',root)
+      .filter(visible);
+  }
+
+  function cityCurtain(){
+    return q('#city-entry-curtain');
+  }
+
+  function syncCityDialog(){
+    const curtain=cityCurtain();
+    if(!curtain)return;
+    curtain.setAttribute('role','dialog');
+    curtain.setAttribute('aria-modal','true');
+    if(!curtain.hasAttribute('tabindex'))curtain.tabIndex=-1;
+    const open=curtain.classList.contains('show')&&curtain.getAttribute('aria-hidden')!=='true';
+    if(open){
+      if(!lastFocus||curtain.contains(lastFocus))lastFocus=document.activeElement;
+      const close=q('[data-close-city]',curtain);
+      if(document.activeElement===document.body||!curtain.contains(document.activeElement)){
+        (close||curtain).focus({preventScroll:true});
+      }
+    }else if(lastFocus&&document.contains(lastFocus)){
+      const restore=lastFocus;
+      lastFocus=null;
+      restore.focus?.({preventScroll:true});
+    }
+  }
+
+  function installCityDialog(){
+    const curtain=cityCurtain();
+    if(!curtain)return;
+    syncCityDialog();
+    const observer=new MutationObserver(syncCityDialog);
+    observer.observe(curtain,{attributes:true,attributeFilter:['class','aria-hidden']});
+    document.addEventListener('keydown',event=>{
+      const current=cityCurtain();
+      if(!current||!current.classList.contains('show')||current.getAttribute('aria-hidden')==='true')return;
+      if(event.key==='Escape'){
+        event.preventDefault();
+        q('[data-close-city]',current)?.click();
+        return;
+      }
+      if(event.key!=='Tab')return;
+      const items=focusables(current);
+      if(!items.length){event.preventDefault();current.focus();return;}
+      const first=items[0],last=items[items.length-1];
+      if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+      else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+    });
+  }
+
+  function installNavComfort(){
+    document.addEventListener('click',event=>{
+      const nav=event.target.closest('.shell-nav [data-game-view]');
+      if(nav){
+        scheduleSync();
+        if(window.matchMedia?.('(max-width:1024px)').matches){
+          setTimeout(()=>nav.scrollIntoView({block:'nearest',inline:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}),0);
+        }
+      }
+      if(event.target.closest('#orders [data-order],.reference-orders [data-order],[data-ai-mode],#territories button'))scheduleSync();
+    },{passive:true});
+    document.addEventListener('change',scheduleSync,{passive:true});
+    window.addEventListener('kaykha:server-sync-request',()=>{installLiveRegions();scheduleSync();});
+    window.addEventListener('kaykha:identity',()=>{installLiveRegions();scheduleSync();});
+  }
+
+  function init(){
+    document.documentElement.dataset.kaykhaUiux='final-v1';
+    installLiveRegions();
+    syncPressedStates();
+    installCityDialog();
+    installNavComfort();
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
+  else init();
+})();
