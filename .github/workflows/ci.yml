@@ -46,6 +46,8 @@ jobs:
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
+      - name: Phase 5 full-bundle freeze regression
+        run: node scripts/phase5-freeze-regression-e2e.mjs
       - name: Mobile shell scroll and navigation smoke
         run: node scripts/mobile-shell-e2e.mjs
       - name: Browser lobby and voice smoke
