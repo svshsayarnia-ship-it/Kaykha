@@ -82,5 +82,6 @@
       "src": "/(.*)",
       "dest": "/index.js"
     }
-  ]
+  ],
+  "ignoreCommand": "if [ \"$VERCEL_PROJECT_ID\" = \"prj_LBLc5n7RiGzETcCuLfj4QenKZgnF\" ] && git log -1 --pretty=%B | grep -Fq '[phase5-only]'; then exit 0; else exit 1; fi"
 }
