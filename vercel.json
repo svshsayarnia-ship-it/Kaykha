@@ -58,6 +58,13 @@
       }
     },
     {
+      "src": "/war-room\\.html",
+      "dest": "/index.js",
+      "headers": {
+        "Vercel-CDN-Cache-Control": "max-age=300, stale-while-revalidate=86400"
+      }
+    },
+    {
       "src": "/index\\.html",
       "dest": "/index.js",
       "headers": {
