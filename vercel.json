@@ -51,28 +51,7 @@
       }
     },
     {
-      "src": "/reference-skin\\.css",
-      "dest": "/index.js",
-      "headers": {
-        "Vercel-CDN-Cache-Control": "max-age=300, stale-while-revalidate=86400"
-      }
-    },
-    {
-      "src": "/war-room\\.css",
-      "dest": "/index.js",
-      "headers": {
-        "Vercel-CDN-Cache-Control": "max-age=300, stale-while-revalidate=86400"
-      }
-    },
-    {
       "src": "/game",
-      "dest": "/index.js",
-      "headers": {
-        "Vercel-CDN-Cache-Control": "max-age=300, stale-while-revalidate=86400"
-      }
-    },
-    {
-      "src": "/war-room\\.html",
       "dest": "/index.js",
       "headers": {
         "Vercel-CDN-Cache-Control": "max-age=300, stale-while-revalidate=86400"
