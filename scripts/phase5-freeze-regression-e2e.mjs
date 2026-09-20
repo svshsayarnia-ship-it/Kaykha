@@ -112,8 +112,8 @@ try {
   }));
 
   await page.goto(`http://127.0.0.1:${address.port}/game?mode=practice`, { waitUntil: 'load', timeout: 7000 });
-  await page.waitForSelector('#resolve', { timeout: 3000 });
-  await page.waitForSelector('#kx-dawn-role-status', { timeout: 3000 });
+  await page.waitForSelector('#resolve', { state: 'attached', timeout: 3000 });
+  await page.waitForSelector('#kx-dawn-role-status', { state: 'attached', timeout: 3000 });
 
   await page.evaluate(() => {
     window.__kaykhaFreezeHeartbeat = 0;
