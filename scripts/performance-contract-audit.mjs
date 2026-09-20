@@ -23,8 +23,10 @@ assert.deepEqual(indexBuild?.config?.includeFiles, ['api/*.js'],
 
 assert.ok(!war.includes('<script src="https://cdn.jsdelivr.net/npm/livekit-client@'),
   'LiveKit must not block initial HTML parsing');
-assert.ok(war.includes('/kaykha-online.js?v=20260918p1'),
+assert.match(war, /\/kaykha-online\\.js\\?v=[A-Za-z0-9._-]+/,
   'gameplay bundle must be versioned so browser caching is safe');
+assert.ok(!war.includes('src="/kaykha-online.js"'),
+  'gameplay bundle must never be referenced without a cache-busting version');
 assert.ok(war.includes("public, max-age=60, s-maxage=300"),
   'HTML should be briefly edge-cacheable');
 
