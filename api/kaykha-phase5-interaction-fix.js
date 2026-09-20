@@ -922,7 +922,19 @@ module.exports = function asset(_request, response) {
     const phase=q('#phase');if(phase)new MutationObserver(()=>syncOrderLocks()).observe(phase,{childList:true,subtree:true,characterData:true});
     const identitySelects=[q('#faction'),q('#persona')].filter(Boolean);
     identitySelects.forEach(select=>new MutationObserver(()=>buildIdentityPickers()).observe(select,{childList:true,attributes:true,subtree:true}));
-    new MutationObserver(()=>syncDawnRole()).observe(document.body,{childList:true,subtree:true});
+    let dawnObserverFrame=0;
+    const dawnObserver=new MutationObserver(mutations=>{
+      const addedControl=mutations.some(mutation=>Array.from(mutation.addedNodes||[]).some(node=>{
+        if(node.nodeType!==1)return false;
+        return node.matches?.('#resolve,[data-mobile-dawn]')||node.querySelector?.('#resolve,[data-mobile-dawn]');
+      }));
+      if(!addedControl||dawnObserverFrame)return;
+      dawnObserverFrame=requestAnimationFrame(()=>{
+        dawnObserverFrame=0;
+        syncDawnRole();
+      });
+    });
+    dawnObserver.observe(document.body,{childList:true,subtree:true});
   }
 
   function boot(){
