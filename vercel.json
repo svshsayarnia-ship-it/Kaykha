@@ -44,7 +44,7 @@
       }
     },
     {
-      "src": "/(command-reference\\.css|command-reference\\.js|command-visual-v2\\.css|market-reference\\.css|market-reference\\.js|market-all-cities\\.js|market-typography-v2\\.css|economy-city-v3\\.css|astrolabe-dashboard\\.css|astrolabe-dashboard\\.js|cinematic-controls\\.css|cinematic-controls\\.js|university-dashboard\\.css|university-dashboard\\.js|world-map-v2\\.css|world-map-v2\\.js|city-interactions-v2\\.css|city-interactions-v2\\.js|diwan-diorama\\.css|diwan-diorama\\.js|war-room\\.js|command-map\\.webp|market-goods\\.webp|astrolabe-core\\.webp|astrolabe-sun-moon-v2\\.webp|armillary-sphere\\.webp|academy-four-faculties-v2\\.webp|cinematic-icon-sprite\\.webp|iran-greater-map\\.webp)",
+      "src": "/(command-reference\\.css|command-reference\\.js|command-visual-v2\\.css|market-reference\\.css|market-reference\\.js|market-all-cities\\.js|market-typography-v2\\.css|economy-city-v3\\.css|astrolabe-dashboard\\.css|astrolabe-dashboard\\.js|cinematic-controls\\.css|cinematic-controls\\.js|university-dashboard\\.css|university-dashboard\\.js|world-map-v2\\.css|world-map-v2\\.js|city-interactions-v2\\.css|city-interactions-v2\\.js|diwan-diorama\\.css|diwan-diorama\\.js|war-room\\.js|war-room\\.css|reference-skin\\.css|command-map\\.webp|market-goods\\.webp|astrolabe-core\\.webp|astrolabe-sun-moon-v2\\.webp|armillary-sphere\\.webp|academy-four-faculties-v2\\.webp|cinematic-icon-sprite\\.webp|iran-greater-map\\.webp)",
       "dest": "/public/$1",
       "headers": {
         "cache-control": "public, max-age=86400, stale-while-revalidate=604800"
