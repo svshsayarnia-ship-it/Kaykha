@@ -30,6 +30,7 @@ module.exports = function asset(_request, response) {
     let tutorialStep = 0;
     let reminderTimer = null;
     let boardState = null;
+    let previewObserver = null;
 
     function isMobile() {
       return window.innerWidth <= 1024 || (window.matchMedia && matchMedia('(pointer: coarse)').matches && Math.min(screen.width || 9999, screen.height || 9999) <= 1024);
@@ -143,6 +144,8 @@ module.exports = function asset(_request, response) {
           .kx-section-label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:14px 0 7px}.kx-section-label b{font-size:13px;color:#ead28c}.kx-section-label small{font-size:9px;color:var(--kx-muted)}
           .kx-order-grid{display:flex!important;gap:7px;overflow-x:auto!important;overflow-y:hidden!important;scroll-snap-type:x proximity;overscroll-behavior-x:contain;padding:2px 1px 7px;scrollbar-width:none}.kx-order-grid::-webkit-scrollbar{display:none}.kx-order{flex:0 0 92px!important;min-width:92px!important;min-height:74px!important;padding:8px 4px!important;border:1px solid #ffffff12!important;border-radius:12px!important;background:#140f0c!important;color:#c7bba9!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;position:relative;scroll-snap-align:center}.kx-order span{font-size:23px}.kx-order b{font-size:10px}.kx-order.active{border-color:#c9a227aa!important;color:#f4dfa0!important;background:#c9a22713!important;box-shadow:0 0 0 1px #c9a22722}.kx-order.locked{opacity:.43;filter:saturate(.45)}.kx-order-lock{position:absolute;top:4px;left:4px;font-size:7px!important;color:#d0ba80}
           .kx-order-copy{min-height:54px;margin-top:8px;padding:9px 10px;border-right:2px solid #c9a22788;border-radius:8px;background:#0d0907;color:#bfb19d;font-size:11px;line-height:1.75}
+          .kx-server-preview{margin-top:8px;padding:10px;border:1px solid #4a9a9166;border-radius:10px;background:#0d211f;color:#cce9e4;font-size:11px;line-height:1.8;white-space:pre-line}
+          .kx-server-preview[data-state="error"]{border-color:#a34b45;color:#f0c3ba}
           .kx-seal{width:100%;min-height:58px!important;margin-top:11px;border:1px solid #c9a227!important;border-radius:14px!important;background:linear-gradient(145deg,#9a762d,#48340f)!important;color:#fff0b8!important;font-size:16px!important;font-weight:900!important}.kx-seal:disabled{opacity:.38!important}.kx-dawn{display:none;width:100%;min-height:54px!important;margin-top:8px;border:1px solid #a34b45!important;border-radius:14px!important;background:linear-gradient(145deg,#7d2328,#351013)!important;color:#ffe1d6!important;font-size:15px!important;font-weight:900!important}.kx-after-seal .kx-dawn{display:block}.kx-after-seal .kx-seal{background:#16100c!important;border-color:#ffffff1d!important;color:#a99c8b!important}
           .kx-economy-note{margin-top:10px;padding:9px 10px;border:1px solid #ffffff10;border-radius:10px;background:#0e0a07;color:#9f9588;font-size:10px;line-height:1.7}.kx-economy-note b{color:#d7bd70}
           html.kx-linear-mobile [data-view-panel="map"]{min-height:calc(100dvh - 136px)!important}.kx-map-scroll-frame{position:relative!important;min-height:70dvh!important;max-height:70dvh!important;overflow:auto!important;border:1px solid var(--kx-line)!important;border-radius:14px!important;background:#100b08!important}.kx-map-scroll-frame #territories{min-height:70dvh!important}.map-board{min-height:70dvh!important;padding:6px!important;position:relative!important}.map-help{display:none!important}#kx-route-line{display:block;position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:20;overflow:visible}.kx-route-line-path{stroke:#d7bd70;stroke-width:2.5;stroke-dasharray:7 5;filter:drop-shadow(0 0 5px #c9a22788)}
@@ -274,7 +277,7 @@ module.exports = function asset(_request, response) {
       flow.id = 'kx-mobile-command-flow';
       flow.innerHTML = '<div class="kx-flow-title"><small>مرکز تصمیم موبایل</small><h2>فرمان</h2></div>'+
         (isPractice()?'<section class="kx-tutorial"><div class="kx-tutorial-head"><b>تمرین مرحله‌ای</b><button type="button" data-tutorial-skip>رد کردن</button></div><p data-tutorial-copy></p><div class="kx-tutorial-steps" data-tutorial-steps></div></section>':'')+
-        '<div class="kx-route-cards"><button type="button" class="kx-route-card" data-slot="origin"><small>۱ · مبدأ</small><b data-mobile-origin>شهر را از نقشه انتخاب کن</b></button><button type="button" class="kx-route-card" data-slot="target"><small>۲ · هدف</small><b data-mobile-target>شهر را از نقشه انتخاب کن</b></button></div><div class="kx-section-label"><b>۳ · نوع فرمان</b><small>یک اثر ثابت برای هر فرمان</small></div><div class="kx-order-grid" data-mobile-orders></div><div class="kx-order-copy" data-mobile-order-copy>نوع فرمان را انتخاب کن.</div><button type="button" class="kx-seal" data-mobile-seal>مهر فرمان</button><button type="button" class="kx-dawn" data-mobile-dawn>اجرای سپیده‌دم</button><div class="kx-economy-note"><b>تفاوت اقتصاد:</b> تجارت = اثر کوتاه‌مدت همین راند · بازار = سند، مالکیت و درآمد پایدار.</div>';
+        '<div class="kx-route-cards"><button type="button" class="kx-route-card" data-slot="origin"><small>۱ · مبدأ</small><b data-mobile-origin>شهر را از نقشه انتخاب کن</b></button><button type="button" class="kx-route-card" data-slot="target"><small>۲ · هدف</small><b data-mobile-target>شهر را از نقشه انتخاب کن</b></button></div><div class="kx-section-label"><b>۳ · نوع فرمان</b><small>یک اثر ثابت برای هر فرمان</small></div><div class="kx-order-grid" data-mobile-orders></div><div class="kx-order-copy" data-mobile-order-copy>نوع فرمان را انتخاب کن.</div><div class="kx-server-preview" data-mobile-preview aria-live="polite">هزینه و ریسک از سرور خوانده می‌شود.</div><button type="button" class="kx-seal" data-mobile-seal>مهر فرمان</button><button type="button" class="kx-dawn" data-mobile-dawn>اجرای سپیده‌دم</button><div class="kx-economy-note"><b>تفاوت اقتصاد:</b> تجارت = اثر کوتاه‌مدت همین راند · بازار = سند، مالکیت و درآمد پایدار.</div>';
       const anchor = view.querySelector('.view-head');
       if (anchor) anchor.insertAdjacentElement('afterend', flow); else view.prepend(flow);
       flow.querySelectorAll('[data-slot]').forEach(button => button.addEventListener('click', () => { desiredSlot=button.dataset.slot; switchView('map'); setTimeout(updateMapFlow,80); }));
@@ -318,6 +321,11 @@ module.exports = function asset(_request, response) {
       buildOrderGrid();
       const order = activeOrder(); const meta = orderMeta[order] || {label:order,copy:'اثر توسط موتور بازی حل می‌شود.'};
       const copy = flow.querySelector('[data-mobile-order-copy]'); if (copy) copy.textContent = meta.label + ' · ' + meta.copy;
+      const preview = $('#kaykha-command-preview'), mobilePreview = flow.querySelector('[data-mobile-preview]');
+      if (mobilePreview) {
+        mobilePreview.dataset.state = preview?.dataset.state || 'idle';
+        mobilePreview.textContent = preview?.textContent?.trim() || 'هزینه و ریسک از سرور خوانده می‌شود.';
+      }
       const seal = flow.querySelector('[data-mobile-seal]'); const sourceSeal = $('#seal');
       const valid = Boolean(origin?.value && target?.value && allowedOrder(order) && sourceSeal && !sourceSeal.disabled);
       if (seal) { seal.disabled = !valid || sealedThisRound; seal.textContent = sealedThisRound ? 'فرمان مهر شد – منتظر سپیده‌دم' : 'مهر فرمان'; }
@@ -500,6 +508,13 @@ module.exports = function asset(_request, response) {
       if (isPractice()) { lastResourceState=practiceResources(); renderResourceBar(lastResourceState); }
       document.documentElement.dataset.kaykhaMobileLinear = VERSION;
       document.documentElement.dataset.kaykhaMobileSurface = SURFACE_VERSION;
+      if (!previewObserver) {
+        const card = $('.command-card');
+        if (card) {
+          previewObserver = new MutationObserver(()=>syncCommandFlow());
+          previewObserver.observe(card,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-state']});
+        }
+      }
       if (!observer) {
         const scheduleObserverRefresh=()=>{
           if(observerFrame||document.hidden||!isMobile())return;
