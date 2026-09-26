@@ -122,13 +122,23 @@ module.exports = function asset(_request, response) {
         if (order) setTimeout(() => syncOrder(order.dataset.order), 0);
         if (event.target.closest('#seal')) {
           const result = ensureCauseEffect()?.querySelector('[data-ce-result]');
-          if (result) result.textContent = 'فرمان برای سرور ارسال شد؛ نتیجه فقط پس از Shared Resolver قطعی می‌شود.';
+          if (result) result.textContent = 'در حال ثبت فرمان؛ منتظر پاسخ سرور…';
         }
         if (event.target.closest('#resolve')) {
           const result = ensureCauseEffect()?.querySelector('[data-ce-result]');
           if (result) result.textContent = 'در حال محاسبهٔ سپیده‌دم روی سرور…';
         }
       }, true);
+
+      window.addEventListener('kaykha:order-state', event => {
+        const result = ensureCauseEffect()?.querySelector('[data-ce-result]');
+        if (result && event.detail?.state === 'sealed') result.textContent = 'فرمان روی سرور ثبت شد؛ نتیجه پس از سپیده‌دم قطعی می‌شود.';
+      });
+      const onlineStatus = $('#online-status');
+      if (onlineStatus) new MutationObserver(() => {
+        const result = ensureCauseEffect()?.querySelector('[data-ce-result]');
+        if (result && onlineStatus.classList.contains('bad')) result.textContent = 'فرمان ثبت نشد: ' + onlineStatus.textContent.trim();
+      }).observe(onlineStatus, {childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['class']});
 
       window.addEventListener('kaykha:visual-outcome', event => {
         const detail = event.detail || {};
