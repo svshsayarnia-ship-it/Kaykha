@@ -36,6 +36,8 @@ Reference: current `main` at `6e4b100` and the supplied Shadows of Pars archive.
 - Uses the latest authoritative territory event for city ownership and own-city figures; shows no fabricated rival strength or economy in that sheet.
 - Suppresses the competing map pin preview on the mobile single-surface flow.
 - Removes a misleading base-price label from the mobile seal button. Existing server preview remains available in the canonical command path.
+- Mirrors the live server preview into the compact mobile command flow, including the actual cost, benefit, and risk. The mobile primary strip now shows only Attack, Defend, Scout, and the existing complete Trade order. Scout remains locked until round two in both practice and online modes; secondary legacy orders remain outside this primary strip.
+- A live preview practice check completed one order: Ray attacked Yazd, nine coins were reserved, server resolution captured Yazd, AI supported Nishapur, and play advanced to round two. This verifies one turn, not a complete match.
 
 ## Remaining acceptance work
 
