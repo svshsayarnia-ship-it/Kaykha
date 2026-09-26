@@ -26,6 +26,7 @@
   };
 
   let phaseOneRound=1;
+  let phaseOneOrderRound=0;
   let phaseOneDawnAt=null;
   let phaseOneOrderState='waiting';
   let lobbyPending=null;
@@ -323,6 +324,11 @@
     window.addEventListener('kaykha:game-meta',event=>{
       const detail=event.detail||{};
       phaseOneDawnAt=detail.nextDawnAt||detail.next_dawn_at||detail.objective?.next_dawn_at||null;
+      const serverRound=Number(detail.round_no||0);
+      if(serverRound>phaseOneOrderRound){
+        if(phaseOneOrderRound>0){phaseOneOrderState='waiting';renderPhaseOneOrder();}
+        phaseOneOrderRound=serverRound;
+      }
       renderPhaseOneRound();
       renderPhaseOneDawn();
     });
