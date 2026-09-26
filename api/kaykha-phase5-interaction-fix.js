@@ -744,11 +744,10 @@ module.exports = function asset(_request, response) {
   }
 
   function syncOrderLocks(){
-    const practice=isPractice();
     const round=roundNo();
     qa('#orders [data-order]').forEach(button=>{
       const unlock=ORDER_UNLOCK[button.dataset.order]||1;
-      const locked=!practice&&round<unlock;
+      const locked=round<unlock;
       button.disabled=locked;
       button.classList.toggle('kx-order-locked',locked);
       if(locked)button.dataset.kxUnlock='راند '+new Intl.NumberFormat('fa-IR').format(unlock);
