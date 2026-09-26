@@ -38,6 +38,7 @@ Reference: current `main` at `6e4b100` and the supplied Shadows of Pars archive.
 - Removes a misleading base-price label from the mobile seal button. Existing server preview remains available in the canonical command path.
 - Mirrors the live server preview into the compact mobile command flow, including the actual cost, benefit, and risk. The mobile primary strip now shows only Attack, Defend, Scout, and the existing complete Trade order. Scout remains locked until round two in both practice and online modes; secondary legacy orders remain outside this primary strip.
 - A live preview practice check completed one order: Ray attacked Yazd, nine coins were reserved, server resolution captured Yazd, AI supported Nishapur, and play advanced to round two. This verifies one turn, not a complete match.
+- A later practice run advanced through six complete rounds. In round seven the player had two coins and no affordable command; the server refused to resolve without a sealed order. This is a match-blocking economy/skip-turn defect. The client now labels a rejected order as rejected and resets the previous round's order badge, but a server-side free pass/conserve action is still required before a full match can be completed reliably.
 
 ## Remaining acceptance work
 
