@@ -52,6 +52,7 @@ run('mobile',()=>{
   has(linearBody,'20260916-mobile-linear-v4','linear mobile v4 marker missing');
   has(linearBody,'kx-mobile-resource-bar','mobile resource bar missing');
   has(linearBody,'data-mobile-seal','linear command seal control missing');
+  has(linearBody,"$('#kaykha-command-preview')",'mobile must show the server command preview');
   has(linearBody,'kx-causal-sheet','causal result sheet missing');
   has(linearBody,"spell:{icon:'☼'",'spell missing from mobile order flow');
   has(linearBody,'data-more-action="identity"','mobile identity entry missing');
