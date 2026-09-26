@@ -53,6 +53,8 @@ run('mobile',()=>{
   has(linearBody,'kx-mobile-resource-bar','mobile resource bar missing');
   has(linearBody,'data-mobile-seal','linear command seal control missing');
   has(linearBody,"$('#kaykha-command-preview')",'mobile must show the server command preview');
+  has(linearBody,"new Set(['attack','defend','spy','trade'])",'mobile first view must expose only complete core orders');
+  lacks(linearBody,'if (isPractice()) return true;','Practice must obey the same round unlocks as online');
   has(linearBody,'kx-causal-sheet','causal result sheet missing');
   has(linearBody,"spell:{icon:'☼'",'spell missing from mobile order flow');
   has(linearBody,'data-more-action="identity"','mobile identity entry missing');
@@ -66,6 +68,8 @@ run('mobile',()=>{
 });
 
 run('authority',()=>{
+  const clarity=read('api/kaykha-phase5-interaction-fix.js');
+  has(clarity,'const locked=round<unlock;','Practice and online must share order unlock rules');
   const module=require(path.join(root,'api/kaykha-authoritative-controls.js'));
   let body='';module({},capture(chunk=>body+=chunk));new Function(body);
   lacks(body,'installMobileMapFix','rules controller must not own mobile layout');
