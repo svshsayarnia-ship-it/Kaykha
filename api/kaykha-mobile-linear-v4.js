@@ -29,6 +29,7 @@ module.exports = function asset(_request, response) {
     let sealedThisRound = false;
     let tutorialStep = 0;
     let reminderTimer = null;
+    let boardState = null;
 
     function isMobile() {
       return window.innerWidth <= 1024 || (window.matchMedia && matchMedia('(pointer: coarse)').matches && Math.min(screen.width || 9999, screen.height || 9999) <= 1024);
@@ -160,6 +161,9 @@ module.exports = function asset(_request, response) {
           html.kx-linear-mobile .view-head{display:none!important}
           html.kx-linear-mobile button,html.kx-linear-mobile [role=button],html.kx-linear-mobile a{min-height:48px}
           html.kx-linear-mobile p,html.kx-linear-mobile input,html.kx-linear-mobile select,html.kx-linear-mobile textarea{font-size:16px}
+          #kx-city-sheet .kx-city-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px}
+          #kx-city-sheet .kx-city-actions button{min-height:48px;border:1px solid #c9a22777;border-radius:10px;background:#342710;color:#f1dda1;font:inherit}
+          #kx-city-sheet .kx-city-actions button:disabled{opacity:.42}
         }
       `;
       document.head.appendChild(style);
@@ -305,7 +309,6 @@ module.exports = function asset(_request, response) {
         setTimeout(syncCommandFlow,0);
       }));
     }
-    function commandCost(order) { const rule = window.KAYKHA_ACTION_MANIFEST?.[order]; return rule ? Number(rule.base_cost || 0) : null; }
     function syncCommandFlow() {
       const flow = ensureCommandFlow(); if (!flow) return;
       const origin = $('#command-origin'), target = $('#command-target');
@@ -317,8 +320,7 @@ module.exports = function asset(_request, response) {
       const copy = flow.querySelector('[data-mobile-order-copy]'); if (copy) copy.textContent = meta.label + ' · ' + meta.copy;
       const seal = flow.querySelector('[data-mobile-seal]'); const sourceSeal = $('#seal');
       const valid = Boolean(origin?.value && target?.value && allowedOrder(order) && sourceSeal && !sourceSeal.disabled);
-      const cost = commandCost(order);
-      if (seal) { seal.disabled = !valid || sealedThisRound; seal.textContent = sealedThisRound ? 'فرمان مهر شد – منتظر سپیده‌دم' : 'مهر فرمان' + (cost!=null ? ' · '+new Intl.NumberFormat('fa-IR').format(cost)+' سکه' : ''); }
+      if (seal) { seal.disabled = !valid || sealedThisRound; seal.textContent = sealedThisRound ? 'فرمان مهر شد – منتظر سپیده‌دم' : 'مهر فرمان'; }
       flow.classList.toggle('kx-after-seal', sealedThisRound);
     }
 
@@ -328,7 +330,7 @@ module.exports = function asset(_request, response) {
       let confirm = $('#kx-map-confirm');
       if (!confirm) { confirm=document.createElement('button');confirm.type='button';confirm.id='kx-map-confirm';confirm.textContent='تأیید و بازگشت به فرمان';document.body.appendChild(confirm);confirm.addEventListener('click',()=>{desiredSlot=null;switchView('command');setTimeout(syncCommandFlow,60);}); }
       let sheet = $('#kx-city-sheet');
-      if (!sheet) { sheet=document.createElement('section');sheet.id='kx-city-sheet';sheet.setAttribute('aria-hidden','true');sheet.innerHTML='<b data-city-title>شهر</b><p data-city-copy>برای انتخاب روی یکی از شهرها بزن.</p><div class="kx-city-row"><div class="kx-city-stat"><small>قدرت</small><b data-city-strength>—</b></div><div class="kx-city-stat"><small>اقتصاد</small><b data-city-economy>—</b></div><div class="kx-city-stat"><small>مالک</small><b data-city-owner>—</b></div></div><button type="button" class="kx-sheet-close" data-close-city-sheet>بستن و ادامه روی نقشه</button>';document.body.appendChild(sheet);sheet.querySelector('[data-close-city-sheet]')?.addEventListener('click',()=>closeSurface(sheet)); }
+      if (!sheet) { sheet=document.createElement('section');sheet.id='kx-city-sheet';sheet.setAttribute('aria-hidden','true');sheet.setAttribute('aria-label','وضعیت و فرمان‌های شهر');sheet.innerHTML='<b data-city-title>شهر</b><p data-city-copy>برای انتخاب روی یکی از شهرها بزن.</p><div class="kx-city-row"><div class="kx-city-stat"><small>سپاه</small><b data-city-strength>—</b></div><div class="kx-city-stat"><small>اقتصاد</small><b data-city-economy>—</b></div><div class="kx-city-stat"><small>مالک</small><b data-city-owner>—</b></div></div><div class="kx-city-actions" data-city-actions></div><button type="button" class="kx-sheet-close" data-close-city-sheet>بستن و ادامه روی نقشه</button>';document.body.appendChild(sheet);sheet.querySelector('[data-close-city-sheet]')?.addEventListener('click',()=>closeSurface(sheet)); }
       const board = $('.kx-map-scroll-frame') || $('.map-board');
       if (board && !$('#kx-route-line')) { const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.id='kx-route-line';svg.setAttribute('aria-hidden','true');svg.innerHTML='<line class="kx-route-line-path" x1="0" y1="0" x2="0" y2="0"/>';board.appendChild(svg); }
       updateMapFlow();
@@ -340,18 +342,29 @@ module.exports = function asset(_request, response) {
       select.value = option.value; select.dispatchEvent(new Event('change',{bubbles:true})); return true;
     }
     function cityFromButton(button) { return button?.dataset.city || button?.querySelector('b')?.textContent?.trim() || ''; }
+    function authoritativeCity(city) {
+      const option = Array.from($('#command-target')?.options || []).find(item => item.dataset.cityLabel === city);
+      return boardState?.territories?.find(item => item.territory_id === option?.value) || null;
+    }
     function updateCitySheet(button) {
       const sheet = $('#kx-city-sheet'); if (!sheet || !button) return;
-      const city = cityFromButton(button); const small = button.querySelector('small')?.textContent || '';
-      const originOption = Array.from($('#command-origin')?.options || []).find(item => item.dataset.cityLabel===city);
-      const targetOption = Array.from($('#command-target')?.options || []).find(item => item.dataset.cityLabel===city);
-      const option = targetOption || originOption; const parts = small.split('·').map(x=>x.trim()).filter(Boolean);
+      const city = cityFromButton(button);
       sheet.querySelector('[data-city-title]').textContent = city || 'شهر';
-      sheet.querySelector('[data-city-copy]').textContent = desiredSlot==='origin'?'برای انتخاب مبدأ لمس شد.':desiredSlot==='target'?'برای انتخاب هدف لمس شد.':'وضعیت زنده شهر';
-      sheet.querySelector('[data-city-strength]').textContent = option?.dataset.strength || (parts.find(x=>x.includes('سپاه'))?.replace(/[^۰-۹0-9]/g,'') || '—');
-      sheet.querySelector('[data-city-economy]').textContent = option?.dataset.economy || (parts.find(x=>x.includes('بازار'))?.replace(/[^۰-۹0-9]/g,'') || '—');
-      sheet.querySelector('[data-city-owner]').textContent = parts[0] || (originOption?'تو':'رقیب/بی‌طرف');
-      openSurface(sheet);
+      const territory = authoritativeCity(city);
+      const owned = Boolean(territory && boardState?.me?.id && territory.owner_member_id === boardState.me.id);
+      const rival = Boolean(territory?.owner_member_id && !owned);
+      const visibleStrength = Number(territory?.strength);
+      sheet.dataset.city = city;
+      sheet.querySelector('[data-city-strength]').textContent = owned && Number.isFinite(visibleStrength) ? String(visibleStrength) : 'نامشخص';
+      sheet.querySelector('[data-city-economy]').textContent = owned ? String(territory?.economy ?? '—') : 'نامشخص';
+      sheet.querySelector('[data-city-owner]').textContent = owned ? 'تو' : territory ? (rival ? 'رقیب' : 'بی‌طرف') : 'در حال همگام‌سازی';
+      sheet.querySelector('[data-city-copy]').textContent = owned ? 'شهر خودی؛ دفاع یا تجارت را از همین‌جا آماده کن.' : rival ? 'قلمرو رقیب؛ برای حمله یا شناسایی یک مبدأ خودی لازم است.' : 'شهر مستقل؛ برای حمله یک مبدأ خودی انتخاب کن.';
+      const actions = sheet.querySelector('[data-city-actions]');
+      actions.replaceChildren();
+      for (const [key,label,enabled] of [['attack','حمله',!owned],['defend','دفاع',owned],['spy','شناسایی',rival && allowedOrder('spy')],['trade','تجارت',owned]]) {
+        const action = document.createElement('button'); action.type='button'; action.dataset.kxCityAction=key; action.textContent=label; action.disabled=!territory || !enabled; actions.appendChild(action);
+      }
+      if (!sheet.classList.contains('show')) openSurface(sheet);
     }
     function updateRouteLine() {
       const line = $('#kx-route-line .kx-route-line-path'), svg = $('#kx-route-line'); if (!line || !svg) return;
@@ -440,8 +453,25 @@ module.exports = function asset(_request, response) {
       updateCitySheet(button); syncCommandFlow(); updateMapFlow();
     }
 
+    function prepareCityAction(action, city) {
+      const territory = authoritativeCity(city);
+      if (!territory) return;
+      const origin = $('#command-origin'), target = $('#command-target');
+      if (action === 'defend' || action === 'trade') {
+        if (!setSelectByCity(origin, city)) return;
+        setSelectByCity(target, city);
+      } else if (!origin?.value || !setSelectByCity(target, city)) {
+        addReminder('برای این فرمان نخست یک شهر خودی را به عنوان مبدأ انتخاب کن.','city-action-origin'); return;
+      }
+      const source = $(`#orders [data-order="${action}"]`);
+      if (!source || !allowedOrder(action)) return;
+      source.click(); desiredSlot=null; switchView('command'); syncCommandFlow();
+    }
+
     function bind() {
       document.addEventListener('click', event => {
+        const cityAction = event.target.closest('[data-kx-city-action]');
+        if (cityAction && !cityAction.disabled) prepareCityAction(cityAction.dataset.kxCityAction, $('#kx-city-sheet')?.dataset.city);
         handleCitySelection(event);
         if (event.target.closest('.shell-nav [data-game-view]')) { closeTransientSurfaces(); setTimeout(()=>{ensureMapExtras();syncCommandFlow();applyProgressiveDisclosure();updateMapFlow();},80); }
         const order=event.target.closest('#orders [data-order]');
@@ -453,6 +483,7 @@ module.exports = function asset(_request, response) {
       document.addEventListener('keydown', event=>{if(event.key==='Escape')closeTransientSurfaces();});
       document.addEventListener('click', ()=>setTimeout(syncTransientState,0), true);
       window.addEventListener('kaykha:resource-state', event=>{lastResourceState=event.detail||null;renderResourceBar(lastResourceState);});
+      window.addEventListener('kaykha:territories-state', event=>{boardState=event.detail||null;const sheet=$('#kx-city-sheet');if(sheet?.classList.contains('show')){const button=all('#territories button').find(item=>cityFromButton(item)===sheet.dataset.city);if(button)updateCitySheet(button);}});
       window.addEventListener('kaykha:effect-event', event=>{const row=event.detail?.event||event.detail||{};showCausal(row);if(['attack','spy','sabotage','revolt','raid'].includes(row.source_order_type)&&row.delta?.targeted_me)addReminder('یک اقدام خصمانه علیه تو ثبت شده است؛ گزارش سپیده‌دم را ببین.','targeted-'+(row.id||Date.now()));if(row.source_order_type==='spy')saveTutorialStep(3);});
       window.addEventListener('kaykha:visual-outcome', event=>showCausal(event.detail?.event||event.detail||{}));
       window.addEventListener('kaykha:loans-updated', event=>{updateLoanReminders(event.detail||{});if((event.detail?.loans||[]).length)saveTutorialStep(4);});
