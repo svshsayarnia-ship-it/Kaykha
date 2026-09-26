@@ -290,7 +290,6 @@ module.exports = function asset(_request, response) {
     }
 
     function allowedOrder(order) {
-      if (isPractice()) return true;
       const meta = orderMeta[order];
       return !meta || roundFromUi() >= meta.unlock;
     }
@@ -298,7 +297,11 @@ module.exports = function asset(_request, response) {
       const grid = $('[data-mobile-orders]');
       if (!grid) return;
       const sourceButtons = all('#orders [data-order]');
-      const keys = sourceButtons.length ? sourceButtons.map(button=>button.dataset.order).filter(Boolean) : Object.keys(orderMeta);
+      // The map loop only promotes complete, familiar commands. The broader
+      // legacy order catalogue remains in the existing secondary surfaces.
+      const primary = new Set(['attack','defend','spy','trade']);
+      const keys = (sourceButtons.length ? sourceButtons.map(button=>button.dataset.order).filter(Boolean) : Object.keys(orderMeta))
+        .filter(order=>primary.has(order));
       const active = activeOrder();
       grid.innerHTML = keys.map(order => {
         const meta = orderMeta[order] || {icon:'✦',label:order,copy:'اثر توسط موتور بازی حل می‌شود.',unlock:1};
@@ -370,7 +373,9 @@ module.exports = function asset(_request, response) {
       const actions = sheet.querySelector('[data-city-actions]');
       actions.replaceChildren();
       for (const [key,label,enabled] of [['attack','حمله',!owned],['defend','دفاع',owned],['spy','شناسایی',rival && allowedOrder('spy')],['trade','تجارت',owned]]) {
-        const action = document.createElement('button'); action.type='button'; action.dataset.kxCityAction=key; action.textContent=label; action.disabled=!territory || !enabled; actions.appendChild(action);
+        const action = document.createElement('button'); action.type='button'; action.dataset.kxCityAction=key;
+        action.textContent=key==='spy'&&!allowedOrder('spy') ? 'شناسایی · راند ۲' : label;
+        action.disabled=!territory || !enabled; actions.appendChild(action);
       }
       if (!sheet.classList.contains('show')) openSurface(sheet);
     }
