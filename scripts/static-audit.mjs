@@ -24,6 +24,7 @@ run('presentation',()=>{
   has(war,'ورود به تالار آنلاین','phase-one online CTA missing');
   has(war,'data-p1-dawn','phase-one dawn status missing');
   has(war,'data-p1-order','phase-one authoritative order status missing');
+  has(war,'phaseOneOrderRound','phase-one order status must reset on a new server round');
   has(war,'سه قدم اول','phase-one onboarding missing');
   has(war,"get('mode')==='practice'",'Practice must be explicit in presentation');
   lacks(war,"get('mode')!=='online'",'legacy implicit Practice detection returned in presentation');
@@ -75,6 +76,7 @@ run('authority',()=>{
   lacks(body,'installMobileMapFix','rules controller must not own mobile layout');
   lacks(body,'replaceWith(clone)','rules controller must not clone gameplay controls');
   has(body,'rules-only-v3','authority marker missing');
+  has(body,'فرمان ثبت نشد:','server order failure must replace optimistic confirmation');
 });
 
 run('effects',()=>{
