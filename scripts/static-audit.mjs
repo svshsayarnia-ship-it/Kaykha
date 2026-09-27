@@ -24,6 +24,7 @@ run('presentation',()=>{
   has(war,'ورود به تالار آنلاین','phase-one online CTA missing');
   has(war,'data-p1-dawn','phase-one dawn status missing');
   has(war,'data-p1-order','phase-one authoritative order status missing');
+  has(war,'phaseOneOrderRound','phase-one order status must reset on a new server round');
   has(war,'سه قدم اول','phase-one onboarding missing');
   has(war,"get('mode')==='practice'",'Practice must be explicit in presentation');
   lacks(war,"get('mode')!=='online'",'legacy implicit Practice detection returned in presentation');
@@ -52,6 +53,9 @@ run('mobile',()=>{
   has(linearBody,'20260916-mobile-linear-v4','linear mobile v4 marker missing');
   has(linearBody,'kx-mobile-resource-bar','mobile resource bar missing');
   has(linearBody,'data-mobile-seal','linear command seal control missing');
+  has(linearBody,"$('#kaykha-command-preview')",'mobile must show the server command preview');
+  has(linearBody,"new Set(['attack','defend','spy','trade'])",'mobile first view must expose only complete core orders');
+  lacks(linearBody,'if (isPractice()) return true;','Practice must obey the same round unlocks as online');
   has(linearBody,'kx-causal-sheet','causal result sheet missing');
   has(linearBody,"spell:{icon:'☼'",'spell missing from mobile order flow');
   has(linearBody,'data-more-action="identity"','mobile identity entry missing');
@@ -65,11 +69,14 @@ run('mobile',()=>{
 });
 
 run('authority',()=>{
+  const clarity=read('api/kaykha-phase5-interaction-fix.js');
+  has(clarity,'const locked=round<unlock;','Practice and online must share order unlock rules');
   const module=require(path.join(root,'api/kaykha-authoritative-controls.js'));
   let body='';module({},capture(chunk=>body+=chunk));new Function(body);
   lacks(body,'installMobileMapFix','rules controller must not own mobile layout');
   lacks(body,'replaceWith(clone)','rules controller must not clone gameplay controls');
   has(body,'rules-only-v3','authority marker missing');
+  has(body,'فرمان ثبت نشد:','server order failure must replace optimistic confirmation');
 });
 
 run('effects',()=>{
@@ -101,6 +108,9 @@ run('security',()=>{
   const progressive=read('supabase/migrations/20260916202500_kaykha_phase5_progressive_disclosure_guards.sql');
   has(progressive,"new.order_type in ('caravan','spy')",'progressive order guard missing');
   has(progressive,'kaykha_progressive_loan_guard','progressive loan guard missing');
+  const conserve=read('supabase/migrations/20260927080000_kaykha_conserve_order_no_cost.sql');
+  has(conserve,"'conserve'",'zero-cost conserve order missing');
+  has(conserve,'submit_kaykha_conserve','conserve RPC missing');
 });
 
 if(section==='all'||section==='bundle'){
