@@ -108,6 +108,9 @@ run('security',()=>{
   const progressive=read('supabase/migrations/20260916202500_kaykha_phase5_progressive_disclosure_guards.sql');
   has(progressive,"new.order_type in ('caravan','spy')",'progressive order guard missing');
   has(progressive,'kaykha_progressive_loan_guard','progressive loan guard missing');
+  const conserve=read('supabase/migrations/20260927080000_kaykha_conserve_order_no_cost.sql');
+  has(conserve,"'conserve'",'zero-cost conserve order missing');
+  has(conserve,'submit_kaykha_conserve','conserve RPC missing');
 });
 
 if(section==='all'||section==='bundle'){
