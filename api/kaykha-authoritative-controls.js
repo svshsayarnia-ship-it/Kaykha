@@ -73,8 +73,8 @@ module.exports = function asset(_request, response) {
       const anchor = $('#order-intel') || $('#orders');
       if (!anchor) return null;
       panel = document.createElement('section');
-      panel.id = 'kaykha-cause-effect';
-      panel.innerHTML = '<header><b>زنجیرهٔ تصمیم → نتیجه</b><small>SERVER AUTHORITATIVE</small></header><div class="ce-grid"><div><small>اکنون</small><b data-ce-now>یک فرمان انتخاب کن.</b></div><div><small>هزینه و ضدبازی</small><b data-ce-rule>از قانون سرور خوانده می‌شود.</b></div><div><small>سپیده‌دم</small><b data-ce-result>نتیجهٔ قطعی فقط از Effect Event سرور می‌آید.</b></div></div>';
+        panel.id = 'kaykha-cause-effect';
+      panel.innerHTML = '<header><b>زنجیرهٔ تصمیم → نتیجه</b><small>SERVER AUTHORITATIVE</small></header><div class="ce-grid"><div><small>اکنون</small><b data-ce-now>یک فرمان انتخاب کن.</b></div><div><small>هزینه و ضدبازی</small><b data-ce-rule>از قانون سرور خوانده می‌شود.</b></div><div><small>سپیده‌دم</small><b data-ce-result>نتیجهٔ قطعی فقط از Effect Event سرور می‌آید.</b></div></div><button type="button" data-kaykha-conserve hidden>عبور از راند بدون هزینه</button>';
       anchor.insertAdjacentElement('afterend', panel);
       return panel;
     }
@@ -124,6 +124,19 @@ module.exports = function asset(_request, response) {
           const result = ensureCauseEffect()?.querySelector('[data-ce-result]');
           if (result) result.textContent = 'در حال ثبت فرمان؛ منتظر پاسخ سرور…';
         }
+        const conserve = event.target.closest('[data-kaykha-conserve]');
+        if (conserve) {
+          const gameId = localStorage.getItem('kaykha.active-game-id');
+          const origin = $('#command-origin')?.value;
+          if (!gameId || !origin) return;
+          conserve.disabled = true;
+          rpc('submit_kaykha_conserve', { p_game_id: gameId, p_origin_territory_id: origin }).then(() => {
+            conserve.hidden = true;
+            const status = $('#online-status'); if (status) status.textContent = 'عبور بدون هزینه ثبت شد؛ منتظر سپیده‌دم سرور بمان.';
+            window.dispatchEvent(new CustomEvent('kaykha:order-state', { detail: { state: 'sealed', order: 'conserve' } }));
+          }).catch(error => { conserve.disabled = false; const status = $('#online-status'); if (status) { status.textContent = error.message; status.classList.add('bad'); } });
+          return;
+        }
         if (event.target.closest('#resolve')) {
           const result = ensureCauseEffect()?.querySelector('[data-ce-result]');
           if (result) result.textContent = 'در حال محاسبهٔ سپیده‌دم روی سرور…';
@@ -137,7 +150,11 @@ module.exports = function asset(_request, response) {
       const onlineStatus = $('#online-status');
       if (onlineStatus) new MutationObserver(() => {
         const result = ensureCauseEffect()?.querySelector('[data-ce-result]');
-        if (result && onlineStatus.classList.contains('bad')) result.textContent = 'فرمان ثبت نشد: ' + onlineStatus.textContent.trim();
+        const conserve = ensureCauseEffect()?.querySelector('[data-kaykha-conserve]');
+        if (result && onlineStatus.classList.contains('bad')) {
+          result.textContent = 'فرمان ثبت نشد: ' + onlineStatus.textContent.trim();
+          if (conserve && /کافی|بهای|خزانه|منابع/.test(onlineStatus.textContent)) conserve.hidden = false;
+        }
       }).observe(onlineStatus, {childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['class']});
 
       window.addEventListener('kaykha:visual-outcome', event => {
